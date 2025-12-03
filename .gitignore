@@ -1,0 +1,18 @@
+# Node
+node_modules/
+dist/
+build/
+
+# Python
+venv/
+__pycache__/
+
+# VS Code
+.vscode/
+
+# Environment
+.env
+*.env.local
+
+# Docker volumes
+infra/db-data/
