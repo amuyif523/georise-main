@@ -1,17 +1,23 @@
 version: "3.9"
+
 services:
   db:
     image: postgis/postgis:15-3.3
-    container_name: georise-db
+    container_name: georisem-db
     restart: always
     environment:
-      POSTGRES_USER: georise
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: georise_db
+      POSTGRES_USER: georisem
+      POSTGRES_PASSWORD: georisem123
+      POSTGRES_DB: georisem_db
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - georise_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U georisem -d georisem_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  db_data:
+  georise_db_data:
