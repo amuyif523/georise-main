@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CITIZEN
+  AGENCY_STAFF
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum IncidentStatus {
+  RECEIVED
+  UNDER_REVIEW
+  ASSIGNED
+  RESPONDING
+  RESOLVED
+  CANCELLED
+}
+
+enum AgencyType {
+  POLICE
+  FIRE
+  MEDICAL
+  TRAFFIC
+  DISASTER
+  OTHER
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  fullName     String
+  email        String    @unique
+  phone        String?   @unique
+  passwordHash String
+  role         Role      @default(CITIZEN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  citizenVerification CitizenVerification?
+  agencyStaff         AgencyStaff?
+  incidentsReported   Incident[]             @relation("IncidentsReportedByUser")
+  statusHistory       IncidentStatusHistory[]
+}
+
+model Agency {
+  id          Int         @id @default(autoincrement())
+  name        String
+  type        AgencyType
+  city        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  staff     AgencyStaff[]
+  incidents Incident[]   @relation("IncidentsAssignedToAgency")
+}
+
+model AgencyStaff {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique
+  agencyId Int
+  position String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  agency Agency @relation(fields: [agencyId], references: [id])
+}
+
+model CitizenVerification {
+  id           Int                @id @default(autoincrement())
+  userId       Int                @unique
+  nationalId   String
+  phone        String
+  status       VerificationStatus @default(PENDING)
+  otpCode      String?
+  otpExpiresAt DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Incident {
+  id               Int            @id @default(autoincrement())
+  reporterId       Int
+  assignedAgencyId Int?
+  title            String
+  description      String
+  category         String
+  severityScore    Int?
+  status           IncidentStatus @default(RECEIVED)
+  latitude         Float?
+  longitude        Float?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  reporter       User                 @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
+  assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
+  aiOutput       IncidentAIOutput?
+  statusHistory  IncidentStatusHistory[]
+}
+
+model IncidentAIOutput {
+  id                Int     @id @default(autoincrement())
+  incidentId        Int     @unique
+  modelVersion      String
+  predictedCategory String
+  severityScore     Int
+  confidence        Float
+  summary           String?
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+}
+
+model IncidentStatusHistory {
+  id          Int            @id @default(autoincrement())
+  incidentId  Int
+  actorUserId Int
+  fromStatus  IncidentStatus?
+  toStatus    IncidentStatus
+  note        String?
+  changedAt   DateTime       @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  actor     User     @relation(fields: [actorUserId], references: [id])
+}
