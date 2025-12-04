@@ -98,7 +98,7 @@ model Incident {
   assignedAgencyId Int?
   title            String
   description      String
-  category         String
+  category         String?
   severityScore    Int?
   status           IncidentStatus @default(RECEIVED)
   latitude         Float?
