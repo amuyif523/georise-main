@@ -1,17 +1,50 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
+import { severityBadgeClass, severityLabel } from "../utils/severity";
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const sampleOverview = [
+    { id: "FIRE", label: "Fire", count: 24, sev: 4 },
+    { id: "MEDICAL", label: "Medical", count: 18, sev: 3 },
+    { id: "TRAFFIC", label: "Traffic", count: 30, sev: 2 },
+  ];
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <button className="btn btn-outline btn-sm" onClick={logout}>
-          Logout
-        </button>
+    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+      <div className="max-w-5xl mx-auto px-4 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <p className="text-sm text-cyan-200">Admin workspace</p>
+            <h1 className="text-3xl font-bold">System overview</h1>
+            <p className="text-slate-400 text-sm">
+              Monitor categories and recent severities.
+            </p>
+          </div>
+          <button className="btn btn-outline btn-sm" onClick={logout}>
+            Logout
+          </button>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-3">
+          {sampleOverview.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">{item.label}</p>
+                  <h3 className="text-2xl font-bold text-white">{item.count}</h3>
+                </div>
+                <span className={severityBadgeClass(item.sev)}>
+                  Sev {severityLabel(item.sev)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <p>Welcome, {user?.fullName}. Here you will manage users, agencies, and system settings.</p>
     </div>
   );
 };
