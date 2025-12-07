@@ -16,3 +16,6 @@ __pycache__/
 
 # Docker volumes
 infra/db-data/
+
+models/
+

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MapPin, Shield, Sparkles } from "lucide-react";
 import api from "../lib/api";
+import { severityBadgeClass, severityLabel } from "../utils/severity";
 
 type Incident = {
   id: number;
@@ -16,14 +17,8 @@ type Incident = {
     predictedCategory: string;
     severityScore: number;
     confidence: number;
+    summary?: string | null;
   } | null;
-};
-
-const severityColor = (score: number | null | undefined) => {
-  if (score == null) return "badge badge-neutral";
-  if (score >= 4) return "badge badge-error";
-  if (score >= 3) return "badge badge-warning";
-  return "badge badge-success";
 };
 
 const statusColor = (status: string) => {
@@ -106,8 +101,8 @@ const MyReportsPage: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <span className={statusColor(incident.status)}>{incident.status}</span>
-                    <span className={severityColor(incident.severityScore)}>
-                      Sev {incident.severityScore ?? "?"}
+                    <span className={severityBadgeClass(incident.severityScore)}>
+                      Sev {severityLabel(incident.severityScore)}
                     </span>
                   </div>
                 </div>
@@ -124,9 +119,14 @@ const MyReportsPage: React.FC = () => {
                   <Shield size={16} className="text-amber-300" />
                   <span>
                     Category: {incident.category ?? "Pending"} · AI severity:{" "}
-                    {incident.severityScore ?? "—"}
+                    {severityLabel(incident.severityScore)}
                   </span>
                 </div>
+                {incident.aiOutput?.summary && (
+                  <div className="mt-2 text-xs text-slate-400">
+                    AI summary: {incident.aiOutput.summary}
+                  </div>
+                )}
                 <div className="mt-2 text-xs text-slate-500">
                   ID: {incident.id} · Created: {formatDate(incident.createdAt)}
                 </div>
