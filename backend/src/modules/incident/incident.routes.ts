@@ -160,7 +160,7 @@ router.get(
             subCityId: true,
             reviewStatus: true,
             createdAt: true,
-            reporter: { select: { id: true, fullName: true, trustScore: true } },
+            reporter: { select: { id: true, fullName: true, trustScore: true, email: true, phone: true } },
           },
         });
         return res.json({ incidents });
@@ -176,7 +176,9 @@ router.get(
       const whereClause = filters.length ? `AND ${filters.join(" AND ")}` : "";
 
       const incidents = await prisma.$queryRawUnsafe<any[]>(`
-        SELECT id, title, category, "severityScore", status, latitude, longitude, "subCityId", "reviewStatus", "createdAt"
+        SELECT id, title, category, "severityScore", status, latitude, longitude, "subCityId", "reviewStatus", "createdAt",
+               NULL::text as "reporterName",
+               NULL::text as "reporterContact"
         FROM "Incident" i
         WHERE 1=1
         ${whereClause}
