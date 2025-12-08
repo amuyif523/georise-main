@@ -2,6 +2,7 @@ import axios from "axios";
 import { IncidentStatus } from "@prisma/client";
 import prisma from "../../prisma";
 import { CreateIncidentRequest } from "./incident.types";
+import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
 
@@ -74,6 +75,7 @@ export class IncidentService {
       include: { aiOutput: true },
     });
 
+    emitIncidentCreated(toIncidentPayload(updated));
     return updated;
   }
 

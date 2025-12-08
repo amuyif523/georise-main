@@ -17,6 +17,7 @@ const AgenciesPage = React.lazy(() => import("./pages/admin/AgenciesPage"));
 const UsersPage = React.lazy(() => import("./pages/admin/UsersPage"));
 const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogsPage"));
 const AnalyticsPage = React.lazy(() => import("./pages/admin/AnalyticsPage"));
+const ActivityFeed = React.lazy(() => import("./pages/admin/ActivityFeed"));
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
@@ -119,6 +120,16 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
                   <AnalyticsPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/activity"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading activity…</div>}>
+                  <ActivityFeed />
                 </Suspense>
               </ProtectedRoute>
             }

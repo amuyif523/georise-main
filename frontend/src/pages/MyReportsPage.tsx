@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MapPin, Shield, Sparkles } from "lucide-react";
 import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
+import { getSocket } from "../lib/socket";
 
 type Incident = {
   id: number;
@@ -58,6 +59,23 @@ const MyReportsPage: React.FC = () => {
       }
     };
     fetchData();
+
+    const socket = getSocket();
+    if (socket) {
+      const handler = (inc: any) => {
+        setIncidents((prev) =>
+          prev.map((r) =>
+            r.id === inc.id
+              ? { ...r, status: inc.status, severityScore: inc.severityScore, category: inc.category }
+              : r
+          )
+        );
+      };
+      socket.on("incident:updated", handler);
+      return () => {
+        socket.off("incident:updated", handler);
+      };
+    }
   }, []);
 
   return (

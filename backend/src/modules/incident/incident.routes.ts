@@ -9,6 +9,7 @@ import {
 } from "./incident.controller";
 import { validateBody } from "../../middleware/validate";
 import { createIncidentSchema } from "./incident.validation";
+import { emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
 
 const router = Router();
 
@@ -124,6 +125,7 @@ router.patch(
         },
       });
 
+      emitIncidentUpdated(toIncidentPayload(updated));
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,
@@ -155,6 +157,7 @@ router.patch(
         },
       });
 
+      emitIncidentUpdated(toIncidentPayload(updated));
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,
@@ -186,6 +189,7 @@ router.patch(
         },
       });
 
+      emitIncidentUpdated(toIncidentPayload(updated));
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,

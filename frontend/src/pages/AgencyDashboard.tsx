@@ -2,6 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
+import { useEffect, useState } from "react";
+import { getSocket } from "../lib/socket";
+import IncidentCard from "../components/incident/IncidentCard";
+import AppLayout from "../layouts/AppLayout";
 
 const AgencyDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -10,9 +14,25 @@ const AgencyDashboard: React.FC = () => {
     { id: 102, title: "Traffic crash at Ring Road", severity: 3 },
     { id: 103, title: "Power line down", severity: 2 },
   ];
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = (inc: any) => {
+      setEvents((prev) => [{ ...inc, createdAt: new Date().toISOString() }, ...prev].slice(0, 5));
+    };
+    socket.on("incident:created", handler);
+    socket.on("incident:updated", handler);
+    return () => {
+      socket?.off("incident:created", handler);
+      socket?.off("incident:updated", handler);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+    <AppLayout>
+      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
       <div className="max-w-5xl mx-auto px-4 space-y-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -49,8 +69,28 @@ const AgencyDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+
+        <div className="mt-6">
+          <p className="text-sm text-cyan-200 mb-2">Live events</p>
+          <div className="space-y-2">
+            {events.map((e) => (
+              <IncidentCard
+                key={e.id}
+                title={e.title || "Incident"}
+                category={e.category}
+                severity={e.severityScore}
+                status={e.status}
+                timestamp={e.createdAt}
+              />
+            ))}
+            {events.length === 0 && (
+              <div className="text-sm text-slate-400">No recent events yet.</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 

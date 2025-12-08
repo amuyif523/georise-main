@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "../lib/api";
+import { connectSocket, disconnectSocket } from "../lib/socket";
 
 type Role = "CITIZEN" | "AGENCY_STAFF" | "ADMIN";
 
@@ -41,7 +42,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const token = localStorage.getItem("georise_token");
     if (token) {
-      fetchMe();
+      (async () => {
+        await fetchMe();
+        connectSocket(token);
+      })();
     } else {
       setLoading(false);
     }
@@ -69,11 +73,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const { token, user: userData } = res.data;
     localStorage.setItem("georise_token", token);
     setUser(userData);
+    connectSocket(token);
   };
 
   const logout = () => {
     localStorage.removeItem("georise_token");
     setUser(null);
+    disconnectSocket();
   };
 
   return (
