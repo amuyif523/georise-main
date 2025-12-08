@@ -34,6 +34,12 @@ enum AgencyType {
   MEDICAL
   TRAFFIC
   DISASTER
+  ELECTRIC
+  WATER
+  ENVIRONMENT
+  PUBLIC_HEALTH
+  CONSTRUCTION
+  ADMINISTRATION
   OTHER
 }
 
@@ -68,6 +74,9 @@ model Agency {
   isApproved  Boolean     @default(false)
   isActive    Boolean     @default(false)
   boundary    Unsupported("geometry(Polygon,4326)")?
+  centerLatitude  Float?
+  centerLongitude Float?
+  jurisdiction    Unsupported("geometry(Polygon,4326)")?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
