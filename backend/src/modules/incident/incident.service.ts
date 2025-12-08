@@ -18,6 +18,15 @@ export class IncidentService {
       },
     });
 
+    // Populate geography column when coordinates are provided
+    if (data.latitude != null && data.longitude != null) {
+      await prisma.$executeRaw`
+        UPDATE "Incident"
+        SET location = ST_SetSRID(ST_MakePoint(${data.longitude}, ${data.latitude}), 4326)
+        WHERE id = ${incident.id};
+      `;
+    }
+
     let aiOutput: any = null;
     try {
       const res = await axios.post(AI_ENDPOINT, {

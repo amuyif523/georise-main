@@ -103,6 +103,7 @@ model Incident {
   status           IncidentStatus @default(RECEIVED)
   latitude         Float?
   longitude        Float?
+  location         Unsupported("geography(Point,4326)")?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
 
@@ -24,6 +25,12 @@ const AgencyDashboard: React.FC = () => {
           <button className="btn btn-outline btn-sm" onClick={logout}>
             Logout
           </button>
+        </div>
+
+        <div className="flex justify-end">
+          <Link to="/agency/map" className="btn btn-primary btn-sm">
+            Open dispatch map
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">
