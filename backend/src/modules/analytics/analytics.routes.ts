@@ -1,152 +1,80 @@
 import { Router } from "express";
+import prisma from "../../prisma.js";
+import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { Role } from "@prisma/client";
-import { requireAuth, requireRole } from "../../middleware/auth";
-import prisma from "../../prisma";
 
 const router = Router();
 
-// Heatmap points with time/severity filters
-router.get(
-  "/heatmap",
-  requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
-  async (req, res) => {
-    try {
-      const hours = Number(req.query.hours || 24);
-      const minSeverity = Number(req.query.minSeverity || 0);
-      if (!Number.isFinite(hours) || !Number.isFinite(minSeverity)) {
-        return res.status(400).json({ message: "Invalid query params" });
-      }
-      const since = new Date(Date.now() - hours * 3600 * 1000);
+// Heatmap points (lat/lng/severity)
+router.get("/heatmap", requireAuth, async (_req, res) => {
+  const rows = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT
+      ST_Y(location) AS lat,
+      ST_X(location) AS lng,
+      COALESCE("severityScore", 0) AS severity
+    FROM "Incident"
+    WHERE location IS NOT NULL
+      AND "status" != 'CANCELLED'
+  `);
+  res.json(rows);
+});
 
-      const points = await prisma.$queryRaw<
-        Array<{ lat: number; lng: number; weight: number | null }>
-      >`
-        SELECT ST_Y(location) AS lat,
-               ST_X(location) AS lng,
-               "severityScore"::float AS weight
-        FROM "Incident"
-        WHERE location IS NOT NULL
-          AND "createdAt" >= ${since}
-          AND ("severityScore" IS NULL OR "severityScore" >= ${minSeverity})
-      `;
+// K-means clustering (default k=5) for last 30 days
+router.get("/clusters", requireAuth, async (_req, res) => {
+  const rows = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT
+      ST_ClusterKMeans(location, 5) OVER () AS cluster_id,
+      id,
+      title,
+      COALESCE("severityScore", 0) AS severity,
+      ST_Y(location) AS lat,
+      ST_X(location) AS lng
+    FROM "Incident"
+    WHERE location IS NOT NULL
+      AND "reportedAt" > NOW() - INTERVAL '30 days'
+  `);
+  res.json(rows);
+});
 
-      res.json({ points });
-    } catch (err: any) {
-      console.error("Heatmap error:", err);
-      res.status(400).json({ message: err?.message || "Failed to load heatmap points" });
-    }
-  }
-);
+// KPI cards: avg dispatch/arrival/resolution rate
+router.get("/kpi", requireAuth, async (_req, res) => {
+  const [row] = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT
+      (SELECT AVG(EXTRACT(EPOCH FROM ("dispatchedAt" - "reportedAt")))/60 FROM "Incident" WHERE "dispatchedAt" IS NOT NULL) AS avg_dispatch,
+      (SELECT AVG(EXTRACT(EPOCH FROM ("arrivalAt" - "dispatchedAt")))/60 FROM "Incident" WHERE "arrivalAt" IS NOT NULL AND "dispatchedAt" IS NOT NULL) AS avg_arrival,
+      (SELECT COUNT(*) FILTER (WHERE status='RESOLVED')*100.0/NULLIF(COUNT(*),0) FROM "Incident") AS resolution_rate
+  `);
 
-// Hotspot clusters (admin)
-router.get(
-  "/clusters",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    try {
-      const clusters = await prisma.$queryRaw<
-        Array<{ id: number; lat: number; lng: number; cluster_id: number }>
-      >`
-        SELECT id,
-               ST_Y(location) AS lat,
-               ST_X(location) AS lng,
-               cluster_id
-        FROM (
-          SELECT id, location,
-            ST_ClusterKMeans(location::geometry, 5) OVER () AS cluster_id
-          FROM "Incident"
-          WHERE location IS NOT NULL
-        ) AS clusters
-      `;
+  res.json({
+    avgDispatch: row?.avg_dispatch !== null ? Number(row.avg_dispatch.toFixed(1)) : null,
+    avgArrival: row?.avg_arrival !== null ? Number(row.avg_arrival.toFixed(1)) : null,
+    resolutionRate: row?.resolution_rate !== null ? Number(row.resolution_rate.toFixed(1)) : null,
+  });
+});
 
-      res.json({ clusters });
-    } catch (err: any) {
-      console.error("Clusters error:", err);
-      res.status(400).json({ message: err?.message || "Failed to load clusters" });
-    }
-  }
-);
+// Time-series incidents per day (last 30 days)
+router.get("/timeline", requireAuth, async (_req, res) => {
+  const rows = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT
+      to_char(date_trunc('day', "reportedAt"), 'YYYY-MM-DD') AS day,
+      count(*) AS count
+    FROM "Incident"
+    WHERE "reportedAt" >= NOW() - INTERVAL '30 days'
+    GROUP BY day
+    ORDER BY day ASC
+  `);
+  res.json(rows);
+});
 
-// Basic stats
-router.get(
-  "/stats",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    try {
-      const lastWeek = new Date(Date.now() - 7 * 24 * 3600 * 1000);
-      const total = await prisma.incident.count();
-      const highSeverity = await prisma.incident.count({
-        where: { severityScore: { gte: 4 } },
-      });
-      const weekIncidents = await prisma.incident.count({
-        where: { createdAt: { gte: lastWeek } },
-      });
-      const perCategory = await prisma.incident.groupBy({
-        by: ["category"],
-        _count: { _all: true },
-      });
-
-      res.json({ total, highSeverity, weekIncidents, perCategory });
-    } catch (err: any) {
-      console.error("Stats error:", err);
-      res.status(400).json({ message: err?.message || "Failed to load stats" });
-    }
-  }
-);
-
-// Simple risk scoring prototype (higher severity + recency)
-router.get(
-  "/risk",
-  requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
-  async (req, res) => {
-    try {
-      const hours = Number(req.query.hours || 72);
-      const top = Number(req.query.top || 10);
-      if (!Number.isFinite(hours) || !Number.isFinite(top)) {
-        return res.status(400).json({ message: "Invalid query params" });
-      }
-
-      const risks = await prisma.$queryRaw<
-        Array<{
-          id: number;
-          title: string;
-          category: string | null;
-          severityScore: number | null;
-          status: string;
-          latitude: number | null;
-          longitude: number | null;
-          risk: number;
-        }>
-      >`
-        SELECT id,
-               title,
-               category,
-               "severityScore",
-               status,
-               latitude,
-               longitude,
-               (
-                 COALESCE("severityScore", 2)
-                 + CASE WHEN status != 'RESOLVED' THEN 1 ELSE 0 END
-                 + LEAST(1.0, 24.0 / (EXTRACT(EPOCH FROM (NOW() - "createdAt"))/3600.0 + 1))
-               ) AS risk
-        FROM "Incident"
-        WHERE "createdAt" >= NOW() - (${hours} * INTERVAL '1 hour')
-          AND location IS NOT NULL
-        ORDER BY risk DESC
-        LIMIT ${top}
-      `;
-
-      res.json({ risks });
-    } catch (err: any) {
-      console.error("Risk scoring error:", err);
-      res.status(400).json({ message: err?.message || "Failed to load risk scores" });
-    }
-  }
-);
+// Admin-only endpoint to surface analytics safely if needed
+router.get("/admin/summary", requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const [row] = await prisma.$queryRawUnsafe<any[]>(`
+    SELECT
+      (SELECT COUNT(*) FROM "Incident") AS total_incidents,
+      (SELECT COUNT(*) FROM "Incident" WHERE status='RESOLVED') AS resolved_incidents,
+      (SELECT COUNT(*) FROM "Incident" WHERE status!='RESOLVED') AS active_incidents
+  `);
+  res.json(row || {});
+});
 
 export default router;
