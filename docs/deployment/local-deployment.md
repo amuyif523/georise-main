@@ -40,3 +40,8 @@ Optional: seed demo data
 cd backend
 npx prisma db seed
 ```
+
+Demo logins
+- Admin: admin@example.com / password123
+- Agency (Police): police1@example.com / password123
+- Citizen: citizen1@example.com / password123
