@@ -5,6 +5,7 @@ import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 import OnlineStatusBanner from "./components/OnlineStatusBanner";
 import { AuthProvider } from "./context/AuthContext";
+import { registerSW } from "virtual:pwa-register";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgencyDashboard from "./pages/AgencyDashboard";
 import CitizenDashboard from "./pages/CitizenDashboard";
@@ -21,6 +22,13 @@ const ActivityFeed = React.lazy(() => import("./pages/admin/ActivityFeed"));
 const CitizenVerificationPage = React.lazy(() => import("./pages/CitizenVerificationPage"));
 const ReviewQueuePage = React.lazy(() => import("./pages/admin/ReviewQueuePage"));
 const VerificationPage = React.lazy(() => import("./pages/admin/VerificationPage"));
+
+// Register service worker for PWA/offline caching
+registerSW({
+  onOfflineReady() {
+    console.log("PWA offline cache ready");
+  },
+});
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

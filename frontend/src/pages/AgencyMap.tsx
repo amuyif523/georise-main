@@ -96,6 +96,7 @@ const AgencyMap: React.FC = () => {
   const [minSeverity, setMinSeverity] = useState(0);
   const [showHeat, setShowHeat] = useState(true);
   const [showClusters, setShowClusters] = useState(false);
+  const [lowDataMode, setLowDataMode] = useState(() => localStorage.getItem("low_data_mode") === "1");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
@@ -151,7 +152,7 @@ const AgencyMap: React.FC = () => {
     };
     loadGeo();
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(fetchData, lowDataMode ? 30000 : 10000);
     const socket = getSocket();
     if (socket) {
       const handlerCreated = (inc: any) => {
@@ -197,7 +198,7 @@ const AgencyMap: React.FC = () => {
       };
     }
     return () => clearInterval(interval);
-  }, [hours, minSeverity]);
+  }, [hours, minSeverity, lowDataMode]);
 
   const updateStatus = async (id: number, action: "assign" | "respond" | "resolve") => {
     const confirmMsg =
@@ -376,6 +377,23 @@ const AgencyMap: React.FC = () => {
             onChange={(e) => setShowClusters(e.target.checked)}
           />
           <span className="text-slate-400">Clusters</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={lowDataMode}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setLowDataMode(next);
+              localStorage.setItem("low_data_mode", next ? "1" : "0");
+              if (next) {
+                setShowHeat(false);
+                setShowClusters(false);
+              }
+            }}
+          />
+          <span className="text-slate-400">Low data</span>
         </label>
       </div>
       {loading && <div className="p-4 text-slate-300">Loading map…</div>}

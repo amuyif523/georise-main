@@ -5,6 +5,8 @@ import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { Map, MessageSquare, ShieldCheck } from "lucide-react";
 import api from "../lib/api";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { addToIncidentQueue } from "../offline/incidentQueue";
 
 type Step = 1 | 2 | 3;
 
@@ -229,6 +231,7 @@ const ReportIncidentWizard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
+  const online = useNetworkStatus();
 
   const handleNextFromStep1 = () => {
     if (!form.title || !form.description) {
@@ -252,50 +255,21 @@ const ReportIncidentWizard: React.FC = () => {
     try {
       setSubmitting(true);
       setError(null);
-      if (!navigator.onLine) {
-        const queue = JSON.parse(localStorage.getItem("georise_offline_queue") || "[]");
-        queue.push({ type: "incident", payload: form, createdAt: new Date().toISOString() });
-        localStorage.setItem("georise_offline_queue", JSON.stringify(queue));
-        setInfo("Offline detected. Your report is queued and will auto-send when back online.");
-        setSubmitting(false);
+      const payload = form;
+      if (online) {
+        await api.post("/incidents", payload);
         navigate("/citizen/my-reports");
-        return;
+      } else {
+        await addToIncidentQueue(payload);
+        setInfo("You are offline. Your report has been queued and will auto-send when back online.");
       }
-
-      await api.post("/incidents", form);
-      navigate("/citizen/my-reports");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to submit incident.");
+      await addToIncidentQueue(form);
+      setInfo("Network issue. Your report has been queued and will sync when online.");
     } finally {
       setSubmitting(false);
     }
   };
-
-  // Auto-sync queued incidents when online
-  React.useEffect(() => {
-    const syncQueue = async () => {
-      const raw = localStorage.getItem("georise_offline_queue");
-      if (!raw) return;
-      const queue = JSON.parse(raw);
-      const remaining: any[] = [];
-      for (const item of queue) {
-        if (item.type === "incident") {
-          try {
-            await api.post("/incidents", item.payload);
-          } catch {
-            remaining.push(item);
-          }
-        }
-      }
-      if (remaining.length === 0) {
-        localStorage.removeItem("georise_offline_queue");
-      } else {
-        localStorage.setItem("georise_offline_queue", JSON.stringify(remaining));
-      }
-    };
-    window.addEventListener("online", syncQueue);
-    return () => window.removeEventListener("online", syncQueue);
-  }, []);
 
   const isMobile = typeof window !== "undefined" ? window.innerWidth < 768 : false;
 
