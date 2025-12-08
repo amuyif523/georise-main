@@ -13,6 +13,7 @@ import IncidentDetailPane from "../components/incident/IncidentDetailPane";
 import AppLayout from "../layouts/AppLayout";
 import { getSocket } from "../lib/socket";
 import BoundariesLayer from "../components/maps/BoundariesLayer";
+import ClusterLayer from "../components/maps/ClusterLayer";
 
 type Incident = {
   id: number;
@@ -34,6 +35,8 @@ type Incident = {
 };
 
 type HeatPoint = { lat: number; lng: number; weight: number | null };
+type ClusterPoint = { id: number; cluster_id: number; lat: number; lng: number; severity: number; title?: string | null };
+type ClusterPoint = { id: number; cluster_id: number; lat: number; lng: number; severity: number; title?: string | null };
 
 const severityFill = (score: number | null | undefined) => {
   if (score == null) return "#94a3b8"; // slate
@@ -84,6 +87,7 @@ const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({
 const AgencyMap: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
+  const [clusterPoints, setClusterPoints] = useState<ClusterPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +95,7 @@ const AgencyMap: React.FC = () => {
   const [hours, setHours] = useState(24);
   const [minSeverity, setMinSeverity] = useState(0);
   const [showHeat, setShowHeat] = useState(true);
+  const [showClusters, setShowClusters] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
@@ -101,19 +106,30 @@ const AgencyMap: React.FC = () => {
   const fetchData = async () => {
     try {
       setListLoading(true);
-      const [incRes, heatRes, respRes] = await Promise.all([
+      const [incRes, heatRes, respRes, clusterRes] = await Promise.all([
         api.get("/incidents", {
           params: { status: "RECEIVED", hours },
         }),
         api.get("/analytics/heatmap", { params: { hours, minSeverity } }),
         api.get("/responders"),
+        api.get("/analytics/clusters"),
       ]);
       let incs = incRes.data.incidents || [];
       if (selectedSubCity) {
         incs = incs.filter((i: any) => i.subCityId === Number(selectedSubCity));
       }
       setIncidents(incs);
-      setHeatPoints(heatRes.data.points || []);
+      setHeatPoints(heatRes.data.points || heatRes.data || []);
+      setClusterPoints(
+        (clusterRes.data || []).map((c: any) => ({
+          id: c.id || c.cluster_id || Math.random(),
+          cluster_id: c.cluster_id ?? 0,
+          lat: c.lat,
+          lng: c.lng,
+          severity: c.severity ?? 0,
+          title: c.title ?? null,
+        }))
+      );
       setResponders(respRes.data || []);
       setError(null);
     } catch (err: any) {
@@ -352,6 +368,15 @@ const AgencyMap: React.FC = () => {
           />
           <span className="text-slate-400">Heatmap</span>
         </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={showClusters}
+            onChange={(e) => setShowClusters(e.target.checked)}
+          />
+          <span className="text-slate-400">Clusters</span>
+        </label>
       </div>
       {loading && <div className="p-4 text-slate-300">Loading map…</div>}
       <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
@@ -369,6 +394,7 @@ const AgencyMap: React.FC = () => {
           )}
           <BoundariesLayer level={boundaryLevel} />
           <HeatmapLayer points={heatPoints} enabled={showHeat} />
+          {showClusters && <ClusterLayer points={clusterPoints} enabled />}
           <MarkerClusterGroup chunkedLoading>
             {markers}
             {responderMarkers}
