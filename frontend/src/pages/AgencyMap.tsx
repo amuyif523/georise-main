@@ -79,6 +79,7 @@ const AgencyMap: React.FC = () => {
   const [minSeverity, setMinSeverity] = useState(0);
   const [showHeat, setShowHeat] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
 
   const fetchData = async () => {
     try {
@@ -103,6 +104,34 @@ const AgencyMap: React.FC = () => {
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 10000);
+    const socket = getSocket();
+    if (socket) {
+      const handlerCreated = (inc: any) => {
+        setIncidents((prev) => [inc, ...prev]);
+      };
+      const handlerUpdated = (inc: any) => {
+        setIncidents((prev) => prev.map((p) => (p.id === inc.id ? inc : p)));
+      };
+      socket.on("incident:created", handlerCreated);
+      socket.on("incident:updated", handlerUpdated);
+      socket.on("disconnect", () => {
+        // fallback polling every 30s
+        const t = setInterval(fetchData, 30000);
+        setFallbackPoll(t as any);
+      });
+      socket.on("connect", () => {
+        if (fallbackPoll) {
+          clearInterval(fallbackPoll);
+          setFallbackPoll(null);
+        }
+      });
+      return () => {
+        socket.off("incident:created", handlerCreated);
+        socket.off("incident:updated", handlerUpdated);
+        socket.off("disconnect");
+        socket.off("connect");
+      };
+    }
     return () => clearInterval(interval);
   }, [hours, minSeverity]);
 

@@ -1,23 +1,34 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { BellDot, WifiOff, Wifi } from "lucide-react";
+import { BellDot } from "lucide-react";
+import NotificationBell from "../ui/NotificationBell";
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
   const online = typeof navigator !== "undefined" ? navigator.onLine : true;
+  const [offline, setOffline] = useState(!online);
+
+  useEffect(() => {
+    const on = () => setOffline(false);
+    const off = () => setOffline(true);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#0D1117]/80 backdrop-blur">
       <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${online ? "bg-emerald-400" : "bg-yellow-400"}`} />
+        <div className={`w-2 h-2 rounded-full ${offline ? "bg-yellow-400" : "bg-emerald-400"}`} />
         <span className="text-xs text-slate-400">
-          {online ? "Online" : "Offline — actions will sync"}
+          {offline ? "Offline — falling back to polling" : "Online"}
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <BellDot className="text-cyan-300" size={18} />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-        </div>
+        <NotificationBell />
         <div className="flex items-center gap-2 text-sm">
           <span className="text-slate-200">{user?.fullName}</span>
           <span className="text-[11px] px-2 py-1 rounded-full border border-slate-700 bg-slate-900 text-cyan-200">

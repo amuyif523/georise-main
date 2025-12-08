@@ -34,9 +34,17 @@ const ActivityFeed: React.FC = () => {
     const updatedHandler = (inc: any) => pushEvent("UPDATED", inc);
     socket.on("incident:created", createdHandler);
     socket.on("incident:updated", updatedHandler);
+    socket.on("disconnect", () => {
+      // add warning entry
+      setEvents((prev) => [
+        { id: `disc-${Date.now()}`, type: "DISCONNECTED", incidentId: 0, category: null, status: "N/A", createdAt: new Date().toISOString() },
+        ...prev,
+      ]);
+    });
     return () => {
       socket?.off("incident:created", createdHandler);
       socket?.off("incident:updated", updatedHandler);
+      socket?.off("disconnect");
     };
   }, []);
 
