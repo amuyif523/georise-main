@@ -84,6 +84,16 @@ export class AuthService {
     const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
+    // Audit login success
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: "LOGIN_SUCCESS",
+        targetType: "User",
+        targetId: user.id,
+      },
+    });
+
     return {
       token: access,
       refreshToken: refresh,

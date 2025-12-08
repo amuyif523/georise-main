@@ -13,12 +13,21 @@ import { emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEve
 import { reputationService } from "../reputation/reputation.service";
 import { logActivity } from "./activity.service";
 import { getIO } from "../../socket";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const incidentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Citizen routes
 router.post(
   "/",
+  incidentLimiter,
   requireAuth,
   requireRole([Role.CITIZEN]),
   validateBody(createIncidentSchema),
@@ -136,26 +145,58 @@ router.get(
         conditions.assignedAgencyId = agencyId;
       }
 
-      const incidents = await prisma.incident.findMany({
-        where: conditions,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          severityScore: true,
-          status: true,
-          latitude: true,
-          longitude: true,
-          subCityId: true,
-          reviewStatus: true,
-          createdAt: true,
-          reporter:
-            req.user?.role === Role.ADMIN
-              ? { select: { id: true, fullName: true, trustScore: true } }
-              : undefined,
-        },
-      });
+      if (req.user?.role === Role.ADMIN) {
+        const incidents = await prisma.incident.findMany({
+          where: conditions,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            severityScore: true,
+            status: true,
+            latitude: true,
+            longitude: true,
+            subCityId: true,
+            reviewStatus: true,
+            createdAt: true,
+            reporter: { select: { id: true, fullName: true, trustScore: true } },
+          },
+        });
+        return res.json({ incidents });
+      }
+
+      if (!agencyId) return res.status(403).json({ message: "Forbidden" });
+
+      const filters: string[] = [];
+      if (conditions.status) filters.push(`status = '${conditions.status}'`);
+      if (conditions.reviewStatus) filters.push(`\"reviewStatus\" = '${conditions.reviewStatus}'`);
+      if (conditions.createdAt?.gte) filters.push(`"createdAt" >= '${conditions.createdAt.gte.toISOString()}'`);
+
+      const whereClause = filters.length ? `AND ${filters.join(" AND ")}` : "";
+
+      const incidents = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT id, title, category, "severityScore", status, latitude, longitude, "subCityId", "reviewStatus", "createdAt"
+        FROM "Incident" i
+        WHERE 1=1
+        ${whereClause}
+          AND (
+            i."assignedAgencyId" = ${agencyId}
+            OR (
+              i.location IS NOT NULL AND EXISTS (
+                SELECT 1 FROM "AgencyJurisdiction" aj
+                JOIN addis_subcities s ON aj."boundaryId" = s.gid AND aj."boundaryType" = 'SUBCITY'
+                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.geom, i.location)
+              )
+              OR i.location IS NOT NULL AND EXISTS (
+                SELECT 1 FROM "AgencyJurisdiction" aj
+                JOIN addis_woredas w ON aj."boundaryId" = w.gid AND aj."boundaryType" = 'WOREDA'
+                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.geom, i.location)
+              )
+            )
+          )
+        ORDER BY i."createdAt" DESC
+      `);
 
       res.json({ incidents });
     } catch (err: any) {
@@ -194,12 +235,23 @@ router.get(
         }>
       >`
         SELECT id, title, category, "severityScore", status, latitude, longitude, "createdAt"
-        FROM "Incident"
+        FROM "Incident" i
         WHERE location IS NOT NULL
           AND ST_DWithin(
             location,
             ST_SetSRID(ST_MakePoint(${lngNum}, ${latNum}), 4326),
             ${radiusNum}
+          )
+          AND (
+            ${req.user?.role === Role.ADMIN ? "TRUE" : `i.\"assignedAgencyId\" = ${agencyId} OR EXISTS (
+              SELECT 1 FROM \"AgencyJurisdiction\" aj
+              JOIN addis_subcities s ON aj.\"boundaryId\" = s.gid AND aj.\"boundaryType\"='SUBCITY'
+              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(s.geom, i.location)
+            ) OR EXISTS (
+              SELECT 1 FROM \"AgencyJurisdiction\" aj
+              JOIN addis_woredas w ON aj.\"boundaryId\" = w.gid AND aj.\"boundaryType\"='WOREDA'
+              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(w.geom, i.location)
+            )`}
           )
         ORDER BY "severityScore" DESC NULLS LAST, "createdAt" DESC
       `;
