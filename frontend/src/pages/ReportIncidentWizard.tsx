@@ -12,6 +12,7 @@ type WizardForm = {
   description: string;
   latitude?: number;
   longitude?: number;
+  image?: File | null;
 };
 
 const defaultCenter: [number, number] = [9.03, 38.74];
@@ -149,6 +150,20 @@ const Step2Location: React.FC<{
           ? `Selected location: ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
           : "Click anywhere on the map to set the incident location."}
       </p>
+      <div>
+        <label className="label">
+          <span className="label-text text-slate-200">Attach image (optional)</span>
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          className="file-input file-input-bordered w-full max-w-xs"
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            setForm((prev) => ({ ...prev, image: file }));
+          }}
+        />
+      </div>
       <div className="flex justify-between">
         <button className="btn btn-ghost" onClick={onBack}>
           Back
@@ -192,6 +207,7 @@ const Step3Review: React.FC<{
             ? `${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
             : "No location set"}
         </p>
+        {form.image && <p className="text-xs text-slate-500 mt-2">Image attached: {form.image.name}</p>}
       </div>
     </div>
     <div className="flex justify-between">

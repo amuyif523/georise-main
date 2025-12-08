@@ -6,6 +6,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
 import IncidentCard from "../components/incident/IncidentCard";
+import IncidentDetailPane from "../components/incident/IncidentDetailPane";
 import AppLayout from "../layouts/AppLayout";
 
 type Incident = {
@@ -76,6 +77,7 @@ const AgencyMap: React.FC = () => {
   const [hours, setHours] = useState(24);
   const [minSeverity, setMinSeverity] = useState(0);
   const [showHeat, setShowHeat] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const fetchData = async () => {
     try {
@@ -129,6 +131,7 @@ const AgencyMap: React.FC = () => {
             key={i.id}
             position={[i.latitude as number, i.longitude as number]}
             icon={createIcon(i.severityScore)}
+            eventHandlers={{ click: () => setSelectedId(i.id) }}
           >
             <Popup>
               <div className="text-sm space-y-1">
@@ -174,6 +177,8 @@ const AgencyMap: React.FC = () => {
     [incidents, actionLoading]
   );
 
+  const selectedIncident = incidents.find((i) => i.id === selectedId) || null;
+
   return (
     <AppLayout>
       <div className="h-full bg-[#0A0F1A] text-slate-100">
@@ -218,10 +223,10 @@ const AgencyMap: React.FC = () => {
       {loading && <div className="p-4 text-slate-300">Loading map…</div>}
       <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
         <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <HeatmapLayer points={heatPoints} enabled={showHeat} />
-        <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
-      </MapContainer>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <HeatmapLayer points={heatPoints} enabled={showHeat} />
+          <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
+        </MapContainer>
         <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
           <div className="text-sm text-slate-300 mb-2">Live queue</div>
           <div className="space-y-2">
@@ -233,12 +238,19 @@ const AgencyMap: React.FC = () => {
                 severity={i.severityScore}
                 status={i.status}
                 timestamp={i.createdAt}
-                onClick={() => {}}
+                onClick={() => setSelectedId(i.id)}
               />
             ))}
           </div>
         </div>
       </div>
+      <IncidentDetailPane
+        incident={selectedIncident}
+        onClose={() => setSelectedId(null)}
+        onAssign={selectedIncident ? () => updateStatus(selectedIncident.id, "assign") : undefined}
+        onRespond={selectedIncident ? () => updateStatus(selectedIncident.id, "respond") : undefined}
+        onResolve={selectedIncident ? () => updateStatus(selectedIncident.id, "resolve") : undefined}
+      />
     </div>
     </AppLayout>
   );
