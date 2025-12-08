@@ -4,6 +4,7 @@ import AppHeader from "../components/ui/AppHeader";
 import NetworkBanner from "../components/NetworkBanner";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { syncIncidentQueue } from "../offline/incidentQueue";
+import InstallAppBanner from "../components/InstallAppBanner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const online = useNetworkStatus();
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <div className="flex-1 flex flex-col">
         <NetworkBanner />
+        <InstallAppBanner />
         <AppHeader />
         <div className="flex-1 overflow-auto">{children}</div>
       </div>

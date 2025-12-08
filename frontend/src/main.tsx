@@ -23,8 +23,12 @@ const CitizenVerificationPage = React.lazy(() => import("./pages/CitizenVerifica
 const ReviewQueuePage = React.lazy(() => import("./pages/admin/ReviewQueuePage"));
 const VerificationPage = React.lazy(() => import("./pages/admin/VerificationPage"));
 
-// Register service worker for PWA/offline caching
-registerSW({
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (confirm("A new version of GEORISE is available. Reload now?")) {
+      updateSW(true);
+    }
+  },
   onOfflineReady() {
     console.log("PWA offline cache ready");
   },
