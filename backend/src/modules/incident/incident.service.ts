@@ -3,6 +3,7 @@ import { IncidentStatus } from "@prisma/client";
 import prisma from "../../prisma";
 import { CreateIncidentRequest } from "./incident.types";
 import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
+import { gisService } from "../gis/gis.service";
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
 
@@ -19,6 +20,14 @@ export class IncidentService {
       throw new Error("Too many incident reports in a short time. Please wait a few minutes.");
     }
 
+    let subCityId: number | undefined;
+    let woredaId: number | undefined;
+    if (data.latitude != null && data.longitude != null) {
+      const areas = await gisService.findAdministrativeAreaForPoint(data.latitude, data.longitude);
+      if (areas.subCity) subCityId = areas.subCity.id;
+      if (areas.woreda) woredaId = areas.woreda.id;
+    }
+
     const incident = await prisma.incident.create({
       data: {
         title: data.title,
@@ -26,6 +35,8 @@ export class IncidentService {
         reporterId,
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
+        subCityId,
+        woredaId,
         status: IncidentStatus.RECEIVED,
       },
     });

@@ -7,6 +7,7 @@ import authRoutes from "./modules/auth/auth.routes";
 import incidentRoutes from "./modules/incident/incident.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
+import gisRoutes from "./modules/gis/gis.routes";
 import logger from "./logger";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
 
@@ -46,6 +47,7 @@ app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/gis", gisRoutes);
 
 // Error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -1,7 +1,7 @@
 import L from "leaflet";
 import "leaflet.heat";
 import React, { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap, GeoJSON } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
@@ -80,6 +80,8 @@ const AgencyMap: React.FC = () => {
   const [showHeat, setShowHeat] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
+  const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
+  const [selectedSubCity, setSelectedSubCity] = useState<string>("");
 
   const fetchData = async () => {
     try {
@@ -90,7 +92,11 @@ const AgencyMap: React.FC = () => {
         }),
         api.get("/analytics/heatmap", { params: { hours, minSeverity } }),
       ]);
-      setIncidents(incRes.data.incidents || []);
+      let incs = incRes.data.incidents || [];
+      if (selectedSubCity) {
+        incs = incs.filter((i: any) => i.subCityId === Number(selectedSubCity));
+      }
+      setIncidents(incs);
       setHeatPoints(heatRes.data.points || []);
       setError(null);
     } catch (err: any) {
@@ -102,6 +108,15 @@ const AgencyMap: React.FC = () => {
   };
 
   useEffect(() => {
+    const loadGeo = async () => {
+      try {
+        const res = await api.get("/gis/subcities");
+        setSubcityGeo(res.data);
+      } catch {
+        /* ignore */
+      }
+    };
+    loadGeo();
     fetchData();
     const interval = setInterval(fetchData, 10000);
     const socket = getSocket();
@@ -242,6 +257,21 @@ const AgencyMap: React.FC = () => {
           />
           <span className="badge badge-outline">{minSeverity}+</span>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400">Sub-city</span>
+          <select
+            className="select select-bordered select-xs bg-slate-900 text-white"
+            value={selectedSubCity}
+            onChange={(e) => setSelectedSubCity(e.target.value)}
+          >
+            <option value="">All</option>
+            {subcityGeo?.features?.map((f: any) => (
+              <option key={f.properties.id} value={f.properties.id}>
+                {f.properties.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -256,6 +286,16 @@ const AgencyMap: React.FC = () => {
       <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
         <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {subcityGeo && (
+            <GeoJSON
+              data={subcityGeo}
+              style={() => ({
+                color: "#22d3ee",
+                weight: 1,
+                fillOpacity: 0.05,
+              })}
+            />
+          )}
           <HeatmapLayer points={heatPoints} enabled={showHeat} />
           <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
         </MapContainer>

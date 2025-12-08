@@ -149,6 +149,22 @@ async function main() {
     `;
   }
 
+  // Dispatch rules seed (basic)
+  const rules = [
+    { category: "FIRE", defaultAgencyType: "FIRE" },
+    { category: "TRAFFIC", defaultAgencyType: "TRAFFIC" },
+    { category: "MEDICAL", defaultAgencyType: "MEDICAL" },
+    { category: "CRIME", defaultAgencyType: "POLICE" },
+    { category: "DISASTER", defaultAgencyType: "DISASTER" },
+  ];
+  for (const r of rules) {
+    await prisma.dispatchRule.upsert({
+      where: { category: r.category },
+      update: { defaultAgencyType: r.defaultAgencyType as any },
+      create: { category: r.category, defaultAgencyType: r.defaultAgencyType as any },
+    });
+  }
+
   console.log("Seed complete");
 }
 

@@ -38,6 +38,9 @@ router.get(
         const since = new Date(Date.now() - Number(hours) * 3600 * 1000);
         conditions.createdAt = { gte: since };
       }
+      if (req.query.subCityId) {
+        conditions.subCityId = Number(req.query.subCityId);
+      }
 
       const incidents = await prisma.incident.findMany({
         where: conditions,
@@ -50,6 +53,7 @@ router.get(
           status: true,
           latitude: true,
           longitude: true,
+          subCityId: true,
           createdAt: true,
         },
       });

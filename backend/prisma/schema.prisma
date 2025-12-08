@@ -77,9 +77,13 @@ model Agency {
   centerLatitude  Float?
   centerLongitude Float?
   jurisdiction    Unsupported("geometry(Polygon,4326)")?
+  subCityId   Int?
+  woredaId    Int?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  subCity   SubCity? @relation(fields: [subCityId], references: [id])
+  woreda    Woreda?  @relation(fields: [woredaId], references: [id])
   staff     AgencyStaff[]
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
 }
@@ -132,11 +136,15 @@ model Incident {
   latitude         Float?
   longitude        Float?
   location         Unsupported("geography(Point,4326)")?
+  subCityId        Int?
+  woredaId         Int?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   reporter       User                 @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
+  subCity        SubCity?             @relation(fields: [subCityId], references: [id])
+  woreda         Woreda?              @relation(fields: [woredaId], references: [id])
   aiOutput       IncidentAIOutput?
   statusHistory  IncidentStatusHistory[]
 }
@@ -164,4 +172,36 @@ model IncidentStatusHistory {
 
   incident Incident @relation(fields: [incidentId], references: [id])
   actor     User     @relation(fields: [actorUserId], references: [id])
+}
+
+model SubCity {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  code        String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  jurisdiction Unsupported("geometry(Polygon,4326)")?
+
+  agencies  Agency[]
+  woredas   Woreda[]
+  incidents Incident[]
+}
+
+model Woreda {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String?
+  subCityId Int
+  boundary  Unsupported("geometry(Polygon,4326)")?
+
+  subCity   SubCity  @relation(fields: [subCityId], references: [id])
+  incidents Incident[]
+
+  @@unique([subCityId, name])
+}
+
+model DispatchRule {
+  id                Int        @id @default(autoincrement())
+  category          String
+  defaultAgencyType AgencyType
 }
