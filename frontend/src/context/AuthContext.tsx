@@ -24,6 +24,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastActive, setLastActive] = useState<number>(() => Date.now());
+  const SESSION_MAX_IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
   const fetchMe = async () => {
     try {
@@ -43,7 +45,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setLoading(false);
     }
+
+    const updateActive = () => setLastActive(Date.now());
+    window.addEventListener("mousemove", updateActive);
+    window.addEventListener("keydown", updateActive);
+    return () => {
+      window.removeEventListener("mousemove", updateActive);
+      window.removeEventListener("keydown", updateActive);
+    };
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (user && Date.now() - lastActive > SESSION_MAX_IDLE_MS) {
+        logout();
+      }
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [user, lastActive]);
 
   const login = async (email: string, password: string) => {
     const res = await api.post("/auth/login", { email, password });

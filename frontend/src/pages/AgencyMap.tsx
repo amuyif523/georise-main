@@ -100,6 +100,13 @@ const AgencyMap: React.FC = () => {
   }, [hours, minSeverity]);
 
   const updateStatus = async (id: number, action: "assign" | "respond" | "resolve") => {
+    const confirmMsg =
+      action === "assign"
+        ? "Assign this incident to your agency?"
+        : action === "respond"
+          ? "Mark this incident as RESPONDING?"
+          : "Mark this incident as RESOLVED?";
+    if (!window.confirm(confirmMsg)) return;
     try {
       setActionLoading(id);
       await api.patch(`/incidents/${id}/${action}`);

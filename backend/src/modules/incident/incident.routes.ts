@@ -7,11 +7,19 @@ import {
   getMyIncidentById,
   getMyIncidents,
 } from "./incident.controller";
+import { validateBody } from "../../middleware/validate";
+import { createIncidentSchema } from "./incident.validation";
 
 const router = Router();
 
 // Citizen routes
-router.post("/", requireAuth, requireRole([Role.CITIZEN]), createIncident);
+router.post(
+  "/",
+  requireAuth,
+  requireRole([Role.CITIZEN]),
+  validateBody(createIncidentSchema),
+  createIncident
+);
 router.get("/my", requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get("/my/:id", requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
 

@@ -7,6 +7,17 @@ const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
 
 export class IncidentService {
   async createIncident(data: CreateIncidentRequest, reporterId: number) {
+    // Anti-spam: limit burst submissions
+    const recentCount = await prisma.incident.count({
+      where: {
+        reporterId,
+        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+    });
+    if (recentCount > 5) {
+      throw new Error("Too many incident reports in a short time. Please wait a few minutes.");
+    }
+
     const incident = await prisma.incident.create({
       data: {
         title: data.title,

@@ -9,6 +9,17 @@ import {
   RegisterRequestBody,
 } from "./auth.types";
 
+const failedAttempts = new Map<
+  string,
+  {
+    count: number;
+    lockedUntil?: number;
+  }
+>();
+const LOCK_THRESHOLD = 5;
+const LOCK_WINDOW_MS = 15 * 60 * 1000;
+const LOCK_DURATION_MS = 30 * 60 * 1000;
+
 export class AuthService {
   async register(data: RegisterRequestBody) {
     const existing = await prisma.user.findUnique({
@@ -44,18 +55,28 @@ export class AuthService {
   }
 
   async login(data: LoginRequestBody) {
+    const record = failedAttempts.get(data.email);
+    const now = Date.now();
+    if (record?.lockedUntil && record.lockedUntil > now) {
+      throw new Error("Account temporarily locked due to failed attempts. Please try later.");
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
+      this.bumpFailure(data.email);
       throw new Error("Invalid credentials");
     }
 
     const valid = await bcrypt.compare(data.password, user.passwordHash);
     if (!valid) {
+      this.bumpFailure(data.email);
       throw new Error("Invalid credentials");
     }
+
+    failedAttempts.delete(data.email);
 
     const payload: AuthTokenPayload = {
       userId: user.id,
@@ -102,6 +123,20 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private bumpFailure(email: string) {
+    const now = Date.now();
+    const current = failedAttempts.get(email) || { count: 0 };
+    let next = { ...current, count: current.count + 1 };
+    // reset window
+    if (current.lockedUntil && current.lockedUntil < now) {
+      next = { count: 1 };
+    }
+    if (next.count >= LOCK_THRESHOLD) {
+      next.lockedUntil = now + LOCK_DURATION_MS;
+    }
+    failedAttempts.set(email, next);
   }
 }
 

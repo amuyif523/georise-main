@@ -210,6 +210,7 @@ const ReportIncidentWizard: React.FC = () => {
   const [form, setForm] = useState<WizardForm>({ title: "", description: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleNextFromStep1 = () => {
@@ -234,6 +235,16 @@ const ReportIncidentWizard: React.FC = () => {
     try {
       setSubmitting(true);
       setError(null);
+      if (!navigator.onLine) {
+        const queue = JSON.parse(localStorage.getItem("georise_offline_queue") || "[]");
+        queue.push({ type: "incident", payload: form, createdAt: new Date().toISOString() });
+        localStorage.setItem("georise_offline_queue", JSON.stringify(queue));
+        setInfo("Offline detected. Your report is queued and will auto-send when back online.");
+        setSubmitting(false);
+        navigate("/citizen/my-reports");
+        return;
+      }
+
       await api.post("/incidents", form);
       navigate("/citizen/my-reports");
     } catch (err: any) {
@@ -243,8 +254,39 @@ const ReportIncidentWizard: React.FC = () => {
     }
   };
 
+  // Auto-sync queued incidents when online
+  React.useEffect(() => {
+    const syncQueue = async () => {
+      const raw = localStorage.getItem("georise_offline_queue");
+      if (!raw) return;
+      const queue = JSON.parse(raw);
+      const remaining: any[] = [];
+      for (const item of queue) {
+        if (item.type === "incident") {
+          try {
+            await api.post("/incidents", item.payload);
+          } catch {
+            remaining.push(item);
+          }
+        }
+      }
+      if (remaining.length === 0) {
+        localStorage.removeItem("georise_offline_queue");
+      } else {
+        localStorage.setItem("georise_offline_queue", JSON.stringify(remaining));
+      }
+    };
+    window.addEventListener("online", syncQueue);
+    return () => window.removeEventListener("online", syncQueue);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+      {!navigator.onLine && (
+        <div className="w-full bg-warning text-black text-center text-xs py-2">
+          Offline mode: your report will be queued and synced when you reconnect.
+        </div>
+      )}
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center gap-3">
           <StepPill active={step === 1} label="Describe" icon={<MessageSquare size={18} />} />
@@ -255,6 +297,7 @@ const ReportIncidentWizard: React.FC = () => {
         </div>
 
         <div className="mt-8 p-6 bg-[#0D1117] border border-slate-800 rounded-xl shadow-2xl shadow-cyan-500/10">
+          {info && <div className="alert alert-info text-sm mb-3">{info}</div>}
           {step === 1 && (
             <Step1Describe form={form} setForm={setForm} onNext={handleNextFromStep1} error={error} />
           )}
