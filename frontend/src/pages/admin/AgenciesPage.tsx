@@ -39,12 +39,14 @@ const AgenciesPage: React.FC = () => {
   }, []);
 
   const approve = async (id: number) => {
+    if (!window.confirm("Approve and activate this agency?")) return;
     await api.patch(`/admin/agencies/${id}/approve`);
     fetchPending();
   };
 
   const saveBoundary = async () => {
     if (!selectedId || !boundaryGeoJSON) return;
+    if (!window.confirm("Save this boundary for the selected agency?")) return;
     await api.patch(`/admin/agencies/${selectedId}/boundary`, { geojson: boundaryGeoJSON });
     setBoundaryGeoJSON("");
     setSelectedId(null);

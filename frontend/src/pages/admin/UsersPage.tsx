@@ -32,11 +32,13 @@ const UsersPage: React.FC = () => {
   }, []);
 
   const toggle = async (id: number) => {
+    if (!window.confirm("Are you sure you want to toggle this user's active status?")) return;
     await api.patch(`/admin/users/${id}/toggle`);
     fetchUsers();
   };
 
   const verify = async (id: number) => {
+    if (!window.confirm("Mark this user as VERIFIED?")) return;
     await api.patch(`/admin/users/${id}/verify`);
     fetchUsers();
   };

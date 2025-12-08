@@ -11,3 +11,5 @@ export const NODE_ENV = process.env.NODE_ENV || "development";
 export const DATABASE_URL = required(process.env.DATABASE_URL, "DATABASE_URL");
 export const JWT_SECRET = required(process.env.JWT_SECRET, "JWT_SECRET");
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET;
+export const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
