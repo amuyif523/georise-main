@@ -14,25 +14,8 @@ import {
   RegisterRequestBody,
 } from "./auth.types";
 
-const failedAttempts = new Map<
-  string,
-  {
-    count: number;
-    lockedUntil?: number;
-  }
->();
 const LOCK_THRESHOLD = 5;
-const LOCK_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
-
-const refreshStore = new Map<
-  number,
-  {
-    token: string;
-    tokenVersion: number;
-    exp: number;
-  }
->();
 
 export class AuthService {
   async register(data: RegisterRequestBody) {
@@ -69,28 +52,30 @@ export class AuthService {
   }
 
   async login(data: LoginRequestBody) {
-    const record = failedAttempts.get(data.email);
-    const now = Date.now();
-    if (record?.lockedUntil && record.lockedUntil > now) {
-      throw new Error("Account temporarily locked due to failed attempts. Please try later.");
-    }
-
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
-      this.bumpFailure(data.email);
+      await this.bumpFailureByEmail(data.email);
       throw new Error("Invalid credentials");
+    }
+
+    const now = Date.now();
+    if (user.lockedUntil && user.lockedUntil.getTime() > now) {
+      throw new Error("Account temporarily locked due to failed attempts. Please try later.");
     }
 
     const valid = await bcrypt.compare(data.password, user.passwordHash);
     if (!valid) {
-      this.bumpFailure(data.email);
+      await this.bumpFailure(user.id, user.failedLoginAttempts ?? 0);
       throw new Error("Invalid credentials");
     }
 
-    failedAttempts.delete(data.email);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
 
     const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
@@ -122,32 +107,27 @@ export class AuthService {
   }
 
   createRefreshToken(userId: number, tokenVersion: number) {
-    const token = jwt.sign(
+    return jwt.sign(
       { userId, tokenVersion },
       JWT_REFRESH_SECRET as jwt.Secret,
       { expiresIn: JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
     );
-    const decoded = jwt.decode(token) as { exp?: number };
-    refreshStore.set(userId, { token, tokenVersion, exp: decoded?.exp ? decoded.exp * 1000 : 0 });
-    return token;
   }
 
   verifyRefresh(token: string) {
-    const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { userId: number; tokenVersion?: number };
-    const stored = refreshStore.get(decoded.userId);
-    if (!stored || stored.token !== token || stored.tokenVersion !== (decoded.tokenVersion ?? 0)) {
-      throw new Error("Invalid refresh token");
-    }
-    return decoded;
+    return jwt.verify(token, JWT_REFRESH_SECRET) as { userId: number; tokenVersion?: number };
   }
 
   async rotateRefresh(oldToken: string) {
     const decoded = this.verifyRefresh(oldToken);
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user || user.isActive === false) throw new Error("User not active");
+    if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new Error("Invalid refresh token");
+    }
 
-    const access = this.createAccessToken(user.id, user.role, decoded.tokenVersion ?? 0);
-    const refresh = this.createRefreshToken(user.id, decoded.tokenVersion ?? 0);
+    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0);
+    const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
     return { access, refresh, user };
   }
 
@@ -171,18 +151,23 @@ export class AuthService {
     return user;
   }
 
-  private bumpFailure(email: string) {
-    const now = Date.now();
-    const current = failedAttempts.get(email) || { count: 0 };
-    let next = { ...current, count: current.count + 1 };
-    // reset window
-    if (current.lockedUntil && current.lockedUntil < now) {
-      next = { count: 1 };
-    }
-    if (next.count >= LOCK_THRESHOLD) {
-      next.lockedUntil = now + LOCK_DURATION_MS;
-    }
-    failedAttempts.set(email, next);
+  private async bumpFailure(userId: number, current: number) {
+    const nextCount = current + 1;
+    const lockUntil =
+      nextCount >= LOCK_THRESHOLD ? new Date(Date.now() + LOCK_DURATION_MS) : null;
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: nextCount,
+        lockedUntil: lockUntil,
+      },
+    });
+  }
+
+  private async bumpFailureByEmail(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return;
+    await this.bumpFailure(user.id, user.failedLoginAttempts ?? 0);
   }
 }
 
