@@ -4,7 +4,13 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "ts-node-dev --respawn src/server.ts"
+    "dev": "ts-node-dev --respawn src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "echo \"lint placeholder\"",
+    "test": "echo \"tests pending\"",
+    "seed": "npm run prisma-seed",
+    "prisma-seed": "ts-node prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
