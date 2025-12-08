@@ -14,6 +14,9 @@ router.get(
     try {
       const hours = Number(req.query.hours || 24);
       const minSeverity = Number(req.query.minSeverity || 0);
+      if (!Number.isFinite(hours) || !Number.isFinite(minSeverity)) {
+        return res.status(400).json({ message: "Invalid query params" });
+      }
       const since = new Date(Date.now() - hours * 3600 * 1000);
 
       const points = await prisma.$queryRaw<
@@ -103,6 +106,9 @@ router.get(
     try {
       const hours = Number(req.query.hours || 72);
       const top = Number(req.query.top || 10);
+      if (!Number.isFinite(hours) || !Number.isFinite(top)) {
+        return res.status(400).json({ message: "Invalid query params" });
+      }
 
       const risks = await prisma.$queryRaw<
         Array<{

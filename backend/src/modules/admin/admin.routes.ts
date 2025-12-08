@@ -2,8 +2,11 @@ import { Router } from "express";
 import { Role } from "@prisma/client";
 import { requireAuth, requireRole } from "../../middleware/auth";
 import prisma from "../../prisma";
+import { z } from "zod";
+import { validateBody } from "../../middleware/validate";
 
 const router = Router();
+const idSchema = z.object({ id: z.string().transform((v) => Number(v)).pipe(z.number().int().positive()) });
 
 // Pending agencies
 router.get(
@@ -25,8 +28,9 @@ router.patch(
   requireAuth,
   requireRole([Role.ADMIN]),
   async (req, res) => {
-    const { id } = req.params;
-    const agencyId = Number(id);
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    const agencyId = parsed.data.id;
     const agency = await prisma.agency.update({
       where: { id: agencyId },
       data: { isApproved: true, isActive: true },
@@ -50,10 +54,12 @@ router.patch(
   "/agencies/:id/boundary",
   requireAuth,
   requireRole([Role.ADMIN]),
+  validateBody(z.object({ geojson: z.string().min(10) })),
   async (req, res) => {
-    const { id } = req.params;
-    const { geojson } = req.body;
-    const agencyId = Number(id);
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    const agencyId = parsed.data.id;
+    const { geojson } = req.body as { geojson: string };
 
     await prisma.$executeRaw`
       UPDATE "Agency"
@@ -102,7 +108,9 @@ router.patch(
   requireAuth,
   requireRole([Role.ADMIN]),
   async (req, res) => {
-    const userId = Number(req.params.id);
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    const userId = parsed.data.id;
     const current = await prisma.user.findUnique({ where: { id: userId } });
     if (!current) return res.status(404).json({ message: "User not found" });
 
@@ -130,7 +138,9 @@ router.patch(
   requireAuth,
   requireRole([Role.ADMIN]),
   async (req, res) => {
-    const userId = Number(req.params.id);
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    const userId = parsed.data.id;
     await prisma.citizenVerification.upsert({
       where: { userId },
       update: { status: "VERIFIED" },

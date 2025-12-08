@@ -1,26 +1,28 @@
-import React from "react";
+import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
+import OnlineStatusBanner from "./components/OnlineStatusBanner";
 import { AuthProvider } from "./context/AuthContext";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgencyDashboard from "./pages/AgencyDashboard";
-import AgencyMap from "./pages/AgencyMap";
 import CitizenDashboard from "./pages/CitizenDashboard";
 import MyReportsPage from "./pages/MyReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
 import RoleRedirect from "./pages/RoleRedirect";
-import AgenciesPage from "./pages/admin/AgenciesPage";
-import UsersPage from "./pages/admin/UsersPage";
-import AuditLogsPage from "./pages/admin/AuditLogsPage";
-import AnalyticsPage from "./pages/admin/AnalyticsPage";
+const AgencyMap = React.lazy(() => import("./pages/AgencyMap"));
+const AgenciesPage = React.lazy(() => import("./pages/admin/AgenciesPage"));
+const UsersPage = React.lazy(() => import("./pages/admin/UsersPage"));
+const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogsPage"));
+const AnalyticsPage = React.lazy(() => import("./pages/admin/AnalyticsPage"));
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AuthProvider>
       <BrowserRouter>
+        <OnlineStatusBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
@@ -67,7 +69,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             path="/agency/map"
             element={
               <ProtectedRoute allowedRoles={["AGENCY_STAFF"]}>
-                <AgencyMap />
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading map…</div>}>
+                  <AgencyMap />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -83,7 +87,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             path="/admin/agencies"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <AgenciesPage />
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading agencies…</div>}>
+                  <AgenciesPage />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -91,7 +97,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             path="/admin/users"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <UsersPage />
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading users…</div>}>
+                  <UsersPage />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -99,7 +107,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             path="/admin/audit"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <AuditLogsPage />
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading audit…</div>}>
+                  <AuditLogsPage />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -107,7 +117,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             path="/admin/analytics"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <AnalyticsPage />
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
+                  <AnalyticsPage />
+                </Suspense>
               </ProtectedRoute>
             }
           />
