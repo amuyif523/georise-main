@@ -296,8 +296,14 @@ const ReportIncidentWizard: React.FC = () => {
     return () => window.removeEventListener("online", syncQueue);
   }, []);
 
+  const isMobile = typeof window !== "undefined" ? window.innerWidth < 768 : false;
+
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+    <div
+      className={`min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12 ${
+        isMobile ? "fixed inset-0 overflow-y-auto z-30 bg-[#0A0F1A]/95" : ""
+      }`}
+    >
       {!navigator.onLine && (
         <div className="w-full bg-warning text-black text-center text-xs py-2">
           Offline mode: your report will be queued and synced when you reconnect.

@@ -25,6 +25,7 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
 const AppSidebar: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role;
+  const [open, setOpen] = React.useState(false);
 
   const items =
     role === "ADMIN"
@@ -47,13 +48,25 @@ const AppSidebar: React.FC = () => {
           ];
 
   return (
-    <aside className="w-56 border-r border-slate-800 bg-[#0D1117] hidden md:flex flex-col p-3 gap-2">
-      <div className="px-2 py-3">
-        <div className="text-xs uppercase text-cyan-300 tracking-wide">GEORISE</div>
-        <div className="text-sm text-slate-400">Command Center</div>
-      </div>
-      <nav className="flex flex-col gap-2">{items.map((i) => <NavItem key={i.to} {...i} />)}</nav>
-    </aside>
+    <>
+      <button
+        className="md:hidden fixed top-3 left-3 z-50 btn btn-ghost btn-xs border border-slate-800"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ☰
+      </button>
+      <aside
+        className={`w-56 border-r border-slate-800 bg-[#0D1117] flex-col p-3 gap-2 z-40 transition-transform duration-200 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:flex`}
+      >
+        <div className="px-2 py-3">
+          <div className="text-xs uppercase text-cyan-300 tracking-wide">GEORISE</div>
+          <div className="text-sm text-slate-400">Command Center</div>
+        </div>
+        <nav className="flex flex-col gap-2">{items.map((i) => <NavItem key={i.to} {...i} />)}</nav>
+      </aside>
+    </>
   );
 };
 

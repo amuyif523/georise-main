@@ -72,6 +72,7 @@ const AgencyMap: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [hours, setHours] = useState(24);
@@ -81,6 +82,7 @@ const AgencyMap: React.FC = () => {
 
   const fetchData = async () => {
     try {
+      setListLoading(true);
       const [incRes, heatRes] = await Promise.all([
         api.get("/incidents", {
           params: { status: "RECEIVED", hours },
@@ -94,6 +96,7 @@ const AgencyMap: React.FC = () => {
       setError(err?.response?.data?.message || "Failed to load incidents");
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -230,17 +233,21 @@ const AgencyMap: React.FC = () => {
         <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
           <div className="text-sm text-slate-300 mb-2">Live queue</div>
           <div className="space-y-2">
-            {incidents.map((i) => (
-              <IncidentCard
-                key={i.id}
-                title={i.title}
-                category={i.category}
-                severity={i.severityScore}
-                status={i.status}
-                timestamp={i.createdAt}
-                onClick={() => setSelectedId(i.id)}
-              />
-            ))}
+            {listLoading
+              ? Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20" />
+                ))
+              : incidents.map((i) => (
+                  <IncidentCard
+                    key={i.id}
+                    title={i.title}
+                    category={i.category}
+                    severity={i.severityScore}
+                    status={i.status}
+                    timestamp={i.createdAt}
+                    onClick={() => setSelectedId(i.id)}
+                  />
+                ))}
           </div>
         </div>
       </div>
