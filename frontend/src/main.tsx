@@ -12,6 +12,9 @@ import MyReportsPage from "./pages/MyReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
 import RoleRedirect from "./pages/RoleRedirect";
+import AgenciesPage from "./pages/admin/AgenciesPage";
+import UsersPage from "./pages/admin/UsersPage";
+import AuditLogsPage from "./pages/admin/AuditLogsPage";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
@@ -72,6 +75,30 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/agencies"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AgenciesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AuditLogsPage />
               </ProtectedRoute>
             }
           />

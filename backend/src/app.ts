@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import authRoutes from "./modules/auth/auth.routes";
 import incidentRoutes from "./modules/incident/incident.routes";
+import adminRoutes from "./modules/admin/admin.routes";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.get("/health", (_req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/incidents", incidentRoutes);
+app.use("/api/admin", adminRoutes);
 
 export default app;

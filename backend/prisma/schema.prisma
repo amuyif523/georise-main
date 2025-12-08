@@ -53,6 +53,7 @@ model User {
   agencyStaff         AgencyStaff?
   incidentsReported   Incident[]             @relation("IncidentsReportedByUser")
   statusHistory       IncidentStatusHistory[]
+  auditLogs           AuditLog[]
 }
 
 model Agency {
@@ -61,11 +62,26 @@ model Agency {
   type        AgencyType
   city        String
   description String?
+  isApproved  Boolean     @default(false)
+  isActive    Boolean     @default(false)
+  boundary    Unsupported("geometry(Polygon,4326)")?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   staff     AgencyStaff[]
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int
+  action     String
+  targetType String
+  targetId   Int?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  actor      User     @relation(fields: [actorId], references: [id])
 }
 
 model AgencyStaff {
