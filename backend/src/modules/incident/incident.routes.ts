@@ -10,6 +10,7 @@ import {
 import { validateBody } from "../../middleware/validate";
 import { createIncidentSchema } from "./incident.validation";
 import { emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
+import { reputationService } from "../reputation/reputation.service";
 
 const router = Router();
 
@@ -31,9 +32,10 @@ router.get(
   requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
   async (req, res) => {
     try {
-      const { status, hours } = req.query;
+      const { status, hours, reviewStatus } = req.query;
       const conditions: any = {};
       if (status && typeof status === "string") conditions.status = status as IncidentStatus;
+      if (reviewStatus && typeof reviewStatus === "string") conditions.reviewStatus = reviewStatus;
       if (hours) {
         const since = new Date(Date.now() - Number(hours) * 3600 * 1000);
         conditions.createdAt = { gte: since };
@@ -54,7 +56,11 @@ router.get(
           latitude: true,
           longitude: true,
           subCityId: true,
+          reviewStatus: true,
           createdAt: true,
+          reporter: {
+            select: { id: true, fullName: true, trustScore: true },
+          },
         },
       });
 
@@ -207,6 +213,46 @@ router.patch(
     } catch (err: any) {
       console.error("Resolve incident error:", err);
       res.status(400).json({ message: err?.message || "Failed to resolve incident" });
+    }
+  }
+);
+
+// Review incidents (admin/agency)
+router.post(
+  "/:id/review",
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { decision, note } = req.body as { decision: "APPROVE" | "REJECT"; note?: string };
+      const incident = await prisma.incident.findUnique({
+        where: { id: Number(id) },
+        include: { reporter: true },
+      });
+      if (!incident) return res.status(404).json({ message: "Incident not found" });
+
+      const reviewStatus = decision === "APPROVE" ? "APPROVED" : "REJECTED";
+      const updated = await prisma.incident.update({
+        where: { id: Number(id) },
+        data: {
+          reviewStatus,
+          reviewedById: req.user!.id,
+          reviewNote: note,
+          reviewedAt: new Date(),
+        },
+      });
+
+      if (incident.reporterId) {
+        if (decision === "APPROVE") await reputationService.onIncidentValidated(incident.reporterId);
+        else await reputationService.onIncidentRejected(incident.reporterId);
+      }
+
+      emitIncidentUpdated(toIncidentPayload(updated));
+      return res.json({ incident: updated });
+    } catch (err: any) {
+      console.error("Review incident error:", err);
+      res.status(400).json({ message: err?.message || "Failed to review incident" });
     }
   }
 );

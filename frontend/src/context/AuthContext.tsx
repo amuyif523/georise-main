@@ -9,6 +9,10 @@ interface User {
   fullName: string;
   email: string;
   role: Role;
+  trustScore?: number;
+  totalReports?: number;
+  validReports?: number;
+  rejectedReports?: number;
 }
 
 interface AuthContextValue {

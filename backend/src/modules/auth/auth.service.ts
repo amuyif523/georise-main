@@ -44,6 +44,10 @@ export class AuthService {
         email: true,
         phone: true,
         role: true,
+        trustScore: true,
+        totalReports: true,
+        validReports: true,
+        rejectedReports: true,
         createdAt: true,
       },
     });
@@ -88,6 +92,10 @@ export class AuthService {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        trustScore: user.trustScore ?? 0,
+        totalReports: user.totalReports ?? 0,
+        validReports: user.validReports ?? 0,
+        rejectedReports: user.rejectedReports ?? 0,
       },
     };
   }

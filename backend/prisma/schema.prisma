@@ -28,6 +28,13 @@ enum IncidentStatus {
   CANCELLED
 }
 
+enum ReviewStatus {
+  NOT_REQUIRED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum AgencyType {
   POLICE
   FIRE
@@ -54,6 +61,11 @@ model User {
   tokenVersion Int       @default(0)
   failedLoginAttempts Int @default(0)
   lockedUntil  DateTime?
+  trustScore   Int       @default(0)
+  totalReports Int       @default(0)
+  validReports Int       @default(0)
+  rejectedReports Int    @default(0)
+  lastReportAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -63,6 +75,7 @@ model User {
   incidentsReported   Incident[]             @relation("IncidentsReportedByUser")
   statusHistory       IncidentStatusHistory[]
   auditLogs           AuditLog[]
+  reviewedIncidents   Incident[]             @relation("IncidentReviewUser")
 }
 
 model Agency {
@@ -138,6 +151,10 @@ model Incident {
   location         Unsupported("geography(Point,4326)")?
   subCityId        Int?
   woredaId         Int?
+  reviewStatus     ReviewStatus   @default(NOT_REQUIRED)
+  reviewedById     Int?
+  reviewedAt       DateTime?
+  reviewNote       String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -145,6 +162,7 @@ model Incident {
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
   subCity        SubCity?             @relation(fields: [subCityId], references: [id])
   woreda         Woreda?              @relation(fields: [woredaId], references: [id])
+  reviewer       User?                @relation("IncidentReviewUser", fields: [reviewedById], references: [id])
   aiOutput       IncidentAIOutput?
   statusHistory  IncidentStatusHistory[]
 }

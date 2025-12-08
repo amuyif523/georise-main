@@ -29,13 +29,15 @@ const AppSidebar: React.FC = () => {
 
   const items =
     role === "ADMIN"
-      ? [
-          { to: "/admin", icon: <LayoutDashboard size={16} />, label: "Dashboard" },
-          { to: "/admin/agencies", icon: <Shield size={16} />, label: "Agencies" },
-          { to: "/admin/users", icon: <Users size={16} />, label: "Users" },
-          { to: "/admin/analytics", icon: <Activity size={16} />, label: "Analytics" },
-          { to: "/admin/audit", icon: <Shield size={16} />, label: "Audit" },
-        ]
+        ? [
+            { to: "/admin", icon: <LayoutDashboard size={16} />, label: "Dashboard" },
+            { to: "/admin/agencies", icon: <Shield size={16} />, label: "Agencies" },
+            { to: "/admin/users", icon: <Users size={16} />, label: "Users" },
+            { to: "/admin/verification", icon: <Shield size={16} />, label: "Verification" },
+            { to: "/admin/analytics", icon: <Activity size={16} />, label: "Analytics" },
+            { to: "/admin/audit", icon: <Shield size={16} />, label: "Audit" },
+            { to: "/admin/review", icon: <Activity size={16} />, label: "Review Queue" },
+          ]
       : role === "AGENCY_STAFF"
         ? [
             { to: "/agency", icon: <LayoutDashboard size={16} />, label: "Dispatch" },

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { List, MapPin, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import AppLayout from "../layouts/AppLayout";
+import TrustBadge from "../components/user/TrustBadge";
 
 const CitizenDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -21,6 +22,12 @@ const CitizenDashboard: React.FC = () => {
           <button className="btn btn-outline btn-sm" onClick={logout}>
             Logout
           </button>
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
+          <Link to="/citizen/verify" className="btn btn-xs btn-primary">
+            Verify account
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
