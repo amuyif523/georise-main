@@ -1,6 +1,7 @@
 import L from "leaflet";
+import "leaflet.heat";
 import React, { useEffect, useMemo, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
@@ -15,6 +16,8 @@ type Incident = {
   longitude: number | null;
   createdAt: string;
 };
+
+type HeatPoint = { lat: number; lng: number; weight: number | null };
 
 const severityFill = (score: number | null | undefined) => {
   if (score == null) return "#94a3b8"; // slate
@@ -40,18 +43,49 @@ const createIcon = (score: number | null | undefined) =>
     iconAnchor: [9, 9],
   });
 
+const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({
+  points,
+  enabled,
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!enabled || points.length === 0) return;
+    // @ts-ignore leaflet.heat augments L
+    const layer = L.heatLayer(
+      points.map((p) => [p.lat, p.lng, p.weight ?? 1]),
+      { radius: 20, blur: 15, maxZoom: 18 }
+    );
+    layer.addTo(map);
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [map, points, enabled]);
+
+  return null;
+};
+
 const AgencyMap: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [hours, setHours] = useState(24);
+  const [minSeverity, setMinSeverity] = useState(0);
+  const [showHeat, setShowHeat] = useState(true);
 
-  const fetchIncidents = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get("/incidents", {
-        params: { status: "RECEIVED", hours: 48 },
-      });
-      setIncidents(res.data.incidents || []);
+      const [incRes, heatRes] = await Promise.all([
+        api.get("/incidents", {
+          params: { status: "RECEIVED", hours },
+        }),
+        api.get("/analytics/heatmap", { params: { hours, minSeverity } }),
+      ]);
+      setIncidents(incRes.data.incidents || []);
+      setHeatPoints(heatRes.data.points || []);
+      setError(null);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to load incidents");
     } finally {
@@ -60,16 +94,16 @@ const AgencyMap: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchIncidents();
-    const interval = setInterval(fetchIncidents, 10000);
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [hours, minSeverity]);
 
   const updateStatus = async (id: number, action: "assign" | "respond" | "resolve") => {
     try {
       setActionLoading(id);
       await api.patch(`/incidents/${id}/${action}`);
-      await fetchIncidents();
+      await fetchData();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to update incident");
     } finally {
@@ -108,13 +142,17 @@ const AgencyMap: React.FC = () => {
                     Assign
                   </button>
                   <button
-                    className={`btn btn-xs btn-primary ${actionLoading === i.id ? "loading" : ""}`}
+                    className={`btn btn-xs btn-primary ${
+                      actionLoading === i.id ? "loading" : ""
+                    }`}
                     onClick={() => updateStatus(i.id, "respond")}
                   >
                     Responding
                   </button>
                   <button
-                    className={`btn btn-xs btn-success ${actionLoading === i.id ? "loading" : ""}`}
+                    className={`btn btn-xs btn-success ${
+                      actionLoading === i.id ? "loading" : ""
+                    }`}
                     onClick={() => updateStatus(i.id, "resolve")}
                   >
                     Resolve
@@ -130,9 +168,47 @@ const AgencyMap: React.FC = () => {
   return (
     <div className="h-screen bg-[#0A0F1A] text-slate-100">
       {error && <div className="alert alert-error m-4 text-sm">{error}</div>}
+      <div className="p-4 flex flex-wrap items-center gap-3 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400">Hours</span>
+          <select
+            className="select select-bordered select-xs bg-slate-900 text-white"
+            value={hours}
+            onChange={(e) => setHours(Number(e.target.value))}
+          >
+            {[1, 6, 12, 24, 48, 168].map((h) => (
+              <option key={h} value={h}>
+                Last {h}h
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400">Min severity</span>
+          <input
+            type="range"
+            min={0}
+            max={5}
+            value={minSeverity}
+            onChange={(e) => setMinSeverity(Number(e.target.value))}
+            className="range range-xs w-32"
+          />
+          <span className="badge badge-outline">{minSeverity}+</span>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-sm"
+            checked={showHeat}
+            onChange={(e) => setShowHeat(e.target.checked)}
+          />
+          <span className="text-slate-400">Heatmap</span>
+        </label>
+      </div>
       {loading && <div className="p-4 text-slate-300">Loading map…</div>}
       <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <HeatmapLayer points={heatPoints} enabled={showHeat} />
         <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
       </MapContainer>
     </div>

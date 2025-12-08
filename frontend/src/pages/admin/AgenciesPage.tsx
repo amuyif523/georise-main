@@ -77,7 +77,9 @@ const AgenciesPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">{a.name}</h3>
-                  <p className="text-sm text-slate-400">{a.type} · {a.city}</p>
+                  <p className="text-sm text-slate-400">
+                    {a.type} in {a.city}
+                  </p>
                 </div>
                 <div className={severityBadgeClass(a.isApproved ? 1 : null)}>
                   {a.isApproved ? "Approved" : "Pending"}

@@ -3,6 +3,7 @@ import express from "express";
 import authRoutes from "./modules/auth/auth.routes";
 import incidentRoutes from "./modules/incident/incident.routes";
 import adminRoutes from "./modules/admin/admin.routes";
+import analyticsRoutes from "./modules/analytics/analytics.routes";
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 export default app;
