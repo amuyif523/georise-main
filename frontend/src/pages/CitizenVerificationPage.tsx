@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import AppLayout from "../layouts/AppLayout";
 import api from "../lib/api";

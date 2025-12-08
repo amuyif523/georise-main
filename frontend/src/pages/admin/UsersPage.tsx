@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import api from "../../lib/api";
 
@@ -31,9 +32,9 @@ const UsersPage: React.FC = () => {
     fetchUsers();
   }, []);
 
-  const toggle = async (id: number) => {
-    if (!window.confirm("Are you sure you want to toggle this user's active status?")) return;
-    await api.patch(`/admin/users/${id}/toggle`);
+  const setStatus = async (id: number, next: boolean) => {
+    if (!window.confirm(`${next ? "Activate" : "Deactivate"} this user?`)) return;
+    await api.patch(`/admin/users/${id}/status`, { isActive: next });
     fetchUsers();
   };
 
@@ -89,7 +90,7 @@ const UsersPage: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    <button className="btn btn-xs" onClick={() => toggle(u.id)}>
+                    <button className="btn btn-xs" onClick={() => setStatus(u.id, !u.isActive)}>
                       {u.isActive ? "Deactivate" : "Activate"}
                     </button>
                     {u.citizenVerification?.status !== "VERIFIED" && (

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import L from "leaflet";
 import React, { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
@@ -23,25 +24,42 @@ const AgenciesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
-  const fetchPending = async () => {
+  const fetchAll = async () => {
     try {
       const res = await api.get("/admin/agencies/pending");
-      setAgencies(res.data.agencies || []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to load agencies");
+      const metrics = await api.get("/admin/metrics/agencies");
+      const pending: Agency[] = res.data.agencies || [];
+      const fromMetrics: Agency[] = (metrics.data.agencies || []).map((m: any) => ({
+        id: m.agencyId,
+        name: m.name,
+        type: m.type,
+        city: "Addis",
+        description: "",
+        isApproved: m.isActive,
+        isActive: m.isActive,
+      }));
+      // merge by id
+      const merged: Agency[] = [...pending];
+      fromMetrics.forEach((m) => {
+        if (!merged.find((p) => p.id === m.id)) merged.push(m);
+      });
+      setAgencies(merged);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Failed to load agencies");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
+    fetchAll();
   }, []);
 
   const approve = async (id: number) => {
     if (!window.confirm("Approve and activate this agency?")) return;
     await api.patch(`/admin/agencies/${id}/approve`);
-    fetchPending();
+    fetchAll();
   };
 
   const saveBoundary = async () => {
@@ -50,6 +68,13 @@ const AgenciesPage: React.FC = () => {
     await api.patch(`/admin/agencies/${selectedId}/boundary`, { geojson: boundaryGeoJSON });
     setBoundaryGeoJSON("");
     setSelectedId(null);
+    fetchAll();
+  };
+
+  const toggleStatus = async (id: number, isActive: boolean) => {
+    if (!window.confirm(`${isActive ? "Deactivate" : "Activate"} this agency?`)) return;
+    await api.patch(`/admin/agencies/${id}/status`, { isActive: !isActive });
+    fetchAll();
   };
 
   const onCreated = (e: any, agencyId: number) => {
@@ -83,14 +108,27 @@ const AgenciesPage: React.FC = () => {
                     {a.type} in {a.city}
                   </p>
                 </div>
-                <div className={severityBadgeClass(a.isApproved ? 1 : null)}>
-                  {a.isApproved ? "Approved" : "Pending"}
+                <div className="flex items-center gap-2">
+                  <div className={severityBadgeClass(a.isApproved ? 1 : null)}>
+                    {a.isApproved ? "Approved" : "Pending"}
+                  </div>
+                  <div className={`badge badge-xs ${a.isActive ? "badge-success" : "badge-ghost"}`}>
+                    {a.isActive ? "Active" : "Disabled"}
+                  </div>
                 </div>
               </div>
               <p className="text-sm text-slate-300 mt-2">{a.description}</p>
               {!a.isApproved && (
                 <button className="btn btn-primary btn-sm mt-3" onClick={() => approve(a.id)}>
                   Approve & Activate
+                </button>
+              )}
+              {a.isApproved && (
+                <button
+                  className="btn btn-xs btn-outline mt-2"
+                  onClick={() => toggleStatus(a.id, a.isActive)}
+                >
+                  {a.isActive ? "Disable agency" : "Activate agency"}
                 </button>
               )}
               <div className="mt-3 space-y-2">

@@ -5,6 +5,7 @@ import { CreateIncidentRequest } from "./incident.types";
 import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
 import { gisService } from "../gis/gis.service";
 import { reputationService } from "../reputation/reputation.service";
+import { logActivity } from "./activity.service";
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
 
@@ -105,6 +106,11 @@ export class IncidentService {
       },
       include: { aiOutput: true },
     });
+
+    await logActivity(incident.id, "SYSTEM", "Incident created", reporterId);
+    if (reviewStatus === "PENDING_REVIEW") {
+      await logActivity(incident.id, "STATUS_CHANGE", "Incident marked for review", reporterId);
+    }
 
     await reputationService.onIncidentCreated(reporterId);
     if (reviewStatus !== "PENDING_REVIEW") {

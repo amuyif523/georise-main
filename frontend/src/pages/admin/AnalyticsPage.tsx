@@ -1,148 +1,138 @@
 import React, { useEffect, useState } from "react";
-import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
+  LineElement,
   BarElement,
   CategoryScale,
   LinearScale,
   Tooltip,
   Legend,
+  PointElement,
 } from "chart.js";
+import { Line, Bar } from "react-chartjs-2";
 import api from "../../lib/api";
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend, PointElement);
 
-type AnalyticsResponse = {
-  totals: { total: number; active: number; resolved: number };
-  byAgency: { agencyId: number | null; agencyName: string | null; count: number }[];
-};
-
-type StatsResponse = {
+type IncidentMetrics = {
   total: number;
-  highSeverity: number;
-  weekIncidents: number;
-  perCategory: { category: string | null; _count: { _all: number } }[];
+  active: number;
+  resolved: number;
+  avgSeverity: number | null;
+  byDay: { day: string; count: number }[];
 };
 
-type ClusterPoint = { cluster_id: number; lat: number; lng: number; id: number };
+type AgencyMetric = {
+  agencyId: number;
+  name: string;
+  type: string;
+  isActive: boolean;
+  total: number;
+  resolved: number;
+};
+
+type AgenciesResponse = { agencies: AgencyMetric[] };
+
+const KPICard: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
+  <div className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow shadow-cyan-500/5">
+    <p className="text-xs text-slate-400">{label}</p>
+    <p className="text-2xl font-bold text-cyan-200">{value}</p>
+  </div>
+);
 
 const AnalyticsPage: React.FC = () => {
-  const [data, setData] = useState<AnalyticsResponse | null>(null);
-  const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [clusters, setClusters] = useState<ClusterPoint[]>([]);
+  const [incidents, setIncidents] = useState<IncidentMetrics | null>(null);
+  const [agencies, setAgencies] = useState<AgencyMetric[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const [adminRes, statsRes, clustersRes] = await Promise.all([
-        api.get("/admin/analytics"),
-        api.get("/analytics/stats"),
-        api.get("/analytics/clusters"),
-      ]);
-      setData(adminRes.data);
-      setStats(statsRes.data);
-      setClusters(clustersRes.data.clusters || []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to load analytics");
-    }
-  };
-
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [incRes, agRes] = await Promise.all([
+          api.get("/admin/metrics/incidents"),
+          api.get("/admin/metrics/agencies"),
+        ]);
+        setIncidents(incRes.data);
+        setAgencies((agRes.data as AgenciesResponse).agencies || []);
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg || "Failed to load analytics");
+      }
+    };
     fetchData();
   }, []);
 
-  const chartData = {
-    labels: data?.byAgency.map((a) => a.agencyName || "Unassigned") || [],
-    datasets: [
-      {
-        label: "Incidents per agency",
-        data: data?.byAgency.map((a) => a.count) || [],
-        backgroundColor: "#0ea5e9",
-      },
-    ],
-  };
+  const trendData = incidents
+    ? {
+        labels: incidents.byDay.map((d) => new Date(d.day).toLocaleDateString()),
+        datasets: [
+          {
+            label: "Incidents per day",
+            data: incidents.byDay.map((d) => d.count),
+            borderColor: "#22d3ee",
+            backgroundColor: "rgba(34,211,238,0.2)",
+          },
+        ],
+      }
+    : null;
 
-  const categoryChart = {
-    labels: stats?.perCategory.map((c) => c.category || "Uncategorized") || [],
-    datasets: [
-      {
-        label: "By category",
-        data: stats?.perCategory.map((c) => c._count._all) || [],
-        backgroundColor: "#8b5cf6",
-      },
-    ],
-  };
+  const agencyBar =
+    agencies.length > 0
+      ? {
+          labels: agencies.map((a) => a.name),
+          datasets: [
+            {
+              label: "Total",
+              data: agencies.map((a) => a.total),
+              backgroundColor: "rgba(94,234,212,0.6)",
+            },
+            {
+              label: "Resolved",
+              data: agencies.map((a) => a.resolved),
+              backgroundColor: "rgba(251,191,36,0.6)",
+            },
+          ],
+        }
+      : null;
 
-  const clusterSummary = Object.values(
-    clusters.reduce((acc: Record<number, number>, cur) => {
-      acc[cur.cluster_id] = (acc[cur.cluster_id] || 0) + 1;
-      return acc;
-    }, {})
-  );
+  const exportCsv = () => {
+    window.open(`${api.defaults.baseURL?.replace("/api", "")}/api/admin/export/incidents`, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0F1A] text-slate-100 p-6 space-y-6">
-      <div>
-        <p className="text-sm text-cyan-200">Admin control</p>
-        <h1 className="text-3xl font-bold">Analytics</h1>
-        <p className="text-slate-400 text-sm">Overview of incidents, load, and hotspots.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-cyan-200">Admin dashboard</p>
+          <h1 className="text-3xl font-bold">Operational Analytics</h1>
+          <p className="text-slate-400 text-sm">Live KPIs across incidents and agencies.</p>
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={exportCsv}>
+          Export Incidents CSV
+        </button>
       </div>
+
       {error && <div className="alert alert-error text-sm">{error}</div>}
-      {data ? (
+
+      {incidents ? (
         <>
-          <div className="grid md:grid-cols-3 gap-3">
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <p className="text-xs text-slate-400">Total incidents</p>
-              <p className="text-2xl font-bold text-white">{stats?.total ?? data.totals.total}</p>
+          <div className="grid md:grid-cols-4 gap-3">
+            <KPICard label="Total incidents" value={incidents.total} />
+            <KPICard label="Active" value={incidents.active} />
+            <KPICard label="Resolved" value={incidents.resolved} />
+            <KPICard label="Avg severity" value={(incidents.avgSeverity ?? 0).toFixed(2)} />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl border border-slate-800 bg-[#0D1117]">
+              <p className="text-sm text-slate-300 mb-2">Incidents over time</p>
+              {trendData ? <Line data={trendData} /> : <p className="text-slate-400 text-sm">No data</p>}
             </div>
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <p className="text-xs text-slate-400">Active</p>
-              <p className="text-2xl font-bold text-white">{data.totals.active}</p>
-            </div>
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <p className="text-xs text-slate-400">Resolved</p>
-              <p className="text-2xl font-bold text-white">{data.totals.resolved}</p>
+            <div className="p-4 rounded-xl border border-slate-800 bg-[#0D1117]">
+              <p className="text-sm text-slate-300 mb-2">Agency load</p>
+              {agencyBar ? <Bar data={agencyBar} /> : <p className="text-slate-400 text-sm">No data</p>}
             </div>
           </div>
-          {stats && (
-            <div className="grid md:grid-cols-3 gap-3">
-              <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-                <p className="text-xs text-slate-400">High severity (4-5)</p>
-                <p className="text-2xl font-bold text-white">{stats.highSeverity}</p>
-              </div>
-              <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-                <p className="text-xs text-slate-400">Incidents last 7 days</p>
-                <p className="text-2xl font-bold text-white">{stats.weekIncidents}</p>
-              </div>
-              <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-                <p className="text-xs text-slate-400">Hotspot clusters</p>
-                <p className="text-2xl font-bold text-white">{clusterSummary.length || 0}</p>
-              </div>
-            </div>
-          )}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <Bar data={chartData} />
-            </div>
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <Bar data={categoryChart} />
-            </div>
-          </div>
-          {clusterSummary.length > 0 && (
-            <div className="p-4 rounded-lg border border-slate-800 bg-[#0D1117]">
-              <h3 className="text-lg font-semibold mb-2">Cluster sizes</h3>
-              <div className="flex flex-wrap gap-2">
-                {clusterSummary.map((count, idx) => (
-                  <div
-                    key={idx}
-                    className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm"
-                  >
-                    Cluster {idx + 1}: <span className="font-semibold">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       ) : (
         <div className="text-slate-300">Loading…</div>

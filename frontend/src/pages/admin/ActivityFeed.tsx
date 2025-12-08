@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import AppLayout from "../../layouts/AppLayout";
 import { getSocket } from "../../lib/socket";

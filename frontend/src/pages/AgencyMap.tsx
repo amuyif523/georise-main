@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable react-hooks/exhaustive-deps */
 import L from "leaflet";
 import "leaflet.heat";
 import React, { useEffect, useMemo, useState } from "react";
@@ -8,6 +11,8 @@ import { severityBadgeClass, severityLabel } from "../utils/severity";
 import IncidentCard from "../components/incident/IncidentCard";
 import IncidentDetailPane from "../components/incident/IncidentDetailPane";
 import AppLayout from "../layouts/AppLayout";
+import { getSocket } from "../lib/socket";
+import BoundariesLayer from "../components/maps/BoundariesLayer";
 
 type Incident = {
   id: number;
@@ -18,6 +23,14 @@ type Incident = {
   latitude: number | null;
   longitude: number | null;
   createdAt: string;
+  reviewStatus?: string;
+  subCityId?: number | null;
+  reporter?: {
+    id: number;
+    fullName: string;
+    trustScore?: number | null;
+  } | null;
+  assignedResponderId?: number | null;
 };
 
 type HeatPoint = { lat: number; lng: number; weight: number | null };
@@ -82,15 +95,18 @@ const AgencyMap: React.FC = () => {
   const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
   const [selectedSubCity, setSelectedSubCity] = useState<string>("");
+  const [boundaryLevel, setBoundaryLevel] = useState<"subcity" | "woreda">("subcity");
+  const [responders, setResponders] = useState<any[]>([]);
 
   const fetchData = async () => {
     try {
       setListLoading(true);
-      const [incRes, heatRes] = await Promise.all([
+      const [incRes, heatRes, respRes] = await Promise.all([
         api.get("/incidents", {
           params: { status: "RECEIVED", hours },
         }),
         api.get("/analytics/heatmap", { params: { hours, minSeverity } }),
+        api.get("/responders"),
       ]);
       let incs = incRes.data.incidents || [];
       if (selectedSubCity) {
@@ -98,6 +114,7 @@ const AgencyMap: React.FC = () => {
       }
       setIncidents(incs);
       setHeatPoints(heatRes.data.points || []);
+      setResponders(respRes.data || []);
       setError(null);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to load incidents");
@@ -127,8 +144,22 @@ const AgencyMap: React.FC = () => {
       const handlerUpdated = (inc: any) => {
         setIncidents((prev) => prev.map((p) => (p.id === inc.id ? inc : p)));
       };
+      const responderPos = (payload: any) => {
+        setResponders((prev) =>
+          prev.map((r) => (r.id === payload.responderId ? { ...r, latitude: payload.lat, longitude: payload.lng } : r))
+        );
+      };
+      const responderAssigned = (payload: any) => {
+        setIncidents((prev) =>
+          prev.map((i) =>
+            i.id === payload.incidentId ? { ...i, assignedResponderId: payload.responderId, status: "ASSIGNED" } : i
+          )
+        );
+      };
       socket.on("incident:created", handlerCreated);
       socket.on("incident:updated", handlerUpdated);
+      socket.on("responder:position", responderPos);
+      socket.on("incident:assignedResponder", responderAssigned);
       socket.on("disconnect", () => {
         // fallback polling every 30s
         const t = setInterval(fetchData, 30000);
@@ -143,6 +174,8 @@ const AgencyMap: React.FC = () => {
       return () => {
         socket.off("incident:created", handlerCreated);
         socket.off("incident:updated", handlerUpdated);
+        socket.off("responder:position", responderPos);
+        socket.off("incident:assignedResponder", responderAssigned);
         socket.off("disconnect");
         socket.off("connect");
       };
@@ -224,6 +257,33 @@ const AgencyMap: React.FC = () => {
     [incidents, actionLoading]
   );
 
+  const responderMarkers = useMemo(
+    () =>
+      responders
+        .filter((r) => r.latitude != null && r.longitude != null)
+        .map((r) => (
+          <Marker
+            key={`resp-${r.id}`}
+            position={[r.latitude as number, r.longitude as number]}
+            icon={L.divIcon({
+              className: "responder-marker",
+              html: `<div style="background:#22d3ee;width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px #22d3ee80;border:2px solid #0f172a;"></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            })}
+          >
+            <Popup>
+              <div className="text-sm space-y-1">
+                <p className="font-semibold">{r.name}</p>
+                <p className="text-xs text-slate-500">{r.type}</p>
+                <p className="text-xs">Status: {r.status}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )),
+    [responders]
+  );
+
   const selectedIncident = incidents.find((i) => i.id === selectedId) || null;
 
   return (
@@ -272,6 +332,17 @@ const AgencyMap: React.FC = () => {
             ))}
           </select>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400">Boundary level</span>
+          <select
+            className="select select-bordered select-xs bg-slate-900 text-white"
+            value={boundaryLevel}
+            onChange={(e) => setBoundaryLevel(e.target.value as any)}
+          >
+            <option value="subcity">Subcity</option>
+            <option value="woreda">Woreda</option>
+          </select>
+        </div>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -296,8 +367,12 @@ const AgencyMap: React.FC = () => {
               })}
             />
           )}
+          <BoundariesLayer level={boundaryLevel} />
           <HeatmapLayer points={heatPoints} enabled={showHeat} />
-          <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
+          <MarkerClusterGroup chunkedLoading>
+            {markers}
+            {responderMarkers}
+          </MarkerClusterGroup>
         </MapContainer>
         <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
           <div className="text-sm text-slate-300 mb-2">Live queue</div>
@@ -326,6 +401,25 @@ const AgencyMap: React.FC = () => {
         onAssign={selectedIncident ? () => updateStatus(selectedIncident.id, "assign") : undefined}
         onRespond={selectedIncident ? () => updateStatus(selectedIncident.id, "respond") : undefined}
         onResolve={selectedIncident ? () => updateStatus(selectedIncident.id, "resolve") : undefined}
+        responders={responders}
+        onAssignResponder={
+          selectedIncident
+            ? async (responderId: number) => {
+                try {
+                  setActionLoading(selectedIncident.id);
+                  await api.patch("/dispatch/assign-responder", {
+                    incidentId: selectedIncident.id,
+                    responderId,
+                  });
+                  await fetchData();
+                } catch (err: any) {
+                  setError(err?.response?.data?.message || "Failed to assign responder");
+                } finally {
+                  setActionLoading(null);
+                }
+              }
+            : undefined
+        }
       />
     </div>
     </AppLayout>

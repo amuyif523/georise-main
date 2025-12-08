@@ -4,6 +4,13 @@ import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
 import { getSocket } from "../lib/socket";
 
+type ActivityLog = {
+  id: string;
+  type: "STATUS_CHANGE" | "COMMENT" | "DISPATCH" | "ASSIGNMENT" | "SYSTEM";
+  message: string;
+  createdAt: string;
+};
+
 type Incident = {
   id: number;
   title: string;
@@ -14,6 +21,7 @@ type Incident = {
   latitude: number | null;
   longitude: number | null;
   createdAt: string;
+  timeline?: ActivityLog[];
   aiOutput?: {
     predictedCategory: string;
     severityScore: number;
@@ -46,14 +54,17 @@ const MyReportsPage: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [loadingTimeline, setLoadingTimeline] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await api.get("/incidents/my");
         setIncidents(res.data.incidents || []);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || "Failed to load incidents");
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg || "Failed to load incidents");
       } finally {
         setLoading(false);
       }
@@ -62,7 +73,7 @@ const MyReportsPage: React.FC = () => {
 
     const socket = getSocket();
     if (socket) {
-      const handler = (inc: any) => {
+      const handler = (inc: Incident) => {
         setIncidents((prev) =>
           prev.map((r) =>
             r.id === inc.id
@@ -77,6 +88,23 @@ const MyReportsPage: React.FC = () => {
       };
     }
   }, []);
+
+  const loadTimeline = async (incidentId: number) => {
+    setLoadingTimeline(incidentId);
+    try {
+      const res = await api.get(`/incidents/${incidentId}/timeline`);
+      const logs: ActivityLog[] = res.data.logs || [];
+      setIncidents((prev) =>
+        prev.map((i) => (i.id === incidentId ? { ...i, timeline: logs.reverse() } : i))
+      );
+      setOpenId(incidentId);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Failed to load timeline");
+    } finally {
+      setLoadingTimeline(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
@@ -136,8 +164,7 @@ const MyReportsPage: React.FC = () => {
                 <div className="mt-3 flex items-center gap-2 text-sm text-slate-300">
                   <Shield size={16} className="text-amber-300" />
                   <span>
-                    Category: {incident.category ?? "Pending"} · AI severity:{" "}
-                    {severityLabel(incident.severityScore)}
+                    Category: {incident.category ?? "Pending"} · AI severity: {severityLabel(incident.severityScore)}
                   </span>
                 </div>
                 {incident.aiOutput?.summary && (
@@ -148,6 +175,36 @@ const MyReportsPage: React.FC = () => {
                 <div className="mt-2 text-xs text-slate-500">
                   ID: {incident.id} · Created: {formatDate(incident.createdAt)}
                 </div>
+
+                <div className="mt-3">
+                  <button
+                    className={`btn btn-xs btn-outline ${loadingTimeline === incident.id ? "loading" : ""}`}
+                    onClick={() => loadTimeline(incident.id)}
+                  >
+                    {openId === incident.id ? "Refresh timeline" : "View updates"}
+                  </button>
+                </div>
+
+                {openId === incident.id && (
+                  <div className="mt-3 space-y-2 border border-slate-800 rounded-lg p-3 bg-slate-900/50">
+                    <p className="text-xs uppercase text-slate-400">Timeline</p>
+                    {incident.timeline && incident.timeline.length > 0 ? (
+                      incident.timeline.map((log) => (
+                        <div
+                          key={log.id}
+                          className="text-sm p-2 rounded-md bg-slate-900 border border-slate-800"
+                        >
+                          <p className="text-white">{log.message}</p>
+                          <p className="text-[11px] text-slate-500">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-400">No updates yet.</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

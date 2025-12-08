@@ -165,20 +165,27 @@ router.patch(
   }
 );
 
-// Audit logs
+// Audit logs (paginated)
 router.get(
   "/audit",
   requireAuth,
   requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const logs = await prisma.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: {
-        actor: { select: { id: true, fullName: true, email: true } },
-      },
-    });
-    res.json({ logs });
+  async (req, res) => {
+    const page = Number(req.query.page ?? 1);
+    const pageSize = Number(req.query.pageSize ?? 50);
+    const skip = (page - 1) * pageSize;
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          actor: { select: { id: true, fullName: true, email: true } },
+        },
+      }),
+      prisma.auditLog.count(),
+    ]);
+    res.json({ logs, total, page, pageSize });
   }
 );
 
@@ -214,6 +221,186 @@ router.get(
         count: row._count._all,
       })),
     });
+  }
+);
+
+// Admin metrics: incidents
+router.get(
+  "/metrics/incidents",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (_req, res) => {
+    const total = await prisma.incident.count();
+    const active = await prisma.incident.count({
+      where: { status: { in: ["RECEIVED", "UNDER_REVIEW", "ASSIGNED", "RESPONDING"] } },
+    });
+    const resolved = await prisma.incident.count({ where: { status: "RESOLVED" } });
+
+    const severity = await prisma.incident.aggregate({
+      _avg: { severityScore: true },
+    });
+
+    const byDay: { day: Date; count: number }[] = await prisma.$queryRawUnsafe(`
+      SELECT date_trunc('day', "createdAt") as day, count(*)::int
+      FROM "Incident"
+      GROUP BY 1
+      ORDER BY 1 ASC;
+    `);
+
+    res.json({
+      total,
+      active,
+      resolved,
+      avgSeverity: severity._avg.severityScore,
+      byDay,
+    });
+  }
+);
+
+// Admin metrics: agencies
+router.get(
+  "/metrics/agencies",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (_req, res) => {
+    const agencyLoads = await prisma.incident.groupBy({
+      by: ["assignedAgencyId", "status"],
+      _count: { _all: true },
+    });
+
+    const agencies = await prisma.agency.findMany({
+      select: { id: true, name: true, type: true, isActive: true },
+    });
+
+    const grouped = agencies.map((a) => {
+      const rows = agencyLoads.filter((r) => r.assignedAgencyId === a.id);
+      const total = rows.reduce((sum, r) => sum + r._count._all, 0);
+      const resolved = rows
+        .filter((r) => r.status === "RESOLVED")
+        .reduce((sum, r) => sum + r._count._all, 0);
+      return {
+        agencyId: a.id,
+        name: a.name,
+        type: a.type,
+        isActive: a.isActive,
+        total,
+        resolved,
+      };
+    });
+
+    res.json({ agencies: grouped });
+  }
+);
+
+// Toggle agency active status
+router.patch(
+  "/agencies/:id/status",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  validateBody(z.object({ isActive: z.boolean() })),
+  async (req, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    const agencyId = parsed.data.id;
+    const { isActive } = req.body as { isActive: boolean };
+
+    const updated = await prisma.agency.update({
+      where: { id: agencyId },
+      data: { isActive },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: isActive ? "ACTIVATE_AGENCY" : "DEACTIVATE_AGENCY",
+        targetType: "Agency",
+        targetId: agencyId,
+      },
+    });
+
+    res.json({ agency: updated });
+  }
+);
+
+// Set user active status explicitly
+router.patch(
+  "/users/:id/status",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  validateBody(z.object({ isActive: z.boolean() })),
+  async (req, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    const userId = parsed.data.id;
+    const { isActive } = req.body as { isActive: boolean };
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: isActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
+        targetType: "User",
+        targetId: userId,
+      },
+    });
+
+    res.json({ user: updated });
+  }
+);
+
+// Export incidents CSV (basic)
+router.get(
+  "/export/incidents",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (_req, res) => {
+    const incidents = await prisma.incident.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        severityScore: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    const header = [
+      "id",
+      "title",
+      "category",
+      "severityScore",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "latitude",
+      "longitude",
+    ];
+    const rows = incidents.map((i) =>
+      [
+        i.id,
+        `"${(i.title || "").replace(/"/g, '""')}"`,
+        i.category ?? "",
+        i.severityScore ?? "",
+        i.status,
+        i.createdAt.toISOString(),
+        i.updatedAt.toISOString(),
+        i.latitude ?? "",
+        i.longitude ?? "",
+      ].join(",")
+    );
+
+    const csv = [header.join(","), ...rows].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=\"incidents.csv\"");
+    res.send(csv);
   }
 );
 

@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [postgis(map: "postgis")]
 }
 
 enum Role {
@@ -33,6 +35,22 @@ enum ReviewStatus {
   PENDING_REVIEW
   APPROVED
   REJECTED
+}
+
+enum ResponderStatus {
+  AVAILABLE
+  ASSIGNED
+  EN_ROUTE
+  ON_SCENE
+  OFFLINE
+}
+
+enum ActivityType {
+  STATUS_CHANGE
+  COMMENT
+  DISPATCH
+  ASSIGNMENT
+  SYSTEM
 }
 
 enum AgencyType {
@@ -76,6 +94,7 @@ model User {
   statusHistory       IncidentStatusHistory[]
   auditLogs           AuditLog[]
   reviewedIncidents   Incident[]             @relation("IncidentReviewUser")
+  activityLogs        ActivityLog[]
 }
 
 model Agency {
@@ -99,6 +118,7 @@ model Agency {
   woreda    Woreda?  @relation(fields: [woredaId], references: [id])
   staff     AgencyStaff[]
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
+  jurisdictions AgencyJurisdiction[]
 }
 
 model AuditLog {
@@ -141,6 +161,7 @@ model Incident {
   id               Int            @id @default(autoincrement())
   reporterId       Int
   assignedAgencyId Int?
+  assignedResponderId Int?
   title            String
   description      String
   category         String?
@@ -155,16 +176,24 @@ model Incident {
   reviewedById     Int?
   reviewedAt       DateTime?
   reviewNote       String?
+  reportedAt       DateTime       @default(now())
+  verifiedAt       DateTime?
+  dispatchedAt     DateTime?
+  arrivalAt        DateTime?
+  resolvedAt       DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   reporter       User                 @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
+  assignedResponder Responder?        @relation(fields: [assignedResponderId], references: [id])
   subCity        SubCity?             @relation(fields: [subCityId], references: [id])
   woreda         Woreda?              @relation(fields: [woredaId], references: [id])
   reviewer       User?                @relation("IncidentReviewUser", fields: [reviewedById], references: [id])
   aiOutput       IncidentAIOutput?
   statusHistory  IncidentStatusHistory[]
+  activityLogs   ActivityLog[]
+  responders     Responder[]
 }
 
 model IncidentAIOutput {
@@ -192,6 +221,18 @@ model IncidentStatusHistory {
   actor     User     @relation(fields: [actorUserId], references: [id])
 }
 
+model ActivityLog {
+  id         String       @id @default(cuid())
+  incidentId Int
+  userId     Int?
+  type       ActivityType
+  message    String
+  createdAt  DateTime     @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+}
+
 model SubCity {
   id          Int       @id @default(autoincrement())
   name        String    @unique
@@ -214,6 +255,7 @@ model Woreda {
 
   subCity   SubCity  @relation(fields: [subCityId], references: [id])
   incidents Incident[]
+  agencies  Agency[]
 
   @@unique([subCityId, name])
 }
@@ -223,3 +265,32 @@ model DispatchRule {
   category          String
   defaultAgencyType AgencyType
 }
+
+model AgencyJurisdiction {
+  id           Int      @id @default(autoincrement())
+  agencyId     Int
+  boundaryType String   // SUBCITY or WOREDA
+  boundaryId   Int      // gid from addis_subcities/addis_woredas
+  createdAt    DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+}
+
+model Responder {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String
+  status       ResponderStatus @default(AVAILABLE)
+  agencyId     Int
+  incidentId   Int?
+  userId       Int?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  agency       Agency   @relation(fields: [agencyId], references: [id])
+  incident     Incident? @relation(fields: [incidentId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
+}
+

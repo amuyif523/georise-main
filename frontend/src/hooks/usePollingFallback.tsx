@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef } from "react";
 
 export const usePollingFallback = (shouldPoll: boolean, fn: () => void, intervalMs = 30000) => {

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 
 const AdminDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const sampleOverview = [
     { id: "FIRE", label: "Fire", count: 24, sev: 4 },
     { id: "MEDICAL", label: "Medical", count: 18, sev: 3 },

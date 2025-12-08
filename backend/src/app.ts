@@ -9,8 +9,9 @@ import adminRoutes from "./modules/admin/admin.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
 import gisRoutes from "./modules/gis/gis.routes";
 import verificationRoutes from "./modules/verification/verification.routes";
+import responderRoutes from "./modules/responders/responder.routes";
+import dispatchRoutes from "./modules/dispatch/dispatch.routes";
 import logger from "./logger";
-import analyticsRoutes from "./modules/analytics/analytics.routes";
 
 const app = express();
 
@@ -50,6 +51,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/gis", gisRoutes);
 app.use("/api/verification", verificationRoutes);
+app.use("/api/responders", responderRoutes);
+app.use("/api/dispatch", dispatchRoutes);
 
 // Error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";

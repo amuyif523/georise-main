@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import api from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
 
@@ -32,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lastActive, setLastActive] = useState<number>(() => Date.now());
   const SESSION_MAX_IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
-  const fetchMe = async () => {
+  const fetchMe = useCallback(async () => {
     try {
       const res = await api.get("/auth/me");
       setUser(res.data.user);
@@ -41,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("georise_token");
@@ -61,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       window.removeEventListener("mousemove", updateActive);
       window.removeEventListener("keydown", updateActive);
     };
-  }, []);
+  }, [SESSION_MAX_IDLE_MS, fetchMe]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -70,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }, 60000);
     return () => clearInterval(timer);
-  }, [user, lastActive]);
+  }, [user, lastActive, SESSION_MAX_IDLE_MS]);
 
   const login = async (email: string, password: string) => {
     const res = await api.post("/auth/login", { email, password });
@@ -100,3 +101,4 @@ export const useAuth = (): AuthContextValue => {
   }
   return ctx;
 };
+

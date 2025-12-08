@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { BellDot } from "lucide-react";
 import { getSocket } from "../../lib/socket";

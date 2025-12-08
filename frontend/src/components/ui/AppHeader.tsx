@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { BellDot } from "lucide-react";
 import NotificationBell from "../ui/NotificationBell";
 
 const AppHeader: React.FC = () => {
@@ -24,7 +23,7 @@ const AppHeader: React.FC = () => {
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${offline ? "bg-yellow-400" : "bg-emerald-400"}`} />
         <span className="text-xs text-slate-400">
-          {offline ? "Offline — falling back to polling" : "Online"}
+          {offline ? "Offline (fallback to polling)" : "Online"}
         </span>
       </div>
       <div className="flex items-center gap-3">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -8,7 +9,7 @@ import IncidentCard from "../components/incident/IncidentCard";
 import AppLayout from "../layouts/AppLayout";
 
 const AgencyDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const sampleQueue = [
     { id: 101, title: "Fire near market", severity: 4 },
     { id: 102, title: "Traffic crash at Ring Road", severity: 3 },
