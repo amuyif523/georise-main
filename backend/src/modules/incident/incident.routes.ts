@@ -39,8 +39,14 @@ router.get("/:id/timeline", requireAuth, async (req, res) => {
   if (req.user?.role === Role.CITIZEN && incident.reporterId !== req.user.id) {
     return res.status(403).json({ message: "Forbidden" });
   }
-  if (req.user?.role === Role.AGENCY_STAFF && incident.assignedAgencyId == null) {
-    return res.status(403).json({ message: "Forbidden" });
+  if (req.user?.role === Role.AGENCY_STAFF) {
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user.id },
+      select: { agencyId: true },
+    });
+    if (!staff || incident.assignedAgencyId !== staff.agencyId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
   }
 
   const logs = await prisma.activityLog.findMany({
@@ -104,6 +110,16 @@ router.get(
   requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
   async (req, res) => {
     try {
+      let agencyId: number | null = null;
+      if (req.user?.role === Role.AGENCY_STAFF) {
+        const staff = await prisma.agencyStaff.findUnique({
+          where: { userId: req.user.id },
+          select: { agencyId: true },
+        });
+        if (!staff) return res.status(403).json({ message: "Forbidden" });
+        agencyId = staff.agencyId;
+      }
+
       const { status, hours, reviewStatus } = req.query;
       const conditions: any = {};
       if (status && typeof status === "string") conditions.status = status as IncidentStatus;
@@ -114,6 +130,10 @@ router.get(
       }
       if (req.query.subCityId) {
         conditions.subCityId = Number(req.query.subCityId);
+      }
+      if (agencyId) {
+        // Enforce agency isolation: only incidents assigned to this agency
+        conditions.assignedAgencyId = agencyId;
       }
 
       const incidents = await prisma.incident.findMany({
@@ -130,9 +150,10 @@ router.get(
           subCityId: true,
           reviewStatus: true,
           createdAt: true,
-          reporter: {
-            select: { id: true, fullName: true, trustScore: true },
-          },
+          reporter:
+            req.user?.role === Role.ADMIN
+              ? { select: { id: true, fullName: true, trustScore: true } }
+              : undefined,
         },
       });
 
