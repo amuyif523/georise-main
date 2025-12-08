@@ -1,12 +1,20 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middleware/auth";
 import { incidentService } from "./incident.service";
+import sanitizeHtml from "sanitize-html";
 
 export const createIncident = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    const incident = await incidentService.createIncident(req.body, req.user.id);
+    const sanitizedBody = {
+      ...req.body,
+      title: typeof req.body.title === "string" ? sanitizeHtml(req.body.title) : req.body.title,
+      description:
+        typeof req.body.description === "string" ? sanitizeHtml(req.body.description) : req.body.description,
+    };
+
+    const incident = await incidentService.createIncident(sanitizedBody, req.user.id);
     return res.status(201).json({ incident });
   } catch (err: any) {
     console.error("Create incident error:", err);
