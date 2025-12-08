@@ -4,3 +4,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --glow-blue: rgba(59, 130, 246, 0.5);
+  --glow-cyan: rgba(34, 211, 238, 0.5);
+  --glow-red: rgba(248, 113, 113, 0.7);
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #0a0f1a;
+  color: #e2e8f0;
+}
+
+code,
+.font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+}

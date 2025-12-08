@@ -5,6 +5,8 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import api from "../lib/api";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
+import IncidentCard from "../components/incident/IncidentCard";
+import AppLayout from "../layouts/AppLayout";
 
 type Incident = {
   id: number;
@@ -173,7 +175,8 @@ const AgencyMap: React.FC = () => {
   );
 
   return (
-    <div className="h-screen bg-[#0A0F1A] text-slate-100">
+    <AppLayout>
+      <div className="h-full bg-[#0A0F1A] text-slate-100">
       {error && <div className="alert alert-error m-4 text-sm">{error}</div>}
       <div className="p-4 flex flex-wrap items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
@@ -213,12 +216,31 @@ const AgencyMap: React.FC = () => {
         </label>
       </div>
       {loading && <div className="p-4 text-slate-300">Loading map…</div>}
-      <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
+      <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
+        <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <HeatmapLayer points={heatPoints} enabled={showHeat} />
         <MarkerClusterGroup chunkedLoading>{markers}</MarkerClusterGroup>
       </MapContainer>
+        <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
+          <div className="text-sm text-slate-300 mb-2">Live queue</div>
+          <div className="space-y-2">
+            {incidents.map((i) => (
+              <IncidentCard
+                key={i.id}
+                title={i.title}
+                category={i.category}
+                severity={i.severityScore}
+                status={i.status}
+                timestamp={i.createdAt}
+                onClick={() => {}}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
+    </AppLayout>
   );
 };
 

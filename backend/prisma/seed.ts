@@ -4,135 +4,61 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Clear existing demo data (optional; keep minimal to avoid destructive ops)
-  // await prisma.incident.deleteMany({});
-  // await prisma.user.deleteMany({});
-  // await prisma.agency.deleteMany({});
-
   const passwordHash = await bcrypt.hash("password123", 10);
 
-  // Agencies
   const agencies = [
-    {
-      name: "Bole Police Dept",
-      type: "POLICE",
-      city: "Bole",
-      lat: 9.0106,
-      lng: 38.7835,
-    },
-    {
-      name: "Piassa Fire Station",
-      type: "FIRE",
-      city: "Arada",
-      lat: 9.037,
-      lng: 38.756,
-    },
-    {
-      name: "CMC Ambulance Center",
-      type: "MEDICAL",
-      city: "Yeka",
-      lat: 9.0405,
-      lng: 38.834,
-    },
-    {
-      name: "Teklehaymanot Traffic Post",
-      type: "TRAFFIC",
-      city: "Lideta",
-      lat: 9.012,
-      lng: 38.741,
-    },
-    {
-      name: "Summit Utility Response",
-      type: "ELECTRIC",
-      city: "Yeka",
-      lat: 9.047,
-      lng: 38.813,
-    },
-    {
-      name: "Aware Flood Response Unit",
-      type: "DISASTER",
-      city: "Akaki",
-      lat: 8.963,
-      lng: 38.807,
-    },
-    {
-      name: "AAWSA Water Ops – Megenagna",
-      type: "WATER",
-      city: "Yeka",
-      lat: 9.019,
-      lng: 38.811,
-    },
-    {
-      name: "Environmental Hazard Unit – Gullele",
-      type: "ENVIRONMENT",
-      city: "Gullele",
-      lat: 9.056,
-      lng: 38.722,
-    },
-    {
-      name: "Public Health Rapid Response",
-      type: "PUBLIC_HEALTH",
-      city: "Addis Ababa",
-      lat: 9.025,
-      lng: 38.77,
-    },
-    {
-      name: "Construction Safety Corps",
-      type: "CONSTRUCTION",
-      city: "Addis Ababa",
-      lat: 9.015,
-      lng: 38.77,
-    },
-    {
-      name: "City Administration Ops",
-      type: "ADMINISTRATION",
-      city: "Addis Ababa",
-      lat: 9.03,
-      lng: 38.75,
-    },
-    {
-      name: "General Support Unit",
-      type: "OTHER",
-      city: "Addis Ababa",
-      lat: 9.02,
-      lng: 38.79,
-    },
+    { name: "Bole Police Dept", type: "POLICE", city: "Bole", lat: 9.0106, lng: 38.7835 },
+    { name: "Piassa Fire Station", type: "FIRE", city: "Arada", lat: 9.037, lng: 38.756 },
+    { name: "CMC Ambulance Center", type: "MEDICAL", city: "Yeka", lat: 9.0405, lng: 38.834 },
+    { name: "Teklehaymanot Traffic Post", type: "TRAFFIC", city: "Lideta", lat: 9.012, lng: 38.741 },
+    { name: "Summit Utility Response", type: "ELECTRIC", city: "Yeka", lat: 9.047, lng: 38.813 },
+    { name: "Aware Flood Response Unit", type: "DISASTER", city: "Akaki", lat: 8.963, lng: 38.807 },
+    { name: "AAWSA Water Ops – Megenagna", type: "WATER", city: "Yeka", lat: 9.019, lng: 38.811 },
+    { name: "Environmental Hazard Unit – Gullele", type: "ENVIRONMENT", city: "Gullele", lat: 9.056, lng: 38.722 },
+    { name: "Public Health Rapid Response", type: "PUBLIC_HEALTH", city: "Addis Ababa", lat: 9.025, lng: 38.77 },
+    { name: "Construction Safety Corps", type: "CONSTRUCTION", city: "Addis Ababa", lat: 9.015, lng: 38.77 },
+    { name: "City Administration Ops", type: "ADMINISTRATION", city: "Addis Ababa", lat: 9.03, lng: 38.75 },
+    { name: "General Support Unit", type: "OTHER", city: "Addis Ababa", lat: 9.02, lng: 38.79 },
   ];
 
   const createdAgencies = [];
   for (const a of agencies) {
-    const agency = await prisma.agency.upsert({
-      where: { name: a.name },
-      update: {
-        city: a.city,
-        type: a.type as any,
-        isApproved: true,
-        isActive: true,
-        centerLatitude: a.lat,
-        centerLongitude: a.lng,
-      },
-      create: {
-        name: a.name,
-        city: a.city,
-        type: a.type as any,
-        description: `${a.type} unit in ${a.city}`,
-        isApproved: true,
-        isActive: true,
-        centerLatitude: a.lat,
-        centerLongitude: a.lng,
-      },
-    });
+    let agency = await prisma.agency.findFirst({ where: { name: a.name } });
+    if (!agency) {
+      agency = await prisma.agency.create({
+        data: {
+          name: a.name,
+          city: a.city,
+          type: "OTHER" as any,
+          description: `${a.type} unit in ${a.city}`,
+          isApproved: true,
+          isActive: true,
+        },
+      });
+    } else {
+      agency = await prisma.agency.update({
+        where: { id: agency.id },
+        data: {
+          city: a.city,
+          type: "OTHER" as any,
+          isApproved: true,
+          isActive: true,
+        },
+      });
+    }
 
     await prisma.$executeRaw`
       UPDATE "Agency"
-      SET boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 1200)::geometry,
+      SET "centerLatitude" = ${a.lat},
+          "centerLongitude" = ${a.lng},
+          type = ${a.type}::"AgencyType",
+          boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 1200)::geometry,
           jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 1200)::geometry
       WHERE id = ${agency.id};
     `;
     createdAgencies.push(agency);
   }
 
-  // Users
   const admin = await prisma.user.upsert({
     where: { email: "admin@example.com" },
     update: {},
@@ -166,12 +92,13 @@ async function main() {
     },
   });
 
+  const policeAgencyId = createdAgencies.find((a) => a.type === "POLICE")?.id ?? createdAgencies[0]?.id;
   await prisma.agencyStaff.upsert({
     where: { userId: agencyUser.id },
-    update: { agencyId: police.id },
+    update: { agencyId: policeAgencyId },
     create: {
       userId: agencyUser.id,
-      agencyId: police.id,
+      agencyId: policeAgencyId,
       position: "Dispatcher",
     },
   });
@@ -179,7 +106,7 @@ async function main() {
   const incidents = [
     {
       title: "እሳት በደራሲ ቦሌ ሱቅ",
-      description: "እሳት ተነሳ በደራሲ ያለው ሱቅ ውስጥ፣ ሰዎች እየተሰማሩ ናቸው",
+      description: "እሳት ተነሳ በደራሲ ሱቅ ውስጥ፣ ሰዎች እየተሰማሩ ናቸው።",
       category: "FIRE",
       severityScore: 4,
       latitude: 9.0123,

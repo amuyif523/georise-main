@@ -2,11 +2,13 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { List, MapPin, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import AppLayout from "../layouts/AppLayout";
 
 const CitizenDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+    <AppLayout>
+      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-10 pb-12">
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -61,6 +63,7 @@ const CitizenDashboard: React.FC = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 

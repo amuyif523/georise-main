@@ -2,6 +2,7 @@ import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
 import { Link } from "react-router-dom";
+import AppLayout from "../layouts/AppLayout";
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -12,7 +13,8 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
+    <AppLayout>
+      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
       <div className="max-w-5xl mx-auto px-4 space-y-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -62,6 +64,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 };
 
