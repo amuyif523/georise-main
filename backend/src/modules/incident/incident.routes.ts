@@ -115,6 +115,16 @@ router.patch(
           assignedAgencyId: req.body.assignedAgencyId ?? null,
         },
       });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: req.user!.id,
+          action: "ASSIGN_INCIDENT",
+          targetType: "Incident",
+          targetId: Number(id),
+        },
+      });
+
       res.json({ incident: updated });
     } catch (err: any) {
       console.error("Assign incident error:", err);
@@ -136,6 +146,16 @@ router.patch(
           status: IncidentStatus.RESPONDING,
         },
       });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: req.user!.id,
+          action: "RESPOND_INCIDENT",
+          targetType: "Incident",
+          targetId: Number(id),
+        },
+      });
+
       res.json({ incident: updated });
     } catch (err: any) {
       console.error("Respond incident error:", err);
@@ -157,6 +177,16 @@ router.patch(
           status: IncidentStatus.RESOLVED,
         },
       });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: req.user!.id,
+          action: "RESOLVE_INCIDENT",
+          targetType: "Incident",
+          targetId: Number(id),
+        },
+      });
+
       res.json({ incident: updated });
     } catch (err: any) {
       console.error("Resolve incident error:", err);

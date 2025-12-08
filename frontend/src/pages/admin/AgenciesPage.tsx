@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+import L from "leaflet";
+import React, { useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
+import { EditControl } from "react-leaflet-draw";
 import api from "../../lib/api";
 import { severityBadgeClass } from "../../utils/severity";
 
@@ -18,6 +21,7 @@ const AgenciesPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   const fetchPending = async () => {
     try {
@@ -44,6 +48,13 @@ const AgenciesPage: React.FC = () => {
     await api.patch(`/admin/agencies/${selectedId}/boundary`, { geojson: boundaryGeoJSON });
     setBoundaryGeoJSON("");
     setSelectedId(null);
+  };
+
+  const onCreated = (e: any, agencyId: number) => {
+    const layer = e.layer;
+    const geojson = layer.toGeoJSON();
+    setSelectedId(agencyId);
+    setBoundaryGeoJSON(JSON.stringify(geojson.geometry));
   };
 
   return (
@@ -78,8 +89,32 @@ const AgenciesPage: React.FC = () => {
                   Approve & Activate
                 </button>
               )}
-              <div className="mt-3">
-                <label className="text-xs text-slate-400">Boundary GeoJSON (polygon)</label>
+              <div className="mt-3 space-y-2">
+                <label className="text-xs text-slate-400">Draw boundary (polygon)</label>
+                <div className="h-64 rounded-lg overflow-hidden border border-slate-800">
+                  <MapContainer
+                    center={[9.03, 38.74]}
+                    zoom={12}
+                    style={{ height: "100%", width: "100%" }}
+                    whenCreated={(map) => (mapRef.current = map)}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <FeatureGroup>
+                      <EditControl
+                        position="topright"
+                        draw={{
+                          rectangle: false,
+                          circle: false,
+                          polyline: false,
+                          marker: false,
+                          circlemarker: false,
+                        }}
+                        onCreated={(e) => onCreated(e, a.id)}
+                        edit={{ edit: false, remove: false }}
+                      />
+                    </FeatureGroup>
+                  </MapContainer>
+                </div>
                 <textarea
                   className="textarea textarea-bordered w-full bg-slate-900 text-white"
                   rows={3}
@@ -91,7 +126,7 @@ const AgenciesPage: React.FC = () => {
                   placeholder='{"type":"Polygon","coordinates":[[...]]}'
                 />
                 <button
-                  className="btn btn-outline btn-xs mt-2"
+                  className="btn btn-outline btn-xs"
                   onClick={saveBoundary}
                   disabled={selectedId !== a.id || !boundaryGeoJSON}
                 >

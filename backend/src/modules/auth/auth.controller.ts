@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import prisma from "../../prisma";
 import type { AuthenticatedRequest } from "../../middleware/auth";
 import { authService } from "./auth.service";
 
@@ -17,6 +18,16 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const result = await authService.login(req.body);
+    if (result.user.role === "ADMIN") {
+      await prisma.auditLog.create({
+        data: {
+          actorId: result.user.id,
+          action: "ADMIN_LOGIN",
+          targetType: "User",
+          targetId: result.user.id,
+        },
+      });
+    }
     return res.status(200).json(result);
   } catch (err: any) {
     console.error("Login error:", err);

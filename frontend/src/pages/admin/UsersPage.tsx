@@ -8,6 +8,7 @@ type User = {
   role: string;
   isActive: boolean;
   createdAt: string;
+  citizenVerification?: { status: string } | null;
 };
 
 const UsersPage: React.FC = () => {
@@ -35,6 +36,11 @@ const UsersPage: React.FC = () => {
     fetchUsers();
   };
 
+  const verify = async (id: number) => {
+    await api.patch(`/admin/users/${id}/verify`);
+    fetchUsers();
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0F1A] text-slate-100 p-6 space-y-4">
       <div>
@@ -54,6 +60,7 @@ const UsersPage: React.FC = () => {
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
+                <th>Verification</th>
                 <th></th>
               </tr>
             </thead>
@@ -69,9 +76,25 @@ const UsersPage: React.FC = () => {
                     </span>
                   </td>
                   <td>
+                    <span
+                      className={`badge ${
+                        u.citizenVerification?.status === "VERIFIED"
+                          ? "badge-info"
+                          : "badge-ghost"
+                      }`}
+                    >
+                      {u.citizenVerification?.status || "Unverified"}
+                    </span>
+                  </td>
+                  <td>
                     <button className="btn btn-xs" onClick={() => toggle(u.id)}>
                       {u.isActive ? "Deactivate" : "Activate"}
                     </button>
+                    {u.citizenVerification?.status !== "VERIFIED" && (
+                      <button className="btn btn-xs btn-outline ml-2" onClick={() => verify(u.id)}>
+                        Verify
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

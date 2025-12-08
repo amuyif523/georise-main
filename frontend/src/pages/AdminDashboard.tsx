@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { severityBadgeClass, severityLabel } from "../utils/severity";
+import { Link } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,6 +25,21 @@ const AdminDashboard: React.FC = () => {
           <button className="btn btn-outline btn-sm" onClick={logout}>
             Logout
           </button>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <Link to="/admin/agencies" className="btn btn-primary btn-sm">
+            Manage agencies
+          </Link>
+          <Link to="/admin/users" className="btn btn-secondary btn-sm">
+            Manage users
+          </Link>
+          <Link to="/admin/audit" className="btn btn-ghost btn-sm">
+            Audit logs
+          </Link>
+          <Link to="/admin/analytics" className="btn btn-accent btn-sm">
+            Analytics
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">

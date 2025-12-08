@@ -88,6 +88,7 @@ router.get(
         role: true,
         isActive: true,
         createdAt: true,
+        citizenVerification: { select: { status: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -123,6 +124,37 @@ router.patch(
   }
 );
 
+// Verify citizen
+router.patch(
+  "/users/:id/verify",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (req, res) => {
+    const userId = Number(req.params.id);
+    await prisma.citizenVerification.upsert({
+      where: { userId },
+      update: { status: "VERIFIED" },
+      create: {
+        userId,
+        nationalId: "manual",
+        phone: "manual",
+        status: "VERIFIED",
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: "VERIFY_USER",
+        targetType: "User",
+        targetId: userId,
+      },
+    });
+
+    res.json({ success: true });
+  }
+);
+
 // Audit logs
 router.get(
   "/audit",
@@ -137,6 +169,41 @@ router.get(
       },
     });
     res.json({ logs });
+  }
+);
+
+// Analytics
+router.get(
+  "/analytics",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (_req, res) => {
+    const total = await prisma.incident.count();
+    const active = await prisma.incident.count({
+      where: { status: { in: ["RECEIVED", "UNDER_REVIEW", "ASSIGNED", "RESPONDING"] } },
+    });
+    const resolved = await prisma.incident.count({
+      where: { status: "RESOLVED" },
+    });
+
+    const byAgency = await prisma.incident.groupBy({
+      by: ["assignedAgencyId"],
+      _count: { _all: true },
+    });
+
+    const agencyNames = await prisma.agency.findMany({
+      select: { id: true, name: true },
+    });
+    const nameMap = new Map(agencyNames.map((a) => [a.id, a.name]));
+
+    res.json({
+      totals: { total, active, resolved },
+      byAgency: byAgency.map((row) => ({
+        agencyId: row.assignedAgencyId,
+        agencyName: row.assignedAgencyId ? nameMap.get(row.assignedAgencyId) : "Unassigned",
+        count: row._count._all,
+      })),
+    });
   }
 );
 
