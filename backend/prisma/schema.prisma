@@ -95,6 +95,7 @@ model User {
   auditLogs           AuditLog[]
   reviewedIncidents   Incident[]             @relation("IncidentReviewUser")
   activityLogs        ActivityLog[]
+  responders          Responder[]
 }
 
 model Agency {
@@ -119,6 +120,7 @@ model Agency {
   staff     AgencyStaff[]
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
   jurisdictions AgencyJurisdiction[]
+  responders  Responder[]
 }
 
 model AuditLog {
@@ -169,7 +171,7 @@ model Incident {
   status           IncidentStatus @default(RECEIVED)
   latitude         Float?
   longitude        Float?
-  location         Unsupported("geography(Point,4326)")?
+  location         Unsupported("geometry")?
   subCityId        Int?
   woredaId         Int?
   reviewStatus     ReviewStatus   @default(NOT_REQUIRED)
@@ -186,14 +188,14 @@ model Incident {
 
   reporter       User                 @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
-  assignedResponder Responder?        @relation(fields: [assignedResponderId], references: [id])
+  assignedResponder Responder?        @relation("IncidentAssignedResponder", fields: [assignedResponderId], references: [id])
   subCity        SubCity?             @relation(fields: [subCityId], references: [id])
   woreda         Woreda?              @relation(fields: [woredaId], references: [id])
   reviewer       User?                @relation("IncidentReviewUser", fields: [reviewedById], references: [id])
   aiOutput       IncidentAIOutput?
   statusHistory  IncidentStatusHistory[]
   activityLogs   ActivityLog[]
-  responders     Responder[]
+  responders     Responder[]          @relation("IncidentResponders")
 }
 
 model IncidentAIOutput {
@@ -290,7 +292,8 @@ model Responder {
   updatedAt    DateTime @updatedAt
 
   agency       Agency   @relation(fields: [agencyId], references: [id])
-  incident     Incident? @relation(fields: [incidentId], references: [id])
+  incident     Incident? @relation("IncidentResponders", fields: [incidentId], references: [id])
+  assignedIncidents Incident[] @relation("IncidentAssignedResponder")
   user         User?    @relation(fields: [userId], references: [id])
 }
 
