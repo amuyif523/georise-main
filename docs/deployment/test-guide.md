@@ -1,117 +1,99 @@
-# GEORISE End-to-End Test & Demo Playbook (Local, Production-Style)
+# GEORISE Local Run & Test Guide (Dev Mode)
 
-Use this as a literal checklist. Run commands in **PowerShell** from the repo root unless stated otherwise.
+Run everything locally with hot reloads. Commands are for **PowerShell** on this machine.
 
 ## 1) Prereqs
 - Docker Desktop running.
-- Ports free: 4000 (backend), 8001 (AI), 4173 (frontend preview).
-- Model files present on host at `ai-service/models/afroxlmr_incident_classifier/` (mounted into the AI container).
+- Ports free: 4000 (backend), 8001 (AI), 5173 (frontend).
+- Database container running (PostGIS). If you don’t have it up:
+  ```powershell
+  cd infra
+  docker compose up -d   # uses your dev compose
+  ```
+  Ensure DB is reachable at the host/port your `.env` expects (often `localhost:55432`).
 
-## 2) Build Apps (one-time, optional if already green)
+## 2) Backend (Node/TypeScript)
 ```powershell
-# Backend TypeScript build
 cd backend
-npm run build
-
-# Frontend Vite build
-cd ../frontend
-npm run build
+npm install   # first time only
+npm run dev   # starts ts-node-dev on port 4000
 ```
+Health check: http://localhost:4000/health
 
-## 3) Start the Production Stack (Docker Compose)
-Run from repo root:
+## 3) AI Service (FastAPI)
 ```powershell
-cd infra
-docker compose -f docker-compose.prod.yml up -d --build
+cd ai-service
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
 ```
-Notes:
-- Backend image builds quickly.
-- AI service downloads PyTorch; allow time. If it times out, rerun the same command; downloads are cached.
-- The AI model is not baked into the image; it is mounted from `../ai-service/models`.
+Health check: http://localhost:8001/health
 
-## 4) Verify Containers
+## 4) Frontend (Vite)
 ```powershell
-docker ps
+cd frontend
+npm install   # first time only
+npm run dev   # prints URL, usually http://localhost:5173
 ```
-You should see services: `georisem-db`, `infra-backend`, `infra-ai-service`.
-
-## 5) Health Checks
-- Backend: in browser or curl `http://localhost:4000/health`
-- AI service: `http://localhost:8001/health`
-- DB tables (optional):
-```powershell
-docker exec -it georisem-db psql -U georisem -d georisem_db -c "\dt"
+Make sure `frontend/.env` (or `.env.production` if reused) has:
+```
+VITE_API_URL=http://localhost:4000/api
 ```
 
-## 6) Frontend Preview (local)
-```powershell
-cd ../frontend
-npm run preview
-```
-Open the printed URL (usually `http://localhost:4173`). Frontend uses `VITE_API_URL=http://localhost:4000/api` from `.env.production`.
-
-## 7) Demo Accounts (check in DB)
+## 5) Demo Logins (check actual users in DB)
 List users:
 ```powershell
 docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT id,email,role FROM "User";'
 ```
-Typical demo creds (adjust if your DB differs):
-- Admin: `admin@example.com` / `password123`
-- Agency staff: `police1@example.com` / `password123`
-- Citizen: `citizen@example.com` / `password123`
+Typical demo credentials (adjust if your DB differs):
+- Admin: admin@example.com / password123
+- Agency: police1@example.com / password123
+- Citizen: citizen@example.com / password123
 
-## 8) Admin Flow (Command Theme)
-1. Log in as Admin (`admin@example.com`).
-2. Demo Control:
-   - Go to Admin Demo page (route might be `/admin/demo` in the command layout).
-   - Click “Reset Demo Data”.
-   - Click “Seed Addis Scenario 1”.
-   - Purpose: populate incidents, responder units, assignments for a clean demo.
+## 6) Admin Flow (Command Theme)
+1. Log in as Admin.
+2. Demo Control (if present):
+   - “Reset Demo Data”
+   - “Seed Addis Scenario 1”
 3. Analytics:
-   - Go to Admin Analytics (`/admin/analytics`).
-   - Confirm KPI cards show numbers; trend/status/category charts render.
-4. (Optional) Audit/Users/Agencies pages:
-   - Confirm tables load; badges/roles display.
+   - Open Admin Analytics; confirm KPI cards and charts render.
+4. (Optional) Audit/Users/Agencies pages: tables load, badges show roles/status.
 
-## 9) Agency Flow (Command Theme)
-1. Log in as agency staff (`police1@example.com`).
+## 7) Agency Flow (Command Theme)
+1. Log in as agency staff.
 2. Dashboard/Queue:
-   - See incident table with Severity badges.
-   - If seeded, you’ll see demo incidents; otherwise, create one as citizen first.
+   - Incident table with Severity badges.
 3. Map:
-   - Open Agency Map (e.g., `/agency/map`).
-   - Confirm markers; if boundaries loaded, polygons appear.
+   - Agency Map shows markers; if boundaries configured, polygons appear.
 4. Dispatch suggestion:
-   - Select an incident → “Suggested Dispatch” card should show a recommendation.
-   - Click “Accept Recommendation” to assign.
-5. Analytics:
-   - Open Agency Analytics (`/agency/analytics`) and confirm KPIs/charts scoped to the agency.
+   - Select an incident → “Suggested Dispatch” card → Accept to assign.
+5. Agency Analytics:
+   - KPIs/charts scoped to that agency.
 
-## 10) Citizen Flow (Calm Theme)
-1. Log in as Citizen (`citizen@example.com`).
+## 8) Citizen Flow (Calm Theme)
+1. Log in as Citizen.
 2. Dashboard:
-   - Light theme, “Report Emergency” entry point.
-   - “My Reports” shows existing reports or an EmptyState if none.
+   - Light theme, “Report Emergency” entry.
+   - “My Reports” shows incidents or EmptyState.
 3. Report Incident:
-   - Submit a new incident (title/description/location). Success message appears.
-   - If offline, the offline queue stores it; when back online, it syncs automatically.
+   - Submit; success message appears. If offline, queue syncs when back online.
 4. My Reports:
-   - Confirm the new incident appears with status.
+   - New incident should appear with status.
 
-## 11) API Spot Checks (optional, from PowerShell)
+## 9) API Spot Checks (optional)
 ```powershell
 # Backend health
 curl http://localhost:4000/health
 
 # AI classify test
-curl -X POST http://localhost:8001/classify ^
-  -H "Content-Type: application/json" ^
+curl -X POST http://localhost:8001/classify `
+  -H "Content-Type: application/json" `
   -d "{\"title\":\"fire near bole\",\"description\":\"smoke from apartment\"}"
 ```
-Expect JSON with `predicted_category`, `severity_score`, `confidence`.
 
-## 12) Data Validation (optional, via psql)
-- Incidents count:
+## 10) Data Validation (optional, via psql)
+- Incident count:
 ```powershell
 docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT COUNT(*) FROM "Incident";'
 ```
@@ -119,29 +101,23 @@ docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT COUNT(*) 
 ```powershell
 docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT COUNT(*) FROM "Incident" WHERE "isDemo"=true;'
 ```
-- Check geometry column:
+- Geometry column:
 ```powershell
 docker exec -it georisem-db psql -U georisem -d georisem_db -c '\d "Incident"'
 ```
 Look for `location | geometry(Point,4326)` and index `incident_location_geom_idx`.
 
-## 13) Stopping/Reset
-- Stop stack:
+## 11) Stop Services
+- Stop backend/frontend/AI by closing their terminals.
+- Stop DB (if needed):
 ```powershell
 cd infra
-docker compose -f docker-compose.prod.yml down
+docker compose down
 ```
-- Wipe demo data (Admin UI → Demo Control → Reset Demo Data).
 
-## 14) Common Troubleshooting
-- AI build slow: it downloads Torch; rerun compose if timeout. The model is mounted, not built-in.
-- CORS: If you host frontend elsewhere, set backend CORS origins in app.ts.
-- Ports busy: stop other services on 4000/8001/4173.
-- Missing agency for staff: ensure an `agencyStaff` row links the user to an agency; otherwise, agency routes may 403.
+## 12) Troubleshooting
+- CORS: keep frontend pointing to `http://localhost:4000/api` in dev.
+- Ports busy: stop other services on 4000/8001/5173.
+- Agency 403: ensure the agency staff user has an `agencyStaff` row pointing to an agency.
 
-## 15) Deployment Reminder
-- `backend/.env.production`: keep a long `JWT_SECRET`, correct `DATABASE_URL`, `AI_SERVICE_URL`.
-- `frontend/.env.production`: set `VITE_API_URL` to your deployed API URL when you have one.
-- Use `docker-compose.prod.yml` for prod-like runs; mount the AI model via the volume already defined.
-
-This playbook covers: building, running, health checks, logins, core UI flows (admin/agency/citizen), API checks, and demo seeding. Follow in order for a smooth, “idiot-proof” demo. 
+This guide is purely for local dev mode (no production compose). Follow in order for a predictable setup and demo. 
