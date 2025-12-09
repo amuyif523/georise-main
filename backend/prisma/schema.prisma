@@ -184,6 +184,8 @@ model Incident {
   dispatchedAt     DateTime?
   arrivalAt        DateTime?
   resolvedAt       DateTime?
+  isDemo           Boolean        @default(false)
+  demoScenarioCode String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -310,6 +312,8 @@ model ResponderUnit {
   lastLat    Float?
   lastLon    Float?
   lastSeenAt DateTime?
+  isDemo     Boolean  @default(false)
+  demoScenarioCode String?
 
   agency      Agency              @relation(fields: [agencyId], references: [id])
   assignments IncidentAssignment[]
@@ -323,6 +327,8 @@ model IncidentAssignment {
   acceptedAt DateTime?
   arrivedAt  DateTime?
   completedAt DateTime?
+  isDemo     Boolean  @default(false)
+  demoScenarioCode String?
 
   incident Incident     @relation(fields: [incidentId], references: [id])
   unit     ResponderUnit @relation(fields: [unitId], references: [id])

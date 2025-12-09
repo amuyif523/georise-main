@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Shield, Map, User, Settings } from "lucide-react";
+import { Shield, Map, User, Settings, PlayCircle } from "lucide-react";
 
 const menu = [
   { to: "/citizen", label: "Citizen", icon: User },
   { to: "/agency", label: "Agency", icon: Map },
   { to: "/admin", label: "Admin", icon: Settings },
+  { to: "/admin/demo", label: "Demo Control", icon: PlayCircle },
 ];
 
 export default function Sidebar() {

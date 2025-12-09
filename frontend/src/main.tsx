@@ -20,6 +20,7 @@ const UsersPage = React.lazy(() => import("./pages/admin/UsersPage"));
 const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogsPage"));
 const AnalyticsPage = React.lazy(() => import("./pages/admin/AnalyticsPage"));
 const ActivityFeed = React.lazy(() => import("./pages/admin/ActivityFeed"));
+const AdminDemoControlPage = React.lazy(() => import("./pages/admin/AdminDemoControlPage"));
 const AgencyAnalyticsPage = React.lazy(() => import("./pages/AgencyAnalyticsPage"));
 const CitizenVerificationPage = React.lazy(() => import("./pages/CitizenVerificationPage"));
 const ReviewQueuePage = React.lazy(() => import("./pages/admin/ReviewQueuePage"));
@@ -189,6 +190,16 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <Suspense fallback={<div className="p-4 text-slate-200">Loading…</div>}>
                   <VerificationPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/demo"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading…</div>}>
+                  <AdminDemoControlPage />
                 </Suspense>
               </ProtectedRoute>
             }
