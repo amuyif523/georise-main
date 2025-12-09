@@ -1,8 +1,8 @@
 import { Router } from "express";
-import prisma from "../../prisma.js";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import prisma from "../../prisma";
+import { requireAuth, requireRole } from "../../middleware/auth";
 import { Role } from "@prisma/client";
-import { analyticsService } from "./analytics.service.js";
+import { analyticsService } from "./analytics.service";
 
 const router = Router();
 

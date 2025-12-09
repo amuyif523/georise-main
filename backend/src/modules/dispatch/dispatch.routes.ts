@@ -1,7 +1,7 @@
 import { Router } from "express";
-import prisma from "../../prisma.js";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
-import { dispatchService } from "./dispatch.service.js";
+import prisma from "../../prisma";
+import { requireAuth, requireRole } from "../../middleware/auth";
+import { dispatchService } from "./dispatch.service";
 import { IncidentStatus } from "@prisma/client";
 
 const router = Router();

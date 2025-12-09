@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role, AgencyType } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -13,8 +13,8 @@ async function main() {
     { name: "Teklehaymanot Traffic Post", type: "TRAFFIC", city: "Lideta", lat: 9.012, lng: 38.741 },
     { name: "Summit Utility Response", type: "ELECTRIC", city: "Yeka", lat: 9.047, lng: 38.813 },
     { name: "Aware Flood Response Unit", type: "DISASTER", city: "Akaki", lat: 8.963, lng: 38.807 },
-    { name: "AAWSA Water Ops – Megenagna", type: "WATER", city: "Yeka", lat: 9.019, lng: 38.811 },
-    { name: "Environmental Hazard Unit – Gullele", type: "ENVIRONMENT", city: "Gullele", lat: 9.056, lng: 38.722 },
+    { name: "AAWSA Water Ops - Megenagna", type: "WATER", city: "Yeka", lat: 9.019, lng: 38.811 },
+    { name: "Environmental Hazard Unit - Gullele", type: "ENVIRONMENT", city: "Gullele", lat: 9.056, lng: 38.722 },
     { name: "Public Health Rapid Response", type: "PUBLIC_HEALTH", city: "Addis Ababa", lat: 9.025, lng: 38.77 },
     { name: "Construction Safety Corps", type: "CONSTRUCTION", city: "Addis Ababa", lat: 9.015, lng: 38.77 },
     { name: "City Administration Ops", type: "ADMINISTRATION", city: "Addis Ababa", lat: 9.03, lng: 38.75 },
@@ -29,7 +29,7 @@ async function main() {
         data: {
           name: a.name,
           city: a.city,
-          type: "OTHER" as any,
+          type: a.type as AgencyType,
           description: `${a.type} unit in ${a.city}`,
           isApproved: true,
           isActive: true,
@@ -40,7 +40,7 @@ async function main() {
         where: { id: agency.id },
         data: {
           city: a.city,
-          type: "OTHER" as any,
+          type: a.type as AgencyType,
           isApproved: true,
           isActive: true,
         },
@@ -105,8 +105,8 @@ async function main() {
 
   const incidents = [
     {
-      title: "እሳት በደራሲ ቦሌ ሱቅ",
-      description: "እሳት ተነሳ በደራሲ ሱቅ ውስጥ፣ ሰዎች እየተሰማሩ ናቸው።",
+      title: "Apartment fire near Bole",
+      description: "Smoke visible from 3rd floor apartment near Bole Medhanealem.",
       category: "FIRE",
       severityScore: 4,
       latitude: 9.0123,
@@ -157,13 +157,13 @@ async function main() {
     { category: "CRIME", defaultAgencyType: "POLICE" },
     { category: "DISASTER", defaultAgencyType: "DISASTER" },
   ];
-  for (const r of rules) {
-    await prisma.dispatchRule.upsert({
-      where: { category: r.category },
-      update: { defaultAgencyType: r.defaultAgencyType as any },
-      create: { category: r.category, defaultAgencyType: r.defaultAgencyType as any },
-    });
-  }
+  await prisma.dispatchRule.deleteMany();
+  await prisma.dispatchRule.createMany({
+    data: rules.map((r) => ({
+      category: r.category,
+      defaultAgencyType: r.defaultAgencyType as AgencyType,
+    })),
+  });
 
   console.log("Seed complete");
 }

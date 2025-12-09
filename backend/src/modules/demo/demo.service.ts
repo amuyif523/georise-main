@@ -1,4 +1,4 @@
-import prisma from "../../prisma.js";
+import prisma from "../../prisma";
 
 const DEMO_CODE = "ADDIS_SCENARIO_1";
 
