@@ -69,6 +69,8 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const isOpen = Boolean(incident);
+  const [recs, setRecs] = useState<any[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -87,6 +89,22 @@ const IncidentDetailPane: React.FC<Props> = ({
       }
     };
     fetchTimeline();
+  }, [incident]);
+
+  useEffect(() => {
+    const fetchRecs = async () => {
+      if (!incident) return;
+      setRecsLoading(true);
+      try {
+        const res = await api.get(`/dispatch/recommend/${incident.id}`);
+        setRecs(res.data || []);
+      } catch (err) {
+        setRecs([]);
+      } finally {
+        setRecsLoading(false);
+      }
+    };
+    fetchRecs();
   }, [incident]);
 
   const handleComment = async () => {
@@ -173,6 +191,65 @@ const IncidentDetailPane: React.FC<Props> = ({
         )}
 
         <div className="p-4 space-y-4 h-[calc(100%-180px)] overflow-y-auto">
+          {user?.role !== "CITIZEN" && (
+            <div className="p-3 rounded-lg border border-cyan-600/30 bg-slate-900/70">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Shield size={16} className="text-cyan-300" />
+                  <h3 className="text-sm font-semibold text-white">Suggested dispatch</h3>
+                </div>
+                <span className="text-[11px] text-slate-500">
+                  {recsLoading ? "Calculating..." : `${recs.length || 0} options`}
+                </span>
+              </div>
+              {recsLoading ? (
+                <div className="text-xs text-slate-400">Calculating best agency/unit…</div>
+              ) : !recs.length ? (
+                <div className="text-xs text-slate-400">No recommendation available.</div>
+              ) : (
+                <div className="space-y-2">
+                  {recs.slice(0, 3).map((rec, idx) => (
+                    <div key={rec.unitId ?? rec.agencyId ?? idx} className="p-2 rounded-md bg-slate-800/70 border border-slate-700">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-slate-200">
+                          Agency #{rec.agencyId} {rec.unitId && <>• Unit {rec.unitId}</>}
+                        </div>
+                        <span className="text-[11px] text-cyan-300">
+                          Score {(rec.totalScore * 100).toFixed(0)}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {rec.distanceKm !== null && rec.distanceKm !== undefined
+                          ? `Distance ${rec.distanceKm.toFixed(1)} km`
+                          : "No position"}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Jurisdiction {Math.round(rec.jurisdictionScore * 100)}% • Severity {Math.round(rec.severityScore * 100)}% • Proximity {Math.round(rec.proximityScore * 100)}%
+                      </div>
+                      <button
+                        className="btn btn-xs btn-accent mt-2"
+                        onClick={async () => {
+                          try {
+                            await api.post("/dispatch/assign", {
+                              incidentId: incident.id,
+                              agencyId: rec.agencyId,
+                              unitId: rec.unitId,
+                            });
+                            alert("Suggestion accepted.");
+                          } catch {
+                            alert("Failed to assign suggestion.");
+                          }
+                        }}
+                      >
+                        Accept suggestion
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {error && <div className="alert alert-error text-sm">{error}</div>}
 
           <div>

@@ -15,12 +15,24 @@ const normalize = (value: number | null, max: number) => {
   return Math.max(0, Math.min(1, value / max));
 };
 
+const categoryPreferred = (category?: string | null, agencyType?: string | null): number => {
+  if (!category || !agencyType) return 0;
+  const cat = category.toLowerCase();
+  const type = agencyType.toLowerCase();
+  if (type === "fire" && (cat.includes("fire") || cat.includes("smoke"))) return 0.2;
+  if (type === "medical" && (cat.includes("medical") || cat.includes("injury") || cat.includes("ambulance"))) return 0.2;
+  if (type === "police" && (cat.includes("crime") || cat.includes("assault") || cat.includes("robbery"))) return 0.15;
+  if (type === "traffic" && (cat.includes("traffic") || cat.includes("accident") || cat.includes("crash"))) return 0.15;
+  return 0;
+};
+
 export class DispatchService {
   async recommendForIncident(incidentId: number): Promise<DispatchCandidate[]> {
     const incidentRows: any[] = await prisma.$queryRaw`
       SELECT id,
              severityScore,
-             location
+             location,
+             category
       FROM "Incident"
       WHERE id = ${incidentId}
       LIMIT 1;
@@ -77,7 +89,8 @@ export class DispatchService {
       const agencyUnits = units.filter((u) => u.agencyid === agency.id || u.agencyId === agency.id);
 
       if (!agencyUnits.length) {
-        const totalScore = jurisdictionScore * 0.6 + severityNorm * 0.4;
+        const catBonus = categoryPreferred(incident.category, agency.type);
+        const totalScore = jurisdictionScore * 0.5 + severityNorm * 0.4 + catBonus;
         candidates.push({
           agencyId: agency.id,
           unitId: null,
@@ -93,7 +106,8 @@ export class DispatchService {
       for (const unit of agencyUnits) {
         const distanceKm = unit.distance_km as number | null;
         const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
-        const totalScore = jurisdictionScore * 0.4 + severityNorm * 0.3 + proximityScore * 0.3;
+        const catBonus = categoryPreferred(incident.category, agency.type);
+        const totalScore = jurisdictionScore * 0.35 + severityNorm * 0.3 + proximityScore * 0.25 + catBonus;
         candidates.push({
           agencyId: agency.id,
           unitId: unit.id,

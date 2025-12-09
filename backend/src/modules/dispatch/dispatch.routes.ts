@@ -55,4 +55,32 @@ router.post("/assign", requireAuth, requireRole(["AGENCY_STAFF", "ADMIN"]), asyn
   }
 });
 
+// Optional: auto-assign top candidate
+router.post("/auto-assign/:incidentId", requireAuth, requireRole(["AGENCY_STAFF", "ADMIN"]), async (req, res) => {
+  try {
+    const id = Number(req.params.incidentId);
+    const recs = await dispatchService.recommendForIncident(id);
+    if (!recs.length) return res.status(400).json({ message: "No candidates found" });
+    const top = recs[0];
+    const incident = await prisma.incident.update({
+      where: { id },
+      data: { assignedAgencyId: top.agencyId, status: IncidentStatus.ASSIGNED },
+    });
+    let assignment = null;
+    if (top.unitId) {
+      assignment = await prisma.incidentAssignment.create({
+        data: { incidentId: id, unitId: top.unitId },
+      });
+      await prisma.responderUnit.update({
+        where: { id: top.unitId },
+        data: { status: "BUSY" },
+      });
+    }
+    res.json({ incident, assignment, selected: top });
+  } catch (err: any) {
+    console.error("auto-assign error", err);
+    res.status(400).json({ message: err.message || "Failed to auto-assign" });
+  }
+});
+
 export default router;
