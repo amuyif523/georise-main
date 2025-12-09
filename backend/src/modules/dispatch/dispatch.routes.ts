@@ -1,79 +1,58 @@
 import { Router } from "express";
-import { IncidentStatus, ResponderStatus, Role } from "@prisma/client";
-import prisma from "../../prisma";
-import { requireAuth, requireRole } from "../../middleware/auth";
-import { emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
-import { logActivity } from "../incident/activity.service";
-import { getIO } from "../../socket";
-import { handleETAAndGeofence } from "./dispatch.service";
+import prisma from "../../prisma.js";
+import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { dispatchService } from "./dispatch.service.js";
+import { IncidentStatus } from "@prisma/client";
 
 const router = Router();
 
-// Assign responder to incident
-router.patch(
-  "/assign-responder",
-  requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
-  async (req, res) => {
-    try {
-      const { incidentId, responderId } = req.body as { incidentId: number; responderId: number };
-      if (!incidentId || !responderId) return res.status(400).json({ message: "incidentId and responderId required" });
+// GET /api/dispatch/recommend/:incidentId
+router.get("/recommend/:incidentId", requireAuth, requireRole(["AGENCY_STAFF", "ADMIN"]), async (req, res) => {
+  try {
+    const id = Number(req.params.incidentId);
+    const recs = await dispatchService.recommendForIncident(id);
+    res.json(recs);
+  } catch (err: any) {
+    console.error("recommendation error", err);
+    res.status(400).json({ message: err.message || "Failed to get recommendations" });
+  }
+});
 
-      const incident = await prisma.incident.update({
-        where: { id: incidentId },
-        data: {
-          assignedResponderId: responderId,
-          status: IncidentStatus.ASSIGNED,
-          dispatchedAt: new Date(),
-        },
-      });
+// POST /api/dispatch/assign
+router.post("/assign", requireAuth, requireRole(["AGENCY_STAFF", "ADMIN"]), async (req: any, res) => {
+  try {
+    const { incidentId, agencyId, unitId } = req.body;
+    if (!incidentId || !agencyId) {
+      return res.status(400).json({ message: "incidentId and agencyId are required" });
+    }
 
-      const responder = await prisma.responder.update({
-        where: { id: responderId },
+    const incident = await prisma.incident.update({
+      where: { id: incidentId },
+      data: {
+        assignedAgencyId: agencyId,
+        status: IncidentStatus.ASSIGNED,
+      },
+    });
+
+    let assignment = null;
+    if (unitId) {
+      assignment = await prisma.incidentAssignment.create({
         data: {
-          status: ResponderStatus.ASSIGNED,
           incidentId,
+          unitId,
         },
       });
-
-      await logActivity(incident.id, "DISPATCH", `Responder ${responder.name} assigned`, req.user!.id);
-
-      const io = getIO();
-      io.emit("incident:assignedResponder", { incidentId, responderId });
-      emitIncidentUpdated(toIncidentPayload(incident));
-
-      res.json({ incident, responder });
-    } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Failed to assign responder" });
-    }
-  }
-);
-
-// Responder marks resolved
-router.patch(
-  "/resolve",
-  requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
-  async (req, res) => {
-    try {
-      const { incidentId } = req.body as { incidentId: number };
-      if (!incidentId) return res.status(400).json({ message: "incidentId required" });
-      const now = new Date();
-      const incident = await prisma.incident.update({
-        where: { id: incidentId },
-        data: { status: IncidentStatus.RESOLVED, resolvedAt: now },
+      await prisma.responderUnit.update({
+        where: { id: unitId },
+        data: { status: "BUSY" },
       });
-      await prisma.responder.updateMany({
-        where: { incidentId },
-        data: { status: ResponderStatus.AVAILABLE, incidentId: null },
-      });
-      await logActivity(incident.id, "STATUS_CHANGE", "Incident resolved by responder", req.user!.id);
-      emitIncidentUpdated(toIncidentPayload(incident));
-      res.json({ incident });
-    } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Failed to resolve incident" });
     }
+
+    res.json({ incident, assignment });
+  } catch (err: any) {
+    console.error("assign error", err);
+    res.status(400).json({ message: err.message || "Failed to assign" });
   }
-);
+});
 
 export default router;

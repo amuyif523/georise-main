@@ -23,6 +23,8 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
   const [recent, setRecent] = useState<IncidentListItem[]>([]);
+  const [suggestion, setSuggestion] = useState<any | null>(null);
+  const [loadingSuggest, setLoadingSuggest] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -34,9 +36,38 @@ const AgencyDashboard: React.FC = () => {
         resolved: incs.filter((i) => i.status === "RESOLVED").length,
         highSeverity: incs.filter((i) => (i.severityScore ?? 0) >= 4).length,
       });
+
+      const target = incs.find((i) => i.status !== "RESOLVED");
+      if (target) {
+        setLoadingSuggest(true);
+        try {
+          const recRes = await api.get(`/dispatch/recommend/${target.id}`);
+          setSuggestion(recRes.data?.[0] || null);
+        } catch (err) {
+          setSuggestion(null);
+        } finally {
+          setLoadingSuggest(false);
+        }
+      }
     };
     load();
   }, []);
+
+  const acceptSuggestion = async () => {
+    if (!suggestion || !recent.length) return;
+    const target = recent.find((i) => i.status !== "RESOLVED");
+    if (!target) return;
+    try {
+      await api.post("/dispatch/assign", {
+        incidentId: target.id,
+        agencyId: suggestion.agencyId,
+        unitId: suggestion.unitId,
+      });
+      alert("Suggestion accepted and assignment created.");
+    } catch (err) {
+      alert("Failed to assign suggestion.");
+    }
+  };
 
   return (
     <PageWrapper title="Agency Command Center">
@@ -106,6 +137,28 @@ const AgencyDashboard: React.FC = () => {
               <a href="/admin/review" className="btn btn-outline btn-sm w-full">
                 Review queue
               </a>
+            </div>
+            <div className="mt-4 p-3 rounded-lg border border-cyan-500/30 bg-slate-900/60">
+              <h4 className="font-semibold text-cyan-200 mb-1">Suggested dispatch</h4>
+              {loadingSuggest && <p className="text-xs text-slate-400">Calculating best agency/unit…</p>}
+              {!loadingSuggest && suggestion && (
+                <>
+                  <p className="text-xs text-slate-300">
+                    Agency #{suggestion.agencyId} • Unit {suggestion.unitId ?? "N/A"}
+                  </p>
+                  {suggestion.distanceKm !== null && suggestion.distanceKm !== undefined && (
+                    <p className="text-[11px] text-slate-400">
+                      Distance: {suggestion.distanceKm.toFixed(1)} km — Score {(suggestion.totalScore * 100).toFixed(0)}
+                    </p>
+                  )}
+                  <button className="btn btn-xs btn-accent mt-2" onClick={acceptSuggestion}>
+                    Accept suggestion
+                  </button>
+                </>
+              )}
+              {!loadingSuggest && !suggestion && (
+                <p className="text-xs text-slate-400">No recommendation available yet.</p>
+              )}
             </div>
           </div>
         </div>

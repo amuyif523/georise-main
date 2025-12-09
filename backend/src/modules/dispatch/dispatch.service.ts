@@ -1,72 +1,114 @@
-import prisma from "../../prisma";
-import { getIO } from "../../socket";
-import { ResponderStatus } from "@prisma/client";
+import prisma from "../../prisma.js";
 
-export const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 6371000; // meters
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // meters
+interface DispatchCandidate {
+  agencyId: number;
+  unitId: number | null;
+  distanceKm: number | null;
+  jurisdictionScore: number;
+  severityScore: number;
+  proximityScore: number;
+  totalScore: number;
+}
+
+const normalize = (value: number | null, max: number) => {
+  if (value === null || Number.isNaN(value)) return 0;
+  return Math.max(0, Math.min(1, value / max));
 };
 
-export async function handleETAAndGeofence(responderId: number) {
-  const responder = await prisma.responder.findUnique({
-    where: { id: responderId },
-    select: { id: true, agencyId: true, latitude: true, longitude: true, incidentId: true, status: true },
-  });
-  if (!responder || responder.incidentId == null || responder.latitude == null || responder.longitude == null) return;
+export class DispatchService {
+  async recommendForIncident(incidentId: number): Promise<DispatchCandidate[]> {
+    const incidentRows: any[] = await prisma.$queryRaw`
+      SELECT id,
+             severityScore,
+             location
+      FROM "Incident"
+      WHERE id = ${incidentId}
+      LIMIT 1;
+    `;
+    if (!incidentRows.length) {
+      throw new Error("Incident not found");
+    }
+    const incident = incidentRows[0];
+    const severityNorm = normalize(incident.severityscore ?? 3, 5);
 
-  const incident = await prisma.incident.findUnique({
-    where: { id: responder.incidentId },
-    select: { id: true, latitude: true, longitude: true, arrivalAt: true, status: true },
-  });
-  if (!incident || incident.latitude == null || incident.longitude == null) return;
+    // load agencies with optional jurisdiction geometry
+    const agencies: any[] = await prisma.$queryRaw`
+      SELECT id,
+             name,
+             type,
+             jurisdiction
+      FROM "Agency"
+      WHERE "isActive" = true
+    `;
 
-  const distanceMeters = haversine(responder.latitude, responder.longitude, incident.latitude, incident.longitude);
-  // simple ETA assumption
-  const avgSpeedMPerMin = 1000; // ~60km/h
-  const etaMinutes = distanceMeters / avgSpeedMPerMin;
+    // load available units with last known position
+    const units: any[] = await prisma.$queryRaw`
+      SELECT u.id,
+             u."agencyId",
+             u.name,
+             u.status,
+             u."lastLat",
+             u."lastLon",
+             CASE
+               WHEN u."lastLat" IS NOT NULL AND u."lastLon" IS NOT NULL THEN
+                 ST_DistanceSphere(
+                   ST_SetSRID(ST_MakePoint(u."lastLon", u."lastLat"), 4326),
+                   ${incident.location}
+                 ) / 1000
+               ELSE NULL
+             END AS distance_km
+      FROM "ResponderUnit" u
+      WHERE u."isActive" = true
+        AND u.status = 'AVAILABLE';
+    `;
 
-  const io = getIO();
-  io.to(`agency:${responder.agencyId}`).emit("responder:eta", {
-    incidentId: incident.id,
-    responderId: responder.id,
-    distanceMeters,
-    etaMinutes,
-  });
-  io.to(`responder:${responder.id}`).emit("responder:eta", {
-    incidentId: incident.id,
-    distanceMeters,
-    etaMinutes,
-  });
+    const candidates: DispatchCandidate[] = [];
 
-  if (distanceMeters <= 50 && !incident.arrivalAt) {
-    const now = new Date();
-    const updatedIncident = await prisma.incident.update({
-      where: { id: incident.id },
-      data: { status: "RESPONDING", arrivalAt: now },
-    });
-    await prisma.responder.update({
-      where: { id: responder.id },
-      data: { status: ResponderStatus.ON_SCENE },
-    });
-    await prisma.activityLog.create({
-      data: {
-        incidentId: incident.id,
-        type: "STATUS_CHANGE",
-        message: "Responder arrived on scene (auto-detected)",
-      },
-    });
-    io.emit("incident:arrival", {
-      incidentId: incident.id,
-      responderId: responder.id,
-      arrivalAt: updatedIncident.arrivalAt,
-    });
+    for (const agency of agencies) {
+      // jurisdiction check if geometry available
+      let inJurisdiction = false;
+      if (agency.jurisdiction && incident.location) {
+        const flag: any[] = await prisma.$queryRaw`
+          SELECT ST_Contains(${agency.jurisdiction}::geometry, ${incident.location}::geometry) AS inside
+        `;
+        inJurisdiction = !!(flag[0]?.inside);
+      }
+      const jurisdictionScore = inJurisdiction ? 1 : 0.5;
+      const agencyUnits = units.filter((u) => u.agencyid === agency.id || u.agencyId === agency.id);
+
+      if (!agencyUnits.length) {
+        const totalScore = jurisdictionScore * 0.6 + severityNorm * 0.4;
+        candidates.push({
+          agencyId: agency.id,
+          unitId: null,
+          distanceKm: null,
+          jurisdictionScore,
+          severityScore: severityNorm,
+          proximityScore: 0,
+          totalScore,
+        });
+        continue;
+      }
+
+      for (const unit of agencyUnits) {
+        const distanceKm = unit.distance_km as number | null;
+        const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
+        const totalScore = jurisdictionScore * 0.4 + severityNorm * 0.3 + proximityScore * 0.3;
+        candidates.push({
+          agencyId: agency.id,
+          unitId: unit.id,
+          distanceKm,
+          jurisdictionScore,
+          severityScore: severityNorm,
+          proximityScore,
+          totalScore,
+        });
+      }
+    }
+
+    candidates.sort((a, b) => b.totalScore - a.totalScore);
+    return candidates;
   }
 }
+
+export const dispatchService = new DispatchService();
