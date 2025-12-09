@@ -73,6 +73,23 @@ router.get("/incident/:id/context", requireAuth, async (req, res) => {
   res.json(context[0] || null);
 });
 
+// Incidents with geometry for maps
+router.get(
+  "/incidents",
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  async (_req, res) => {
+    const rows = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT id, title, category, "severityScore",
+             ST_Y(location) AS lat,
+             ST_X(location) AS lon
+      FROM "Incident"
+      WHERE location IS NOT NULL
+    `);
+    res.json(rows);
+  }
+);
+
 // Admin: list agency jurisdictions
 router.get(
   "/admin/agency-jurisdictions",

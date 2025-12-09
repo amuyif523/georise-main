@@ -4,6 +4,7 @@ import api from "../lib/api";
 import PageWrapper from "../components/layout/PageWrapper";
 import type { IncidentListItem } from "../types/incidents";
 import { motion } from "framer-motion";
+import IncidentMap from "../components/maps/IncidentMap";
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({
   label,
@@ -61,8 +62,8 @@ const AgencyDashboard: React.FC = () => {
             </a>
           </div>
           <p className="text-sm text-slate-500">GIS map with incidents, responders, heat/cluster layers.</p>
-          <div className="mt-4 h-full rounded-lg border border-slate-800 bg-slate-900/40 flex items-center justify-center text-slate-500 text-sm">
-            Live map opens in dedicated view.
+          <div className="mt-4 h-full rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden">
+            <IncidentMap />
           </div>
         </motion.div>
 
