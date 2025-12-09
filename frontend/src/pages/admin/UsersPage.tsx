@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import api from "../../lib/api";
+import PageWrapper from "../../components/layout/PageWrapper";
 
 type User = {
   id: number;
@@ -12,10 +13,20 @@ type User = {
   citizenVerification?: { status: string } | null;
 };
 
+const badge = (text: string, tone: "blue" | "green" | "gray") => {
+  const map: Record<string, string> = {
+    blue: "bg-blue-500/20 text-blue-200 border-blue-400/30",
+    green: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
+    gray: "bg-slate-700/40 text-slate-200 border-slate-500/30",
+  };
+  return <span className={`badge badge-sm border ${map[tone]}`}>{text}</span>;
+};
+
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -44,19 +55,28 @@ const UsersPage: React.FC = () => {
     fetchUsers();
   };
 
+  const filtered = users.filter(
+    (u) =>
+      u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 p-6 space-y-4">
-      <div>
-        <p className="text-sm text-cyan-200">Admin control</p>
-        <h1 className="text-3xl font-bold">Users</h1>
-        <p className="text-slate-400 text-sm">Activate / deactivate accounts.</p>
+    <PageWrapper title="Users">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <input
+          className="input input-sm input-bordered bg-slate-900 border-slate-700 text-white"
+          placeholder="Search name or email"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
       {error && <div className="alert alert-error text-sm">{error}</div>}
       {loading ? (
         <div className="text-slate-300">Loading…</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-sm">
+        <div className="overflow-x-auto cyber-card">
+          <table className="table table-sm text-sm">
             <thead>
               <tr>
                 <th>Name</th>
@@ -68,33 +88,24 @@ const UsersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
+              {filtered.map((u) => (
                 <tr key={u.id}>
                   <td>{u.fullName}</td>
                   <td>{u.email}</td>
-                  <td>{u.role}</td>
+                  <td>{badge(u.role, "blue")}</td>
+                  <td>{badge(u.isActive ? "Active" : "Inactive", u.isActive ? "green" : "gray")}</td>
                   <td>
-                    <span className={`badge ${u.isActive ? "badge-success" : "badge-ghost"}`}>
-                      {u.isActive ? "Active" : "Inactive"}
-                    </span>
+                    {badge(
+                      u.citizenVerification?.status === "VERIFIED" ? "Verified" : "Unverified",
+                      u.citizenVerification?.status === "VERIFIED" ? "green" : "gray"
+                    )}
                   </td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        u.citizenVerification?.status === "VERIFIED"
-                          ? "badge-info"
-                          : "badge-ghost"
-                      }`}
-                    >
-                      {u.citizenVerification?.status || "Unverified"}
-                    </span>
-                  </td>
-                  <td>
+                  <td className="space-x-2">
                     <button className="btn btn-xs" onClick={() => setStatus(u.id, !u.isActive)}>
                       {u.isActive ? "Deactivate" : "Activate"}
                     </button>
                     {u.citizenVerification?.status !== "VERIFIED" && (
-                      <button className="btn btn-xs btn-outline ml-2" onClick={() => verify(u.id)}>
+                      <button className="btn btn-xs btn-outline" onClick={() => verify(u.id)}>
                         Verify
                       </button>
                     )}
@@ -105,7 +116,7 @@ const UsersPage: React.FC = () => {
           </table>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

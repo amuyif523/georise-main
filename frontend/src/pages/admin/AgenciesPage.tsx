@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import api from "../../lib/api";
-import { severityBadgeClass } from "../../utils/severity";
+import PageWrapper from "../../components/layout/PageWrapper";
 
 type Agency = {
   id: number;
@@ -38,15 +38,9 @@ const AgenciesPage: React.FC = () => {
         isApproved: m.isActive,
         isActive: m.isActive,
       }));
-      // merge by id
-      const merged: Agency[] = [...pending];
-      fromMetrics.forEach((m) => {
-        if (!merged.find((p) => p.id === m.id)) merged.push(m);
-      });
-      setAgencies(merged);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Failed to load agencies");
+      setAgencies([...pending, ...fromMetrics]);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to load agencies");
     } finally {
       setLoading(false);
     }
@@ -57,129 +51,89 @@ const AgenciesPage: React.FC = () => {
   }, []);
 
   const approve = async (id: number) => {
-    if (!window.confirm("Approve and activate this agency?")) return;
     await api.patch(`/admin/agencies/${id}/approve`);
     fetchAll();
   };
 
+  const onCreated = (e: any) => {
+    const json = e.layer.toGeoJSON();
+    setBoundaryGeoJSON(JSON.stringify(json.geometry));
+    setSelectedId(null);
+  };
+
   const saveBoundary = async () => {
-    if (!selectedId || !boundaryGeoJSON) return;
-    if (!window.confirm("Save this boundary for the selected agency?")) return;
+    if (!boundaryGeoJSON || !selectedId) return;
     await api.patch(`/admin/agencies/${selectedId}/boundary`, { geojson: boundaryGeoJSON });
     setBoundaryGeoJSON("");
     setSelectedId(null);
-    fetchAll();
-  };
-
-  const toggleStatus = async (id: number, isActive: boolean) => {
-    if (!window.confirm(`${isActive ? "Deactivate" : "Activate"} this agency?`)) return;
-    await api.patch(`/admin/agencies/${id}/status`, { isActive: !isActive });
-    fetchAll();
-  };
-
-  const onCreated = (e: any, agencyId: number) => {
-    const layer = e.layer;
-    const geojson = layer.toGeoJSON();
-    setSelectedId(agencyId);
-    setBoundaryGeoJSON(JSON.stringify(geojson.geometry));
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-cyan-200">Admin control</p>
-          <h1 className="text-3xl font-bold">Agencies</h1>
-          <p className="text-slate-400 text-sm">Approve and manage jurisdiction boundaries.</p>
-        </div>
-      </div>
-
+    <PageWrapper title="Agencies">
       {error && <div className="alert alert-error text-sm">{error}</div>}
       {loading ? (
         <div className="text-slate-300">Loading…</div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {agencies.map((a) => (
-            <div key={a.id} className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">{a.name}</h3>
-                  <p className="text-sm text-slate-400">
-                    {a.type} in {a.city}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={severityBadgeClass(a.isApproved ? 1 : null)}>
-                    {a.isApproved ? "Approved" : "Pending"}
-                  </div>
-                  <div className={`badge badge-xs ${a.isActive ? "badge-success" : "badge-ghost"}`}>
-                    {a.isActive ? "Active" : "Disabled"}
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-slate-300 mt-2">{a.description}</p>
-              {!a.isApproved && (
-                <button className="btn btn-primary btn-sm mt-3" onClick={() => approve(a.id)}>
-                  Approve & Activate
-                </button>
-              )}
-              {a.isApproved && (
-                <button
-                  className="btn btn-xs btn-outline mt-2"
-                  onClick={() => toggleStatus(a.id, a.isActive)}
-                >
-                  {a.isActive ? "Disable agency" : "Activate agency"}
-                </button>
-              )}
-              <div className="mt-3 space-y-2">
-                <label className="text-xs text-slate-400">Draw boundary (polygon)</label>
-                <div className="h-64 rounded-lg overflow-hidden border border-slate-800">
-                  <MapContainer
-                    center={[9.03, 38.74]}
-                    zoom={12}
-                    style={{ height: "100%", width: "100%" }}
-                    whenCreated={(map) => (mapRef.current = map)}
-                  >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <FeatureGroup>
-                      <EditControl
-                        position="topright"
-                        draw={{
-                          rectangle: false,
-                          circle: false,
-                          polyline: false,
-                          marker: false,
-                          circlemarker: false,
-                        }}
-                        onCreated={(e) => onCreated(e, a.id)}
-                        edit={{ edit: false, remove: false }}
-                      />
-                    </FeatureGroup>
-                  </MapContainer>
-                </div>
-                <textarea
-                  className="textarea textarea-bordered w-full bg-slate-900 text-white"
-                  rows={3}
-                  value={selectedId === a.id ? boundaryGeoJSON : ""}
-                  onChange={(e) => {
-                    setSelectedId(a.id);
-                    setBoundaryGeoJSON(e.target.value);
-                  }}
-                  placeholder='{"type":"Polygon","coordinates":[[...]]}'
-                />
-                <button
-                  className="btn btn-outline btn-xs"
-                  onClick={saveBoundary}
-                  disabled={selectedId !== a.id || !boundaryGeoJSON}
-                >
-                  Save boundary
-                </button>
-              </div>
+        <div className="grid lg:grid-cols-[1.4fr,1fr] gap-4">
+          <div className="cyber-card h-[65vh]">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold">Jurisdiction editor</h2>
+              <button className="btn btn-sm" disabled={!selectedId || !boundaryGeoJSON} onClick={saveBoundary}>
+                Save boundary
+              </button>
             </div>
-          ))}
+            <p className="text-xs text-slate-400 mb-2">Draw polygon for agency jurisdiction.</p>
+            <MapContainer
+              center={[9.03, 38.74]}
+              zoom={12}
+              className="w-full h-full rounded-lg border border-slate-800 overflow-hidden"
+              whenCreated={(map) => (mapRef.current = map)}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <FeatureGroup>
+                <EditControl
+                  position="topright"
+                  draw={{ rectangle: false, circle: false, circlemarker: false, marker: false, polyline: false }}
+                  onCreated={onCreated}
+                />
+              </FeatureGroup>
+            </MapContainer>
+          </div>
+
+          <div className="cyber-card">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold">Agencies</h2>
+            </div>
+            <div className="space-y-2 max-h-[65vh] overflow-auto">
+              {agencies.map((a) => (
+                <div
+                  key={a.id}
+                  className={`p-3 rounded-lg border ${selectedId === a.id ? "border-cyan-500" : "border-slate-800"} bg-slate-900/60`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">{a.name}</p>
+                      <p className="text-xs text-slate-400">{a.type}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="badge badge-xs">{a.isActive ? "Active" : "Pending"}</span>
+                      <button className="btn btn-xs btn-outline" onClick={() => setSelectedId(a.id)}>
+                        Select boundary
+                      </button>
+                      {!a.isApproved && (
+                        <button className="btn btn-xs btn-primary" onClick={() => approve(a.id)}>
+                          Approve
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </PageWrapper>
   );
 };
 

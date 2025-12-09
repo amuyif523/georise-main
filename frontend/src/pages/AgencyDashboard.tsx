@@ -1,97 +1,115 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { severityBadgeClass, severityLabel } from "../utils/severity";
-import { useEffect, useState } from "react";
-import { getSocket } from "../lib/socket";
-import IncidentCard from "../components/incident/IncidentCard";
-import AppLayout from "../layouts/AppLayout";
+import React, { useEffect, useState } from "react";
+import { MapPin, Activity, AlertCircle, CheckCircle } from "lucide-react";
+import api from "../lib/api";
+import PageWrapper from "../components/layout/PageWrapper";
+import type { IncidentListItem } from "../types/incidents";
+import { motion } from "framer-motion";
+
+const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({
+  label,
+  value,
+  icon,
+}) => (
+  <div className="cyber-card flex items-center gap-3">
+    <div className="p-3 rounded-full bg-cyan-500/10 text-cyan-300">{icon}</div>
+    <div>
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-2xl font-bold text-cyan-100">{value}</p>
+    </div>
+  </div>
+);
 
 const AgencyDashboard: React.FC = () => {
-  const { logout } = useAuth();
-  const sampleQueue = [
-    { id: 101, title: "Fire near market", severity: 4 },
-    { id: 102, title: "Traffic crash at Ring Road", severity: 3 },
-    { id: 103, title: "Power line down", severity: 2 },
-  ];
-  const [events, setEvents] = useState<any[]>([]);
+  const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
+  const [recent, setRecent] = useState<IncidentListItem[]>([]);
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-    const handler = (inc: any) => {
-      setEvents((prev) => [{ ...inc, createdAt: new Date().toISOString() }, ...prev].slice(0, 5));
+    const load = async () => {
+      const res = await api.get("/incidents", { params: { hours: 48 } });
+      const incs: IncidentListItem[] = res.data.incidents || [];
+      setRecent(incs.slice(0, 5));
+      setStats({
+        active: incs.filter((i) => i.status !== "RESOLVED").length,
+        resolved: incs.filter((i) => i.status === "RESOLVED").length,
+        highSeverity: incs.filter((i) => (i.severityScore ?? 0) >= 4).length,
+      });
     };
-    socket.on("incident:created", handler);
-    socket.on("incident:updated", handler);
-    return () => {
-      socket?.off("incident:created", handler);
-      socket?.off("incident:updated", handler);
-    };
+    load();
   }, []);
 
   return (
-    <AppLayout>
-      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
-      <div className="max-w-5xl mx-auto px-4 space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <p className="text-sm text-cyan-200">Agency workspace</p>
-            <h1 className="text-3xl font-bold">Incident queue</h1>
-            <p className="text-slate-400 text-sm">
-              Incoming incidents with severity badges.
-            </p>
-          </div>
-          <button className="btn btn-outline btn-sm" onClick={logout}>
-            Logout
-          </button>
-        </div>
+    <PageWrapper title="Agency Command Center">
+      <div className="grid md:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Active incidents" value={stats.active} icon={<Activity size={18} />} />
+        <StatCard label="Resolved (48h)" value={stats.resolved} icon={<CheckCircle size={18} />} />
+        <StatCard label="High severity" value={stats.highSeverity} icon={<AlertCircle size={18} />} />
+      </div>
 
-        <div className="flex justify-end">
-          <Link to="/agency/map" className="btn btn-primary btn-sm">
-            Open dispatch map
-          </Link>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-3">
-          {sampleQueue.map((item) => (
-            <div
-              key={item.id}
-              className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                <span className={severityBadgeClass(item.severity)}>
-                  Sev {severityLabel(item.severity)}
-                </span>
-              </div>
-              <div className="text-xs text-slate-500 mt-2">ID: {item.id}</div>
+      <div className="grid grid-cols-12 gap-4">
+        <motion.div
+          className="col-span-12 lg:col-span-8 cyber-card h-[60vh] lg:h-[calc(100vh-220px)]"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MapPin size={18} className="text-cyan-300" />
+              <h2 className="font-semibold">Live Map</h2>
             </div>
-          ))}
-        </div>
+            <a href="/agency/map" className="btn btn-sm btn-primary">
+              Open map
+            </a>
+          </div>
+          <p className="text-sm text-slate-500">GIS map with incidents, responders, heat/cluster layers.</p>
+          <div className="mt-4 h-full rounded-lg border border-slate-800 bg-slate-900/40 flex items-center justify-center text-slate-500 text-sm">
+            Live map opens in dedicated view.
+          </div>
+        </motion.div>
 
-        <div className="mt-6">
-          <p className="text-sm text-cyan-200 mb-2">Live events</p>
-          <div className="space-y-2">
-            {events.map((e) => (
-              <IncidentCard
-                key={e.id}
-                title={e.title || "Incident"}
-                category={e.category}
-                severity={e.severityScore}
-                status={e.status}
-                timestamp={e.createdAt}
-              />
-            ))}
-            {events.length === 0 && (
-              <div className="text-sm text-slate-400">No recent events yet.</div>
-            )}
+        <div className="col-span-12 lg:col-span-4 space-y-4">
+          <div className="cyber-card">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle size={18} className="text-orange-400" />
+              <h3 className="font-semibold">Recent incidents</h3>
+            </div>
+            <div className="space-y-3">
+              {recent.map((i) => (
+                <div key={i.id} className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{i.title}</p>
+                    <span className="badge badge-sm">{i.status}</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Severity: {i.severityScore ?? "?"} • {new Date(i.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+              {!recent.length && <p className="text-sm text-slate-400">No incidents in the last 48h.</p>}
+            </div>
+          </div>
+
+          <div className="cyber-card">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin size={18} className="text-cyan-400" />
+              <h3 className="font-semibold">Next actions</h3>
+            </div>
+            <div className="space-y-2 text-sm text-slate-300">
+              <p>• Open live map to assign responders and track arrival.</p>
+              <p>• Watch for high severity incidents (≥ 4) in your queue.</p>
+              <p>• Use Review Queue to validate low-trust reports.</p>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <a href="/agency/map" className="btn btn-primary btn-sm w-full">
+                Go to map
+              </a>
+              <a href="/admin/review" className="btn btn-outline btn-sm w-full">
+                Review queue
+              </a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    </AppLayout>
+    </PageWrapper>
   );
 };
 
