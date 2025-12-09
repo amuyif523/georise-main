@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: georisem-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: georisem
+      POSTGRES_PASSWORD: georisem123
+      POSTGRES_DB: georisem_db
+    volumes:
+      - georise_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U georisem -d georisem_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://georisem:georisem123@db:5432/georisem_db?schema=public"
+      JWT_SECRET: "CHANGE_THIS_TO_A_RANDOM_64_CHAR_SECRET"
+      AI_SERVICE_URL: "http://ai-service:8001"
+    ports:
+      - "4000:4000"
+
+  ai-service:
+    build: ../ai-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+
+volumes:
+  georise_db_data:

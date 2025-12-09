@@ -72,9 +72,6 @@ export const initSocketServer = (server: HttpServer) => {
             lat,
             lng,
           });
-          // ETA + geofence
-          const mod = await import("./modules/dispatch/dispatch.service.js");
-          await mod.handleETAAndGeofence(updated.id);
         } catch (err) {
           logger.error({ err }, "responder:locationUpdate failed");
         }

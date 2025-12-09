@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import L from "leaflet";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import api from "../../lib/api";
@@ -22,7 +21,6 @@ const AgenciesPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
 
   const fetchAll = async () => {
     try {
@@ -87,7 +85,6 @@ const AgenciesPage: React.FC = () => {
               center={[9.03, 38.74]}
               zoom={12}
               className="w-full h-full rounded-lg border border-slate-800 overflow-hidden"
-              whenCreated={(map) => (mapRef.current = map)}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <FeatureGroup>

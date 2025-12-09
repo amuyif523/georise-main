@@ -35,8 +35,7 @@ type Incident = {
 };
 
 type HeatPoint = { lat: number; lng: number; weight: number | null };
-type ClusterPoint = { id: number; cluster_id: number; lat: number; lng: number; severity: number; title?: string | null };
-type ClusterPoint = { id: number; cluster_id: number; lat: number; lng: number; severity: number; title?: string | null };
+type ClusterPoint = { id: number; cluster_id: number; lat: number; lng: number; severity: number; title?: string };
 
 const severityFill = (score: number | null | undefined) => {
   if (score == null) return "#94a3b8"; // slate
@@ -98,7 +97,7 @@ const AgencyMap: React.FC = () => {
   const [showClusters, setShowClusters] = useState(false);
   const [lowDataMode, setLowDataMode] = useState(() => localStorage.getItem("low_data_mode") === "1");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [fallbackPoll, setFallbackPoll] = useState<NodeJS.Timeout | null>(null);
+  const [fallbackPoll, setFallbackPoll] = useState<ReturnType<typeof setInterval> | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
   const [selectedSubCity, setSelectedSubCity] = useState<string>("");
   const [boundaryLevel, setBoundaryLevel] = useState<"subcity" | "woreda">("subcity");
@@ -128,7 +127,7 @@ const AgencyMap: React.FC = () => {
           lat: c.lat,
           lng: c.lng,
           severity: c.severity ?? 0,
-          title: c.title ?? null,
+          title: c.title ?? undefined,
         }))
       );
       setResponders(respRes.data || []);
@@ -152,7 +151,7 @@ const AgencyMap: React.FC = () => {
     };
     loadGeo();
     fetchData();
-    const interval = setInterval(fetchData, lowDataMode ? 30000 : 10000);
+        const interval = setInterval(fetchData, lowDataMode ? 30000 : 10000);
     const socket = getSocket();
     if (socket) {
       const handlerCreated = (inc: any) => {

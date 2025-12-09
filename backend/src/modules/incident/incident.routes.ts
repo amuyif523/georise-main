@@ -219,9 +219,13 @@ router.get(
       const latNum = Number(lat);
       const lngNum = Number(lng);
       const radiusNum = Number(radius);
+      const agencyId = req.user?.agencyId;
 
       if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
         return res.status(400).json({ message: "lat and lng are required and must be numbers" });
+      }
+      if (req.user?.role !== Role.ADMIN && !agencyId) {
+        return res.status(403).json({ message: "Forbidden" });
       }
 
       const incidents = await prisma.$queryRaw<

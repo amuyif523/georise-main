@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Link } from "react-router-dom";
 import { List, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import TrustBadge from "../components/user/TrustBadge";
-import PageWrapper from "../components/layout/PageWrapper";
+import CitizenLayout from "../layouts/CitizenLayout";
 
 const CitizenDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   return (
-    <PageWrapper title="Citizen Panel">
+    <CitizenLayout title="My Safety & Reports">
       <div className="grid lg:grid-cols-2 gap-6">
         <button
           className="btn btn-error w-full p-6 text-lg shadow-lg shadow-red-500/20"
@@ -18,10 +17,10 @@ const CitizenDashboard: React.FC = () => {
           🚨 Report Emergency
         </button>
 
-        <div className="cyber-card">
+        <div className="citizen-card">
           <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm text-slate-300">Identity</span>
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm text-slate-700">Identity</span>
           </div>
           <div className="flex items-center gap-2">
             <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
@@ -31,15 +30,15 @@ const CitizenDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="cyber-card">
-          <h2 className="font-bold mb-2">Nearby Alerts</h2>
-          <p className="text-sm text-slate-400">No alerts in your area.</p>
+        <div className="citizen-card">
+          <h2 className="font-bold mb-2 text-slate-900">Nearby Alerts</h2>
+          <p className="text-sm text-slate-600">No alerts in your area.</p>
         </div>
 
-        <div className="cyber-card">
+        <div className="citizen-card">
           <div className="flex items-center gap-2 mb-3">
-            <Plus size={18} className="text-cyan-300" />
-            <h3 className="text-lg font-semibold">Quick actions</h3>
+            <Plus size={18} className="text-blue-600" />
+            <h3 className="text-lg font-semibold text-slate-900">Quick actions</h3>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <Link to="/citizen/report" className="btn btn-primary btn-sm w-full">
@@ -49,23 +48,23 @@ const CitizenDashboard: React.FC = () => {
               My reports
             </Link>
           </div>
-          <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
+          <div className="mt-3 text-xs text-slate-500 flex items-center gap-2">
             <MapPin size={14} /> Accurate location speeds response.
           </div>
         </div>
 
-        <div className="cyber-card col-span-full">
+        <div className="citizen-card col-span-full">
           <div className="flex items-center gap-2 mb-3">
-            <List size={18} className="text-cyan-300" />
-            <h2 className="font-bold">My Reports</h2>
+            <List size={18} className="text-blue-600" />
+            <h2 className="font-bold text-slate-900">My Reports</h2>
           </div>
-          <p className="text-sm text-slate-400">View status, AI category, and severity.</p>
+          <p className="text-sm text-slate-600">View status, AI category, and urgency.</p>
           <Link to="/citizen/my-reports" className="btn btn-xs btn-outline mt-3">
             Open reports
           </Link>
         </div>
       </div>
-    </PageWrapper>
+    </CitizenLayout>
   );
 };
 

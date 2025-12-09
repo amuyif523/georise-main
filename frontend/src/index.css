@@ -1,14 +1,12 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-draw/dist/leaflet.draw.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "leaflet/dist/leaflet.css";
 
 :root {
   --bg-0: #050910;
@@ -60,4 +58,24 @@ code,
 .font-mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
+}
+
+/* Citizen-facing cards */
+.citizen-card {
+  @apply bg-white border border-slate-200 rounded-xl p-4 md:p-5 shadow-sm;
+}
+
+/* Severity badges */
+.badge-severity-low {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700;
+}
+.badge-severity-medium {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800;
+}
+.badge-severity-high {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700;
+}
+
+.page-section-title {
+  @apply text-sm font-mono tracking-[0.15em] uppercase text-slate-400 mb-1;
 }
