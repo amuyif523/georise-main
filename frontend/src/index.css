@@ -5,6 +5,44 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+
+:root {
+  --bg-0: #050910;
+  --bg-1: #0a0f1a;
+  --bg-2: #0d1117;
+  --bg-3: #161b22;
+
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+
+  --accent-blue: #3b82f6;
+  --accent-cyan: #22d3ee;
+  --accent-red: #ef4444;
+
+  --border-glow: rgba(59, 130, 246, 0.2);
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background: var(--bg-1);
+  color: var(--text-main);
+}
+
+.cyber-card {
+  background: var(--bg-3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: 0.25s;
+}
+.cyber-card:hover {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
 :root {
   --glow-blue: rgba(59, 130, 246, 0.5);
   --glow-cyan: rgba(34, 211, 238, 0.5);

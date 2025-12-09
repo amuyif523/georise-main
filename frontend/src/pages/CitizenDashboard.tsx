@@ -1,77 +1,71 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Link } from "react-router-dom";
-import { List, MapPin, Plus } from "lucide-react";
+import { List, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import AppLayout from "../layouts/AppLayout";
 import TrustBadge from "../components/user/TrustBadge";
+import PageWrapper from "../components/layout/PageWrapper";
 
 const CitizenDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   return (
-    <AppLayout>
-      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-10 pb-12">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <p className="text-sm text-cyan-200">Citizen workspace</p>
-            <h1 className="text-3xl font-bold">Welcome, {user?.fullName}</h1>
-            <p className="text-slate-400 text-sm">
-              Report incidents and track your submissions in one place.
-            </p>
+    <PageWrapper title="Citizen Panel">
+      <div className="grid lg:grid-cols-2 gap-6">
+        <button
+          className="btn btn-error w-full p-6 text-lg shadow-lg shadow-red-500/20"
+          onClick={() => (window.location.href = "/citizen/report")}
+        >
+          🚨 Report Emergency
+        </button>
+
+        <div className="cyber-card">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm text-slate-300">Identity</span>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={logout}>
-            Logout
-          </button>
-        </div>
-        <div className="flex items-center gap-3 mb-4">
-          <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
-          <Link to="/citizen/verify" className="btn btn-xs btn-primary">
-            Verify account
-          </Link>
+          <div className="flex items-center gap-2">
+            <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
+            <Link to="/citizen/verify" className="btn btn-xs btn-primary">
+              Verify account
+            </Link>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <Link
-            to="/citizen/report"
-            className="p-6 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10 hover:border-cyan-500 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-full bg-cyan-500/10 text-cyan-300">
-                <Plus size={20} />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">Report an incident</h3>
-                <p className="text-slate-400 text-sm">3-step wizard with map selection.</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/citizen/my-reports"
-            className="p-6 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10 hover:border-cyan-500 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-full bg-emerald-500/10 text-emerald-300">
-                <List size={20} />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-white">My reports</h3>
-                <p className="text-slate-400 text-sm">
-                  View status, AI category, and severity.
-                </p>
-              </div>
-            </div>
-          </Link>
+        <div className="cyber-card">
+          <h2 className="font-bold mb-2">Nearby Alerts</h2>
+          <p className="text-sm text-slate-400">No alerts in your area.</p>
         </div>
 
-        <div className="mt-6 p-4 rounded-lg border border-slate-800 bg-slate-900/40 flex items-center gap-3 text-sm text-slate-300">
-          <MapPin size={18} className="text-cyan-300" />
-          Select your location accurately in the wizard to help responders move faster.
+        <div className="cyber-card">
+          <div className="flex items-center gap-2 mb-3">
+            <Plus size={18} className="text-cyan-300" />
+            <h3 className="text-lg font-semibold">Quick actions</h3>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Link to="/citizen/report" className="btn btn-primary btn-sm w-full">
+              New report
+            </Link>
+            <Link to="/citizen/my-reports" className="btn btn-outline btn-sm w-full">
+              My reports
+            </Link>
+          </div>
+          <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
+            <MapPin size={14} /> Accurate location speeds response.
+          </div>
+        </div>
+
+        <div className="cyber-card col-span-full">
+          <div className="flex items-center gap-2 mb-3">
+            <List size={18} className="text-cyan-300" />
+            <h2 className="font-bold">My Reports</h2>
+          </div>
+          <p className="text-sm text-slate-400">View status, AI category, and severity.</p>
+          <Link to="/citizen/my-reports" className="btn btn-xs btn-outline mt-3">
+            Open reports
+          </Link>
         </div>
       </div>
-    </div>
-    </AppLayout>
+    </PageWrapper>
   );
 };
 
