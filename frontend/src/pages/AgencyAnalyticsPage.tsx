@@ -11,8 +11,8 @@ import {
   ArcElement,
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
-import PageWrapper from "../../components/layout/PageWrapper";
-import api from "../../lib/api";
+import PageWrapper from "../components/layout/PageWrapper";
+import api from "../lib/api";
 
 ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend, PointElement, ArcElement);
 
@@ -25,11 +25,13 @@ type OverviewResponse = {
   avgResolutionMinutes: number | null;
 };
 
-const KPICard: React.FC<{ label: string; value: string | number; subtitle?: string }> = ({
-  label,
-  value,
-  subtitle,
-}) => (
+const ranges = [
+  { label: "7d", days: 7 },
+  { label: "30d", days: 30 },
+  { label: "90d", days: 90 },
+];
+
+const KPICard: React.FC<{ label: string; value: string | number; subtitle?: string }> = ({ label, value, subtitle }) => (
   <div className="cyber-card">
     <p className="text-xs text-slate-400 uppercase">{label}</p>
     <p className="text-2xl font-bold text-cyan-200">{value}</p>
@@ -37,13 +39,7 @@ const KPICard: React.FC<{ label: string; value: string | number; subtitle?: stri
   </div>
 );
 
-const ranges = [
-  { label: "7d", days: 7 },
-  { label: "30d", days: 30 },
-  { label: "90d", days: 90 },
-];
-
-const AnalyticsPage: React.FC = () => {
+const AgencyAnalyticsPage: React.FC = () => {
   const [range, setRange] = useState(30);
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [heatCount, setHeatCount] = useState<number>(0);
@@ -54,13 +50,12 @@ const AnalyticsPage: React.FC = () => {
     const now = new Date();
     const to = now.toISOString();
     const from = new Date(now.getTime() - range * 24 * 60 * 60 * 1000).toISOString();
-
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
         const [overviewRes, heatRes] = await Promise.all([
-          api.get("/analytics/overview/admin", { params: { from, to } }),
+          api.get("/analytics/overview/agency", { params: { from, to } }),
           api.get("/analytics/heatmap", { params: { from, to } }),
         ]);
         setData(overviewRes.data);
@@ -83,8 +78,8 @@ const AnalyticsPage: React.FC = () => {
         {
           label: "Incidents per day",
           data: data.byDay.map((d) => d.count),
-          borderColor: "#22d3ee",
-          backgroundColor: "rgba(34,211,238,0.2)",
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,0.2)",
           tension: 0.35,
         },
       ],
@@ -99,7 +94,7 @@ const AnalyticsPage: React.FC = () => {
         {
           label: "Incidents",
           data: data.byStatus.map((s) => s.count),
-          backgroundColor: "rgba(34,197,94,0.6)",
+          backgroundColor: "rgba(244,114,182,0.6)",
         },
       ],
     };
@@ -119,7 +114,7 @@ const AnalyticsPage: React.FC = () => {
   }, [data?.byCategory]);
 
   return (
-    <PageWrapper title="City Analytics Dashboard">
+    <PageWrapper title="Agency Analytics">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xs text-slate-400 uppercase">Range</span>
         {ranges.map((r) => (
@@ -141,7 +136,7 @@ const AnalyticsPage: React.FC = () => {
       {data && (
         <>
           <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <KPICard label="Total incidents" value={data.totalIncidents} subtitle="Selected range" />
+            <KPICard label="Incidents" value={data.totalIncidents} subtitle="Your agency scope" />
             <KPICard
               label="Avg response time"
               value={data.avgResponseMinutes ? `${data.avgResponseMinutes.toFixed(1)} min` : "N/A"}
@@ -182,4 +177,4 @@ const AnalyticsPage: React.FC = () => {
   );
 };
 
-export default AnalyticsPage;
+export default AgencyAnalyticsPage;

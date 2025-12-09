@@ -13,12 +13,14 @@ import MyReportsPage from "./pages/MyReportsPage";
 import LoginPage from "./pages/LoginPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
 import RoleRedirect from "./pages/RoleRedirect";
+
 const AgencyMap = React.lazy(() => import("./pages/AgencyMap"));
 const AgenciesPage = React.lazy(() => import("./pages/admin/AgenciesPage"));
 const UsersPage = React.lazy(() => import("./pages/admin/UsersPage"));
 const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogsPage"));
 const AnalyticsPage = React.lazy(() => import("./pages/admin/AnalyticsPage"));
 const ActivityFeed = React.lazy(() => import("./pages/admin/ActivityFeed"));
+const AgencyAnalyticsPage = React.lazy(() => import("./pages/AgencyAnalyticsPage"));
 const CitizenVerificationPage = React.lazy(() => import("./pages/CitizenVerificationPage"));
 const ReviewQueuePage = React.lazy(() => import("./pages/admin/ReviewQueuePage"));
 const VerificationPage = React.lazy(() => import("./pages/admin/VerificationPage"));
@@ -83,6 +85,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/agency"
             element={
@@ -101,6 +104,17 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/agency/analytics"
+            element={
+              <ProtectedRoute allowedRoles={["AGENCY_STAFF"]}>
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
+                  <AgencyAnalyticsPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/admin"
             element={
@@ -179,6 +193,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
+
           <Route
             path="*"
             element={

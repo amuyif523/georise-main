@@ -2,20 +2,48 @@ import { Router } from "express";
 import prisma from "../../prisma.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { Role } from "@prisma/client";
+import { analyticsService } from "./analytics.service.js";
 
 const router = Router();
 
+const buildFilters = (req: any) => {
+  const f: any = {};
+  if (req.query.from) f.from = req.query.from;
+  if (req.query.to) f.to = req.query.to;
+  if (req.query.agencyId) f.agencyId = Number(req.query.agencyId);
+  return f;
+};
+
+// Admin overview
+router.get("/overview/admin", requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  try {
+    const data = await analyticsService.getOverview(buildFilters(req));
+    res.json(data);
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message || "Failed to load analytics" });
+  }
+});
+
+// Agency overview (scoped to user's agency)
+router.get("/overview/agency", requireAuth, requireRole([Role.AGENCY_STAFF]), async (req: any, res) => {
+  try {
+    // Derive agencyId from agencyStaff
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user?.id },
+    });
+    const filters = buildFilters(req);
+    const data = await analyticsService.getOverview({ ...filters, agencyId: staff?.agencyId });
+    res.json(data);
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message || "Failed to load analytics" });
+  }
+});
+
 // Heatmap points (lat/lng/severity)
-router.get("/heatmap", requireAuth, async (_req, res) => {
-  const rows = await prisma.$queryRawUnsafe<any[]>(`
-    SELECT
-      ST_Y(location) AS lat,
-      ST_X(location) AS lng,
-      COALESCE("severityScore", 0) AS severity
-    FROM "Incident"
-    WHERE location IS NOT NULL
-      AND "status" != 'CANCELLED'
-  `);
+router.get("/heatmap", requireAuth, async (req, res) => {
+  const rows = await analyticsService.getHeatmapPoints(buildFilters(req));
   res.json(rows);
 });
 
@@ -37,6 +65,7 @@ router.get("/clusters", requireAuth, async (_req, res) => {
 });
 
 // KPI cards: avg dispatch/arrival/resolution rate
+// Legacy KPI/timeline kept for compatibility (admin scoped)
 router.get("/kpi", requireAuth, async (_req, res) => {
   const [row] = await prisma.$queryRawUnsafe<any[]>(`
     SELECT
@@ -52,7 +81,6 @@ router.get("/kpi", requireAuth, async (_req, res) => {
   });
 });
 
-// Time-series incidents per day (last 30 days)
 router.get("/timeline", requireAuth, async (_req, res) => {
   const rows = await prisma.$queryRawUnsafe<any[]>(`
     SELECT
@@ -64,17 +92,6 @@ router.get("/timeline", requireAuth, async (_req, res) => {
     ORDER BY day ASC
   `);
   res.json(rows);
-});
-
-// Admin-only endpoint to surface analytics safely if needed
-router.get("/admin/summary", requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
-  const [row] = await prisma.$queryRawUnsafe<any[]>(`
-    SELECT
-      (SELECT COUNT(*) FROM "Incident") AS total_incidents,
-      (SELECT COUNT(*) FROM "Incident" WHERE status='RESOLVED') AS resolved_incidents,
-      (SELECT COUNT(*) FROM "Incident" WHERE status!='RESOLVED') AS active_incidents
-  `);
-  res.json(row || {});
 });
 
 export default router;
