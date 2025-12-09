@@ -34,6 +34,8 @@ services:
   ai-service:
     build: ../ai-service
     restart: unless-stopped
+    volumes:
+      - ../ai-service/models:/app/models:ro
     ports:
       - "8001:8001"
 
