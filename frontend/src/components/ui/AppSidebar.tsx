@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Map, Activity, Shield, Home, Users, LayoutDashboard } from "lucide-react";
+import { Map, Activity, Shield, Home, Users, LayoutDashboard, Bell, Radio, BarChart3 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = ({
@@ -29,24 +29,28 @@ const AppSidebar: React.FC = () => {
 
   const items =
     role === "ADMIN"
-        ? [
-            { to: "/admin", icon: <LayoutDashboard size={16} />, label: "Dashboard" },
-            { to: "/admin/agencies", icon: <Shield size={16} />, label: "Agencies" },
-            { to: "/admin/users", icon: <Users size={16} />, label: "Users" },
-            { to: "/admin/verification", icon: <Shield size={16} />, label: "Verification" },
-            { to: "/admin/analytics", icon: <Activity size={16} />, label: "Analytics" },
-            { to: "/admin/audit", icon: <Shield size={16} />, label: "Audit" },
-            { to: "/admin/review", icon: <Activity size={16} />, label: "Review Queue" },
-          ]
+      ? [
+          { to: "/admin", icon: <LayoutDashboard size={16} />, label: "Dashboard" },
+          { to: "/admin/agencies", icon: <Shield size={16} />, label: "Agencies" },
+          { to: "/admin/users", icon: <Users size={16} />, label: "Users" },
+          { to: "/admin/verification", icon: <Shield size={16} />, label: "Verification" },
+          { to: "/admin/review", icon: <Bell size={16} />, label: "Review Queue" },
+          { to: "/admin/activity", icon: <Radio size={16} />, label: "Activity Feed" },
+          { to: "/admin/analytics", icon: <BarChart3 size={16} />, label: "Analytics" },
+          { to: "/admin/audit", icon: <Shield size={16} />, label: "Audit" },
+          { to: "/admin/demo", icon: <Activity size={16} />, label: "Demo Control" },
+        ]
       : role === "AGENCY_STAFF"
         ? [
             { to: "/agency", icon: <LayoutDashboard size={16} />, label: "Dispatch" },
             { to: "/agency/map", icon: <Map size={16} />, label: "Live Map" },
+            { to: "/agency/analytics", icon: <BarChart3 size={16} />, label: "Analytics" },
           ]
         : [
             { to: "/citizen", icon: <Home size={16} />, label: "Home" },
             { to: "/citizen/report", icon: <Activity size={16} />, label: "Report" },
             { to: "/citizen/my-reports", icon: <Shield size={16} />, label: "My Reports" },
+            { to: "/citizen/verify", icon: <Shield size={16} />, label: "Verify" },
           ];
 
   return (
