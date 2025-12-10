@@ -21,9 +21,9 @@
 ## Code Conventions
 ### Frontend
 - **Layouts:**
-  - `CommandLayout`: STRICTLY for Admin and Agency portals (`/admin`, `/agency`).
-  - `CitizenLayout`: For public/citizen facing pages (`/citizen`).
-  - **Do not use** `PageWrapper` or `AppLayout` for new pages; they are legacy.
+  - **Unified Layout:** Use `AppLayout` for ALL pages (Admin, Agency, Citizen).
+  - `AppLayout` handles role-based navigation via `AppSidebar`.
+  - **Do not use** `CommandLayout`, `CitizenLayout`, or `PageWrapper` (deprecated/unused).
 - **State Management:** Context API (`AuthContext`) for auth.
 - **Maps:** `react-leaflet` with `react-leaflet-cluster`.
 - **Styling:** Tailwind CSS with DaisyUI. "Cyber" theme for Command Center.

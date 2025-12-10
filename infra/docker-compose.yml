@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: georisem123
       POSTGRES_DB: georisem_db
     ports:
-      - "55432:5432"
+      - "54320:5432"
     volumes:
       - georise_db_data:/var/lib/postgresql/data
     healthcheck:
