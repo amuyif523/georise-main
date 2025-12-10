@@ -81,6 +81,39 @@ async function main() {
     },
   });
 
+  const fireUser = await prisma.user.upsert({
+    where: { email: "fire1@example.com" },
+    update: {},
+    create: {
+      fullName: "Fire Chief One",
+      email: "fire1@example.com",
+      passwordHash,
+      role: Role.AGENCY_STAFF,
+    },
+  });
+
+  const medicalUser = await prisma.user.upsert({
+    where: { email: "medical1@example.com" },
+    update: {},
+    create: {
+      fullName: "Medic One",
+      email: "medical1@example.com",
+      passwordHash,
+      role: Role.AGENCY_STAFF,
+    },
+  });
+
+  const trafficUser = await prisma.user.upsert({
+    where: { email: "traffic1@example.com" },
+    update: {},
+    create: {
+      fullName: "Traffic Officer One",
+      email: "traffic1@example.com",
+      passwordHash,
+      role: Role.AGENCY_STAFF,
+    },
+  });
+
   const citizen = await prisma.user.upsert({
     where: { email: "citizen1@example.com" },
     update: {},
@@ -102,6 +135,33 @@ async function main() {
       position: "Dispatcher",
     },
   });
+
+  const fireAgencyId = createdAgencies.find((a) => a.type === "FIRE")?.id;
+  if (fireAgencyId) {
+    await prisma.agencyStaff.upsert({
+      where: { userId: fireUser.id },
+      update: { agencyId: fireAgencyId },
+      create: { userId: fireUser.id, agencyId: fireAgencyId, position: "Station Chief" },
+    });
+  }
+
+  const medicalAgencyId = createdAgencies.find((a) => a.type === "MEDICAL")?.id;
+  if (medicalAgencyId) {
+    await prisma.agencyStaff.upsert({
+      where: { userId: medicalUser.id },
+      update: { agencyId: medicalAgencyId },
+      create: { userId: medicalUser.id, agencyId: medicalAgencyId, position: "Head Medic" },
+    });
+  }
+
+  const trafficAgencyId = createdAgencies.find((a) => a.type === "TRAFFIC")?.id;
+  if (trafficAgencyId) {
+    await prisma.agencyStaff.upsert({
+      where: { userId: trafficUser.id },
+      update: { agencyId: trafficAgencyId },
+      create: { userId: trafficUser.id, agencyId: trafficAgencyId, position: "Traffic Controller" },
+    });
+  }
 
   const incidents = [
     {
