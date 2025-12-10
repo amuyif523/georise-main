@@ -11,7 +11,7 @@ import {
   ArcElement,
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
-import PageWrapper from "../components/layout/PageWrapper";
+import AppLayout from "../layouts/AppLayout";
 import api from "../lib/api";
 
 ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend, PointElement, ArcElement);
@@ -114,7 +114,7 @@ const AgencyAnalyticsPage: React.FC = () => {
   }, [data?.byCategory]);
 
   return (
-    <PageWrapper title="Agency Analytics">
+    <AppLayout>
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xs text-slate-400 uppercase">Range</span>
         {ranges.map((r) => (
@@ -173,7 +173,7 @@ const AgencyAnalyticsPage: React.FC = () => {
           </div>
         </>
       )}
-    </PageWrapper>
+    </AppLayout>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import PageWrapper from "../../components/layout/PageWrapper";
+import AppLayout from "../../layouts/AppLayout";
 import api from "../../lib/api";
 
 const AdminDemoControlPage: React.FC = () => {
@@ -35,7 +35,7 @@ const AdminDemoControlPage: React.FC = () => {
   };
 
   return (
-    <PageWrapper title="Demo / Simulation Control">
+    <AppLayout>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="cyber-card">
           <h2 className="text-lg font-semibold mb-2">Scenario Controls</h2>
@@ -73,7 +73,7 @@ const AdminDemoControlPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </PageWrapper>
+    </AppLayout>
   );
 };
 

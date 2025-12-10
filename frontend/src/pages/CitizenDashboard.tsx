@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { List, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import TrustBadge from "../components/user/TrustBadge";
-import CitizenLayout from "../layouts/CitizenLayout";
+import AppLayout from "../layouts/AppLayout";
 
 const CitizenDashboard: React.FC = () => {
   const { user } = useAuth();
   return (
-    <CitizenLayout title="My Safety & Reports">
+    <AppLayout>
       <div className="grid lg:grid-cols-2 gap-6">
         <button
           className="btn btn-error w-full p-6 text-lg shadow-lg shadow-red-500/20"
@@ -23,7 +23,7 @@ const CitizenDashboard: React.FC = () => {
             <span className="text-sm text-slate-700">Identity</span>
           </div>
           <div className="flex items-center gap-2">
-            <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
+            <TrustBadge trustScore={(user as { trustScore?: number } | null)?.trustScore ?? 0} />
             <Link to="/citizen/verify" className="btn btn-xs btn-primary">
               Verify account
             </Link>
@@ -64,7 +64,7 @@ const CitizenDashboard: React.FC = () => {
           </Link>
         </div>
       </div>
-    </CitizenLayout>
+    </AppLayout>
   );
 };
 

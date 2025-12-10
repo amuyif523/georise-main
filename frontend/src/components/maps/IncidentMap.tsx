@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from "react-leaflet";
+import type * as GeoJSONType from "geojson";
 import api from "../../lib/api";
 
 type IncidentPoint = {
@@ -14,7 +15,7 @@ type IncidentPoint = {
 
 type Boundary = {
   id: number;
-  geometry: any;
+  geometry: GeoJSONType.Geometry;
   name?: string;
   zone_name?: string;
   woreda_name?: string;

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import api from "../../lib/api";
-import PageWrapper from "../../components/layout/PageWrapper";
+import AppLayout from "../../layouts/AppLayout";
 
 type Agency = {
   id: number;
@@ -56,7 +56,7 @@ const AgenciesPage: React.FC = () => {
   const onCreated = (e: any) => {
     const json = e.layer.toGeoJSON();
     setBoundaryGeoJSON(JSON.stringify(json.geometry));
-    setSelectedId(null);
+    // keep selectedId so Save boundary stays enabled for the chosen agency
   };
 
   const saveBoundary = async () => {
@@ -66,8 +66,10 @@ const AgenciesPage: React.FC = () => {
     setSelectedId(null);
   };
 
+  const selectedAgency = agencies.find((a) => a.id === selectedId) || null;
+
   return (
-    <PageWrapper title="Agencies">
+    <AppLayout>
       {error && <div className="alert alert-error text-sm">{error}</div>}
       {loading ? (
         <div className="text-slate-300">Loading…</div>
@@ -80,7 +82,11 @@ const AgenciesPage: React.FC = () => {
                 Save boundary
               </button>
             </div>
-            <p className="text-xs text-slate-400 mb-2">Draw polygon for agency jurisdiction.</p>
+            <p className="text-xs text-slate-400 mb-2">
+              {selectedAgency
+                ? `Drawing boundary for: ${selectedAgency.name}`
+                : "Select an agency, then draw a polygon for its jurisdiction."}
+            </p>
             <MapContainer
               center={[9.03, 38.74]}
               zoom={12}
@@ -130,7 +136,7 @@ const AgenciesPage: React.FC = () => {
           </div>
         </div>
       )}
-    </PageWrapper>
+    </AppLayout>
   );
 };
 

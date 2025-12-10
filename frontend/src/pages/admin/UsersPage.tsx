@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import api from "../../lib/api";
-import PageWrapper from "../../components/layout/PageWrapper";
+import AppLayout from "../../layouts/AppLayout";
 
 type User = {
   id: number;
@@ -62,7 +62,7 @@ const UsersPage: React.FC = () => {
   );
 
   return (
-    <PageWrapper title="Users">
+    <AppLayout>
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           className="input input-sm input-bordered bg-slate-900 border-slate-700 text-white"
@@ -116,7 +116,7 @@ const UsersPage: React.FC = () => {
           </table>
         </div>
       )}
-    </PageWrapper>
+    </AppLayout>
   );
 };
 

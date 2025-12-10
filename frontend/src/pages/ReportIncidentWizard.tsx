@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
@@ -263,7 +262,7 @@ const ReportIncidentWizard: React.FC = () => {
         await addToIncidentQueue(payload);
         setInfo("You are offline. Your report has been queued and will auto-send when back online.");
       }
-    } catch (err: any) {
+    } catch {
       await addToIncidentQueue(form);
       setInfo("Network issue. Your report has been queued and will sync when online.");
     } finally {

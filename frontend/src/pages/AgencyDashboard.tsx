@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MapPin, Activity, AlertCircle, CheckCircle } from "lucide-react";
 import api from "../lib/api";
-import PageWrapper from "../components/layout/PageWrapper";
+import AppLayout from "../layouts/AppLayout";
 import type { IncidentListItem } from "../types/incidents";
 import { motion } from "framer-motion";
 import IncidentMap from "../components/maps/IncidentMap";
@@ -23,7 +23,7 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
   const [recent, setRecent] = useState<IncidentListItem[]>([]);
-  const [suggestion, setSuggestion] = useState<any | null>(null);
+  const [suggestion, setSuggestion] = useState<{ agencyId: number; unitId: number | null; distanceKm?: number | null; totalScore: number } | null>(null);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ const AgencyDashboard: React.FC = () => {
         try {
           const recRes = await api.get(`/dispatch/recommend/${target.id}`);
           setSuggestion(recRes.data?.[0] || null);
-        } catch (err) {
+        } catch {
           setSuggestion(null);
         } finally {
           setLoadingSuggest(false);
@@ -64,13 +64,13 @@ const AgencyDashboard: React.FC = () => {
         unitId: suggestion.unitId,
       });
       alert("Suggestion accepted and assignment created.");
-    } catch (err) {
+    } catch {
       alert("Failed to assign suggestion.");
     }
   };
 
   return (
-    <PageWrapper title="Agency Command Center">
+    <AppLayout>
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <StatCard label="Active incidents" value={stats.active} icon={<Activity size={18} />} />
         <StatCard label="Resolved (48h)" value={stats.resolved} icon={<CheckCircle size={18} />} />
@@ -163,7 +163,7 @@ const AgencyDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </PageWrapper>
+    </AppLayout>
   );
 };
 

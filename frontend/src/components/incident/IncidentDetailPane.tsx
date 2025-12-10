@@ -69,7 +69,7 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const isOpen = Boolean(incident);
-  const [recs, setRecs] = useState<any[]>([]);
+  const [recs, setRecs] = useState<Array<{ agencyId: number; unitId: number | null; distanceKm?: number | null; totalScore?: number }>>([]);
   const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
@@ -98,9 +98,9 @@ const IncidentDetailPane: React.FC<Props> = ({
       try {
         const res = await api.get(`/dispatch/recommend/${incident.id}`);
         setRecs(res.data || []);
-      } catch (err) {
-        setRecs([]);
-      } finally {
+    } catch {
+      setRecs([]);
+    } finally {
         setRecsLoading(false);
       }
     };
@@ -237,8 +237,8 @@ const IncidentDetailPane: React.FC<Props> = ({
                             });
                             alert("Suggestion accepted.");
                           } catch {
-                            alert("Failed to assign suggestion.");
-                          }
+                              alert("Failed to assign suggestion.");
+                            }
                         }}
                       >
                         Accept suggestion

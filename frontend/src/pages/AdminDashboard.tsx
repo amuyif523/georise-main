@@ -14,15 +14,12 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="min-h-full bg-[#0A0F1A] text-slate-100 pt-16 pb-12">
-      <div className="max-w-5xl mx-auto px-4 space-y-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="grid gap-6">
+        <div className="flex justify-between items-center">
           <div>
             <p className="text-sm text-cyan-200">Admin workspace</p>
             <h1 className="text-3xl font-bold">System overview</h1>
-            <p className="text-slate-400 text-sm">
-              Monitor categories and recent severities.
-            </p>
+            <p className="text-slate-400 text-sm">Monitor categories and recent severities.</p>
           </div>
           <button className="btn btn-outline btn-sm" onClick={logout}>
             Logout
@@ -63,7 +60,6 @@ const AdminDashboard: React.FC = () => {
           ))}
         </div>
       </div>
-    </div>
     </AppLayout>
   );
 };

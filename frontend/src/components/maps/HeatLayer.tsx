@@ -20,9 +20,15 @@ const HeatLayer: React.FC<Props> = ({ points, enabled = true }) => {
 
   useEffect(() => {
     if (!enabled || !points.length) return;
-    // @ts-ignore leaflet.heat augments L
-    const layer: L.Layer = (window as any).L.heatLayer(
-      points.map((p) => [p.lat, p.lng, Math.max(0.1, Math.min(1, p.severity / 5))]),
+    const heatFactory = (
+      window as typeof window & {
+        L: typeof import("leaflet") & {
+          heatLayer: (pts: [number, number, number][], opts: Record<string, unknown>) => L.Layer;
+        };
+      }
+    ).L.heatLayer;
+    const layer: L.Layer = heatFactory(
+      points.map((p: HeatPoint) => [p.lat, p.lng, Math.max(0.1, Math.min(1, p.severity / 5))]),
       { radius: 30, blur: 20, maxZoom: 18 }
     );
     layer.addTo(map);

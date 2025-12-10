@@ -3,13 +3,22 @@ import api from "../lib/api";
 
 const QUEUE_KEY = "offline_incident_queue";
 
+export interface IncidentPayload {
+  title?: string;
+  description?: string;
+  category?: string;
+  latitude?: number;
+  longitude?: number;
+  [key: string]: unknown;
+}
+
 export interface OfflineIncident {
   tempId: string;
-  payload: any;
+  payload: IncidentPayload;
   createdAt: string;
 }
 
-export async function addToIncidentQueue(payload: any) {
+export async function addToIncidentQueue(payload: IncidentPayload) {
   const queue: OfflineIncident[] = ((await get(QUEUE_KEY)) as OfflineIncident[]) || [];
   const item: OfflineIncident = {
     tempId: `temp_${Date.now()}`,

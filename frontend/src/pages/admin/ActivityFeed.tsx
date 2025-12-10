@@ -36,7 +36,6 @@ const ActivityFeed: React.FC = () => {
     socket.on("incident:created", createdHandler);
     socket.on("incident:updated", updatedHandler);
     socket.on("disconnect", () => {
-      // add warning entry
       setEvents((prev) => [
         { id: `disc-${Date.now()}`, type: "DISCONNECTED", incidentId: 0, category: null, status: "N/A", createdAt: new Date().toISOString() },
         ...prev,
@@ -64,11 +63,12 @@ const ActivityFeed: React.FC = () => {
             >
               <div>
                 <span className="text-cyan-300 mr-2">{e.type}</span>
-                Incident #{e.incidentId} — {e.category || "N/A"} — {e.status}
+                Incident #{e.incidentId} – {e.category || "N/A"} – {e.status}
               </div>
               <div className="text-xs text-slate-500">{new Date(e.createdAt).toLocaleTimeString()}</div>
             </div>
           ))}
+          {!events.length && <div className="text-sm text-slate-400">Waiting for activity…</div>}
         </div>
       </div>
     </AppLayout>
