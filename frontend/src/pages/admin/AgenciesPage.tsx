@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, FeatureGroup } from "react-leaflet";
+import { MapContainer, TileLayer, FeatureGroup, GeoJSON } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import api from "../../lib/api";
 import AppLayout from "../../layouts/AppLayout";
@@ -13,6 +13,7 @@ type Agency = {
   description?: string | null;
   isApproved: boolean;
   isActive: boolean;
+  boundary?: any;
 };
 
 const AgenciesPage: React.FC = () => {
@@ -33,6 +34,7 @@ const AgenciesPage: React.FC = () => {
         description: m.description || "",
         isApproved: m.isApproved,
         isActive: m.isActive,
+        boundary: m.boundary,
       }));
       setAgencies(allAgencies);
     } catch (err: any) {
@@ -91,6 +93,13 @@ const AgenciesPage: React.FC = () => {
               className="w-full h-full rounded-lg border border-slate-800 overflow-hidden"
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              {selectedAgency?.boundary && (
+                <GeoJSON
+                  key={`boundary-${selectedId}`}
+                  data={selectedAgency.boundary}
+                  style={{ color: "#06b6d4", weight: 2, fillOpacity: 0.1 }}
+                />
+              )}
               <FeatureGroup>
                 <EditControl
                   position="topright"

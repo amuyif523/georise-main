@@ -268,9 +268,10 @@ router.get(
       _count: { _all: true },
     });
 
-    const agencies = await prisma.agency.findMany({
-      select: { id: true, name: true, type: true, isActive: true, isApproved: true, city: true, description: true },
-    });
+    const agencies: any[] = await prisma.$queryRaw`
+      SELECT id, name, type, "isActive", "isApproved", city, description, ST_AsGeoJSON(boundary) as boundary
+      FROM "Agency"
+    `;
 
     const grouped = agencies.map((a) => {
       const rows = agencyLoads.filter((r) => r.assignedAgencyId === a.id);
@@ -286,6 +287,7 @@ router.get(
         isApproved: a.isApproved,
         city: a.city,
         description: a.description,
+        boundary: a.boundary ? JSON.parse(a.boundary) : null,
         total,
         resolved,
       };
