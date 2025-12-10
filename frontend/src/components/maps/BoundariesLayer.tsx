@@ -4,15 +4,17 @@ import { GeoJSON } from "react-leaflet";
 import api from "../../lib/api";
 
 type BoundaryFeature = {
-  gid: number;
+  gid?: number;
+  id?: number;
   zone_name?: string;
   woreda_name?: string;
+  name?: string;
   geometry: string;
 };
 
 interface Props {
-  level: "subcity" | "woreda";
-  onSelect?: (id: number, props: { zone_name?: string; woreda_name?: string }) => void;
+  level: "subcity" | "woreda" | "agency";
+  onSelect?: (id: number, props: { zone_name?: string; woreda_name?: string; name?: string }) => void;
 }
 
 const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
@@ -28,9 +30,10 @@ const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
           features: rows.map((row) => ({
             type: "Feature",
             properties: {
-              gid: row.gid,
+              gid: row.gid ?? row.id,
               zone_name: row.zone_name,
               woreda_name: row.woreda_name,
+              name: row.name,
             },
             geometry: row.geometry ? JSON.parse(row.geometry) : null,
           })),
@@ -49,18 +52,18 @@ const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
     <GeoJSON
       data={features as any}
       style={() => ({
-        color: level === "woreda" ? "#f97316" : "#22d3ee",
+        color: level === "woreda" ? "#f97316" : level === "agency" ? "#a855f7" : "#22d3ee",
         weight: 1,
         fillOpacity: 0.05,
       })}
       onEachFeature={(feature, layer) => {
         const props: any = feature.properties || {};
-        const title = `${props.zone_name ?? ""} ${props.woreda_name ?? ""}`.trim();
+        const title = `${props.name ?? ""} ${props.zone_name ?? ""} ${props.woreda_name ?? ""}`.trim();
         if (title) {
           layer.bindTooltip(title, { direction: "center" });
         }
         layer.on("click", () => {
-          onSelect?.(props.gid, props);
+          onSelect?.(props.gid ?? props.id, props);
         });
       }}
     />

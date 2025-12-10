@@ -27,6 +27,14 @@ router.get(
 
 router.get("/boundaries", requireAuth, async (req, res) => {
   const level = (req.query.level as string) || "subcity";
+  if (level === "agency") {
+    const rows = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT id, name, type, ST_AsGeoJSON(boundary) AS geometry
+      FROM "Agency"
+      WHERE boundary IS NOT NULL
+    `);
+    return res.json(rows);
+  }
   if (level === "woreda") {
     const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, name, subcity_id AS "subCityId", ST_AsGeoJSON(boundary) AS geometry

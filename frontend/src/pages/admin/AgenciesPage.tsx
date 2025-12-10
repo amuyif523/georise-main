@@ -24,19 +24,17 @@ const AgenciesPage: React.FC = () => {
 
   const fetchAll = async () => {
     try {
-      const res = await api.get("/admin/agencies/pending");
       const metrics = await api.get("/admin/metrics/agencies");
-      const pending: Agency[] = res.data.agencies || [];
-      const fromMetrics: Agency[] = (metrics.data.agencies || []).map((m: any) => ({
+      const allAgencies: Agency[] = (metrics.data.agencies || []).map((m: any) => ({
         id: m.agencyId,
         name: m.name,
         type: m.type,
-        city: "Addis",
-        description: "",
-        isApproved: m.isActive,
+        city: m.city || "Addis",
+        description: m.description || "",
+        isApproved: m.isApproved,
         isActive: m.isActive,
       }));
-      setAgencies([...pending, ...fromMetrics]);
+      setAgencies(allAgencies);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to load agencies");
     } finally {

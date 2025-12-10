@@ -104,7 +104,7 @@ const AgencyMap: React.FC = () => {
   const [fallbackPoll, setFallbackPoll] = useState<ReturnType<typeof setInterval> | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
   const [selectedSubCity, setSelectedSubCity] = useState<string>("");
-  const [boundaryLevel, setBoundaryLevel] = useState<"subcity" | "woreda">("subcity");
+  const [boundaryLevel, setBoundaryLevel] = useState<"subcity" | "woreda" | "agency">("subcity");
   const [responders, setResponders] = useState<any[]>([]);
 
   const fetchData = async () => {
@@ -368,6 +368,7 @@ const AgencyMap: React.FC = () => {
           >
             <option value="subcity">Subcity</option>
             <option value="woreda">Woreda</option>
+            <option value="agency">Agency</option>
           </select>
         </div>
         <label className="flex items-center gap-2 cursor-pointer">

@@ -269,7 +269,7 @@ router.get(
     });
 
     const agencies = await prisma.agency.findMany({
-      select: { id: true, name: true, type: true, isActive: true },
+      select: { id: true, name: true, type: true, isActive: true, isApproved: true, city: true, description: true },
     });
 
     const grouped = agencies.map((a) => {
@@ -283,6 +283,9 @@ router.get(
         name: a.name,
         type: a.type,
         isActive: a.isActive,
+        isApproved: a.isApproved,
+        city: a.city,
+        description: a.description,
         total,
         resolved,
       };
