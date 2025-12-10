@@ -165,19 +165,6 @@ async function main() {
     })),
   });
 
-  // Simple demo subcity polygons for boundary overlays
-  await prisma.$executeRawUnsafe(`DELETE FROM "SubCity";`);
-  await prisma.$executeRawUnsafe(`
-    INSERT INTO "SubCity" (name, code, jurisdiction, "createdAt", "updatedAt") VALUES
-      ('Bole','BOLE', ST_GeomFromText('SRID=4326;POLYGON((38.74 8.94,38.82 8.94,38.82 9.02,38.74 9.02,38.74 8.94))'), now(), now()),
-      ('Yeka','YEKA', ST_GeomFromText('SRID=4326;POLYGON((38.80 8.99,38.89 8.99,38.89 9.08,38.80 9.08,38.80 8.99))'), now(), now()),
-      ('Arada','ARADA', ST_GeomFromText('SRID=4326;POLYGON((38.70 9.00,38.78 9.00,38.78 9.08,38.70 9.08,38.70 9.00))'), now(), now())
-    ON CONFLICT (name) DO UPDATE
-      SET jurisdiction = EXCLUDED.jurisdiction,
-          code = EXCLUDED.code,
-          "updatedAt" = now();
-  `);
-
   console.log("Seed complete");
 }
 

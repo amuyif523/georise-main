@@ -69,9 +69,13 @@ const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({
 
   useEffect(() => {
     if (!enabled || points.length === 0) return;
+    const safePoints = points.filter(
+      (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng)
+    );
+    if (safePoints.length === 0) return;
     // @ts-ignore leaflet.heat augments L
     const layer = L.heatLayer(
-      points.map((p) => [p.lat, p.lng, p.weight ?? 1]),
+      safePoints.map((p) => [p.lat, p.lng, p.weight ?? 1]),
       { radius: 20, blur: 15, maxZoom: 18 }
     );
     layer.addTo(map);
@@ -119,7 +123,14 @@ const AgencyMap: React.FC = () => {
         incs = incs.filter((i: any) => i.subCityId === Number(selectedSubCity));
       }
       setIncidents(incs);
-      setHeatPoints(heatRes.data.points || heatRes.data || []);
+      const rawHeat = heatRes.data.points || heatRes.data || [];
+      const filteredHeat = (rawHeat as any[]).filter(
+        (p) =>
+          p != null &&
+          Number.isFinite(p.lat) &&
+          Number.isFinite(p.lng)
+      );
+      setHeatPoints(filteredHeat as HeatPoint[]);
       setClusterPoints(
         (clusterRes.data || []).map((c: any) => ({
           id: c.id || c.cluster_id || Math.random(),

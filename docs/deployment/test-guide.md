@@ -1,123 +1,99 @@
-# GEORISE Local Run & Test Guide (Dev Mode)
+# GEORISE Local Test Guide (Dev Stack)
 
-Run everything locally with hot reloads. Commands are for **PowerShell** on this machine.
+This walks you through starting services locally, logging in with seeded accounts, and what to click on each page to verify the flows.
 
 ## 1) Prereqs
-- Docker Desktop running.
-- Ports free: 4000 (backend), 8001 (AI), 5173 (frontend).
-- Database container running (PostGIS). If you don’t have it up:
-  ```powershell
-  cd infra
-  docker compose up -d   # uses your dev compose
-  ```
-  Ensure DB is reachable at the host/port your `.env` expects (often `localhost:55432`).
+- Docker running
+- Node installed
+- Ports:
+  - DB: host 54320
+  - Backend: 4000
+  - Frontend: 5173
 
-## 2) Backend (Node/TypeScript)
+## 2) Start the database
+```powershell
+cd infra
+docker compose up -d db
+docker ps   # confirm db is 0.0.0.0:54320->5432
+```
+
+## 3) Start backend
 ```powershell
 cd backend
-npm install   # first time only
-npm run dev   # starts ts-node-dev on port 4000
+npm install
+npm run dev
 ```
-Health check: http://localhost:4000/health
+- Backend runs at http://localhost:4000
 
-## 3) AI Service (FastAPI)
+## 4) Start frontend
 ```powershell
-cd ai-service
-python -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8001
+cd ../frontend
+npm install --legacy-peer-deps   # if npm install complains
+npm run dev -- --host
 ```
-Health check: http://localhost:8001/health
+- Frontend runs at http://localhost:5173
+- Clear `georise_token` from localStorage before testing to avoid expired JWTs.
 
-## 4) Frontend (Vite)
+## 5) Seed data (if needed after a reset)
 ```powershell
-cd frontend
-npm install   # first time only
-npm run dev   # prints URL, usually http://localhost:5173
+cd ../backend
+npx prisma db seed
 ```
-Make sure `frontend/.env` (or `.env.production` if reused) has:
-```
-VITE_API_URL=http://localhost:4000/api
-```
-
-## 5) Demo Logins (check actual users in DB)
-List users:
-```powershell
-docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT id,email,role FROM "User";'
-```
-Typical demo credentials (adjust if your DB differs):
+Seeded accounts:
 - Admin: admin@example.com / password123
 - Agency: police1@example.com / password123
-- Citizen: citizen@example.com / password123
+- Citizen: citizen1@example.com / password123
 
-## 6) Admin Flow (Command Theme)
-1. Log in as Admin.
-2. Demo Control (if present):
-   - “Reset Demo Data”
-   - “Seed Addis Scenario 1”
-3. Analytics:
-   - Open Admin Analytics; confirm KPI cards and charts render.
-4. (Optional) Audit/Users/Agencies pages: tables load, badges show roles/status.
+## 6) Test flows by role
 
-## 7) Agency Flow (Command Theme)
-1. Log in as agency staff.
-2. Dashboard/Queue:
-   - Incident table with Severity badges.
-3. Map:
-   - Agency Map shows markers; if boundaries configured, polygons appear.
-4. Dispatch suggestion:
-   - Select an incident → “Suggested Dispatch” card → Accept to assign.
-5. Agency Analytics:
-   - KPIs/charts scoped to that agency.
+### Admin (http://localhost:5173/login)
+1) Login as admin@example.com / password123.
+2) Dashboard: check cards load. Click:
+   - Manage agencies (Agencies page loads)
+   - Manage users (Users page loads)
+   - Audit logs (Audit page loads)
+   - Analytics (Analytics page loads)
+3) Agencies: list renders; selecting an agency shows boundary editor; Save boundary should not crash.
+4) Users: table renders; you can view details (no errors).
+5) Verification: list of pending verifications; no errors on load.
+6) Review Queue: incidents pending review list loads.
+7) Activity Feed: should load without 500s.
+8) Analytics: charts load; no blank/white screen.
+9) Audit: table loads; no errors.
+10) Demo Control: buttons render (don’t need to run them unless desired).
 
-## 8) Citizen Flow (Calm Theme)
-1. Log in as Citizen.
-2. Dashboard:
-   - Light theme, “Report Emergency” entry.
-   - “My Reports” shows incidents or EmptyState.
-3. Report Incident:
-   - Submit; success message appears. If offline, queue syncs when back online.
-4. My Reports:
-   - New incident should appear with status.
+#### Boundary workflow (admin)
+1) Go to Agencies.
+2) Click an agency row; the map and “Select boundary” control appear.
+3) On the map, draw a polygon using the drawing tool (rectangle or free polygon).
+4) Click “Save boundary” (or equivalent) to persist. No errors should appear.
+5) Validation: boundaries are stored in DB (geometry column on Agency). You can also hit backend GET `/api/gis/boundaries` (dev mode) to confirm it returns without 500s.
+6) Extra check: ensure no 500s in browser console when selecting/drawing/saving; reload the page and verify the agency still shows the saved boundary (if the UI supports reloading the shape).
 
-## 9) API Spot Checks (optional)
-```powershell
-# Backend health
-curl http://localhost:4000/health
+### Agency Staff (http://localhost:5173/login)
+1) Login as police1@example.com / password123.
+2) Dashboard: incidents list loads; no errors.
+3) Map: loads without errors (even if no boundaries visible); incidents appear if seeded.
+4) Analytics: loads charts; no errors.
+5) Other links in sidebar: should not 404/500.
 
-# AI classify test
-curl -X POST http://localhost:8001/classify `
-  -H "Content-Type: application/json" `
-  -d "{\"title\":\"fire near bole\",\"description\":\"smoke from apartment\"}"
-```
+### Citizen (http://localhost:5173/login)
+1) Login as citizen1@example.com / password123.
+2) Dashboard: loads with buttons/links; no errors.
+3) Report Incident: form loads; can submit (if backend running and logged in).
+4) My Reports: table loads (seeded incidents may show).
 
-## 10) Data Validation (optional, via psql)
-- Incident count:
-```powershell
-docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT COUNT(*) FROM "Incident";'
-```
-- Demo incidents:
-```powershell
-docker exec -it georisem-db psql -U georisem -d georisem_db -c 'SELECT COUNT(*) FROM "Incident" WHERE "isDemo"=true;'
-```
-- Geometry column:
-```powershell
-docker exec -it georisem-db psql -U georisem -d georisem_db -c '\d "Incident"'
-```
-Look for `location | geometry(Point,4326)` and index `incident_location_geom_idx`.
+## 7) Backend health checks
+- Health: http://localhost:4000/health should return JSON {status: "ok", service: ...}
+- If login fails with DB error, ensure db container is up and env DATABASE_URL points to localhost:54320.
 
-## 11) Stop Services
-- Stop backend/frontend/AI by closing their terminals.
-- Stop DB (if needed):
+## 8) Common fixes during testing
+- Expired token: Clear `georise_token` in browser and re-login.
+- Port in use (4000/54320/5173): stop conflicting process or change port in .env and restart.
+- If boundaries request 500s: ensure DB has run all migrations and seed; GIS endpoints now use SubCity/Woreda tables.
+
+## 9) Stop services
 ```powershell
 cd infra
 docker compose down
 ```
-
-## 12) Troubleshooting
-- CORS: keep frontend pointing to `http://localhost:4000/api` in dev.
-- Ports busy: stop other services on 4000/8001/5173.
-- Agency 403: ensure the agency staff user has an `agencyStaff` row pointing to an agency.
-
-This guide is purely for local dev mode (no production compose). Follow in order for a predictable setup and demo. 

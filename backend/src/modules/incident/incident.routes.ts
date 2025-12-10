@@ -187,13 +187,13 @@ router.get(
             OR (
               i.location IS NOT NULL AND EXISTS (
                 SELECT 1 FROM "AgencyJurisdiction" aj
-                JOIN addis_subcities s ON aj."boundaryId" = s.gid AND aj."boundaryType" = 'SUBCITY'
-                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.geom, i.location)
+                JOIN "SubCity" s ON aj."boundaryId" = s.id AND aj."boundaryType" = 'SUBCITY'
+                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
               )
               OR i.location IS NOT NULL AND EXISTS (
                 SELECT 1 FROM "AgencyJurisdiction" aj
-                JOIN addis_woredas w ON aj."boundaryId" = w.gid AND aj."boundaryType" = 'WOREDA'
-                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.geom, i.location)
+                JOIN "Woreda" w ON aj."boundaryId" = w.id AND aj."boundaryType" = 'WOREDA'
+                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.boundary, i.location)
               )
             )
           )
@@ -251,12 +251,12 @@ router.get(
           AND (
             ${req.user?.role === Role.ADMIN ? "TRUE" : `i.\"assignedAgencyId\" = ${agencyId} OR EXISTS (
               SELECT 1 FROM \"AgencyJurisdiction\" aj
-              JOIN addis_subcities s ON aj.\"boundaryId\" = s.gid AND aj.\"boundaryType\"='SUBCITY'
-              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(s.geom, i.location)
+              JOIN \"SubCity\" s ON aj.\"boundaryId\" = s.id AND aj.\"boundaryType\"='SUBCITY'
+              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
             ) OR EXISTS (
               SELECT 1 FROM \"AgencyJurisdiction\" aj
-              JOIN addis_woredas w ON aj.\"boundaryId\" = w.gid AND aj.\"boundaryType\"='WOREDA'
-              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(w.geom, i.location)
+              JOIN \"Woreda\" w ON aj.\"boundaryId\" = w.id AND aj.\"boundaryType\"='WOREDA'
+              WHERE aj.\"agencyId\" = ${agencyId} AND ST_Contains(w.boundary, i.location)
             )`}
           )
         ORDER BY "severityScore" DESC NULLS LAST, "createdAt" DESC
