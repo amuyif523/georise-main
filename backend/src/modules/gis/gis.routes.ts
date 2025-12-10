@@ -25,19 +25,20 @@ router.get(
   }
 );
 
-// Generic imported boundaries from Ethiopia_AdminBoundaries.geojson
 router.get("/boundaries", requireAuth, async (req, res) => {
   const level = (req.query.level as string) || "subcity";
   if (level === "woreda") {
     const rows = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT gid, zone_name, woreda_name, ST_AsGeoJSON(geom) AS geometry
-      FROM addis_woredas
+      SELECT id, name, subcity_id AS "subCityId", ST_AsGeoJSON(boundary) AS geometry
+      FROM "Woreda"
+      WHERE boundary IS NOT NULL
     `);
     return res.json(rows);
   }
   const rows = await prisma.$queryRawUnsafe<any[]>(`
-    SELECT gid, zone_name, ST_AsGeoJSON(geom) AS geometry
-    FROM addis_subcities
+    SELECT id, name, code, ST_AsGeoJSON(jurisdiction) AS geometry
+    FROM "SubCity"
+    WHERE jurisdiction IS NOT NULL
   `);
   return res.json(rows);
 });
@@ -45,13 +46,14 @@ router.get("/boundaries", requireAuth, async (req, res) => {
 router.get("/boundaries/:id/incidents", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   const level = (req.query.level as string) || "subcity";
-  const table = level === "woreda" ? "addis_woredas" : "addis_subcities";
+  const table = level === "woreda" ? '"Woreda"' : '"SubCity"';
+  const geomColumn = level === "woreda" ? "boundary" : "jurisdiction";
   const incidents = await prisma.$queryRawUnsafe<any[]>(`
     SELECT i.id, i.title, i.status, i.latitude, i.longitude
     FROM "Incident" i
     JOIN ${table} b
-      ON ST_Contains(b.geom, i.location)
-    WHERE b.gid = ${id}
+      ON ST_Contains(b.${geomColumn}, i.location)
+    WHERE b.id = ${id}
   `);
   res.json(incidents);
 });
@@ -62,11 +64,11 @@ router.get("/incident/:id/context", requireAuth, async (req, res) => {
     SELECT
       i.id,
       i.title,
-      sub.zone_name AS subcity,
-      wor.woreda_name AS woreda
+      sub.name AS subcity,
+      wor.name AS woreda
     FROM "Incident" i
-    LEFT JOIN addis_woredas wor ON ST_Contains(wor.geom, i.location)
-    LEFT JOIN addis_subcities sub ON ST_Contains(sub.geom, i.location)
+    LEFT JOIN "Woreda" wor ON i.location IS NOT NULL AND wor.boundary IS NOT NULL AND ST_Contains(wor.boundary, i.location)
+    LEFT JOIN "SubCity" sub ON i.location IS NOT NULL AND sub.jurisdiction IS NOT NULL AND ST_Contains(sub.jurisdiction, i.location)
     WHERE i.id = ${id}
     LIMIT 1
   `);
