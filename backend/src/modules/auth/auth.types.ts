@@ -17,4 +17,5 @@ export interface AuthTokenPayload {
   userId: number;
   role: Role;
   tokenVersion?: number;
+  agencyId?: number | null;
 }

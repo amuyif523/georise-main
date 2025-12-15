@@ -8,10 +8,17 @@ import { ResponderStatus } from "@prisma/client";
 let io: Server | null = null;
 
 export const initSocketServer = (server: HttpServer) => {
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    process.env.CLIENT_ORIGIN,
+  ].filter(Boolean) as string[];
+
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 
@@ -25,22 +32,28 @@ export const initSocketServer = (server: HttpServer) => {
     }
     try {
       const payload = authService.verifyToken(token);
-      const { userId, role } = payload;
-      (socket as any).user = { id: userId, role };
+      const { userId, role, agencyId } = payload;
+      (socket as any).user = { id: userId, role, agencyId };
       socket.join(`user:${userId}`);
       socket.join(`role:${role}`);
 
-      try {
-        const staff = await prisma.agencyStaff.findUnique({
-          where: { userId },
-          select: { agencyId: true },
-        });
-        if (staff?.agencyId) {
-          socket.join(`agency:${staff.agencyId}`);
-          logger.info({ userId, agencyId: staff.agencyId }, "Joined agency room");
+      if (agencyId) {
+        socket.join(`agency:${agencyId}`);
+        logger.info({ userId, agencyId }, "Joined agency room");
+      } else {
+        // Fallback for older tokens or if agencyId wasn't in payload
+        try {
+          const staff = await prisma.agencyStaff.findUnique({
+            where: { userId },
+            select: { agencyId: true },
+          });
+          if (staff?.agencyId) {
+            socket.join(`agency:${staff.agencyId}`);
+            logger.info({ userId, agencyId: staff.agencyId }, "Joined agency room (fallback)");
+          }
+        } catch (err) {
+          logger.error({ err }, "Failed joining agency room");
         }
-      } catch (err) {
-        logger.error({ err }, "Failed joining agency room");
       }
 
       // Join responder room if linked
@@ -62,16 +75,26 @@ export const initSocketServer = (server: HttpServer) => {
         try {
           const resp = await prisma.responder.findFirst({ where: { userId } });
           if (!resp) return;
-          const { lat, lng } = payload;
+          const { lat, lng, status } = payload;
+          
+          const updateData: any = { latitude: lat, longitude: lng };
+          if (status && Object.values(ResponderStatus).includes(status)) {
+            updateData.status = status;
+          }
+
           const updated = await prisma.responder.update({
             where: { id: resp.id },
-            data: { latitude: lat, longitude: lng, status: ResponderStatus.EN_ROUTE },
+            data: updateData,
           });
-          io?.to(`agency:${updated.agencyId}`).emit("responder:position", {
-            responderId: updated.id,
-            lat,
-            lng,
-          });
+          
+          if (updated.agencyId) {
+             io?.to(`agency:${updated.agencyId}`).emit("responder:position", {
+              responderId: updated.id,
+              lat,
+              lng,
+              status: updated.status
+            });
+          }
         } catch (err) {
           logger.error({ err }, "responder:locationUpdate failed");
         }

@@ -58,6 +58,7 @@ export class AuthService {
   async login(data: LoginRequestBody) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
+      include: { agencyStaff: true },
     });
 
     if (!user) {
@@ -81,7 +82,8 @@ export class AuthService {
       data: { failedLoginAttempts: 0, lockedUntil: null },
     });
 
-    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0);
+    const agencyId = user.agencyStaff?.agencyId || null;
+    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
     // Audit login success
@@ -102,6 +104,7 @@ export class AuthService {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        agencyId,
         trustScore: user.trustScore ?? 0,
         totalReports: user.totalReports ?? 0,
         validReports: user.validReports ?? 0,
@@ -115,8 +118,8 @@ export class AuthService {
     return decoded;
   }
 
-  createAccessToken(userId: number, role: Role, tokenVersion: number) {
-    const payload: AuthTokenPayload = { userId, role, tokenVersion };
+  createAccessToken(userId: number, role: Role, tokenVersion: number, agencyId?: number | null) {
+    const payload: AuthTokenPayload = { userId, role, tokenVersion, agencyId };
     return jwt.sign(
       payload,
       JWT_SECRET as jwt.Secret,
@@ -138,13 +141,17 @@ export class AuthService {
 
   async rotateRefresh(oldToken: string) {
     const decoded = this.verifyRefresh(oldToken);
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({ 
+      where: { id: decoded.userId },
+      include: { agencyStaff: true }
+    });
     if (!user || user.isActive === false) throw new Error("User not active");
     if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
       throw new Error("Invalid refresh token");
     }
 
-    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0);
+    const agencyId = user.agencyStaff?.agencyId || null;
+    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
     return { access, refresh, user };
   }

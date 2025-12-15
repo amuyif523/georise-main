@@ -1,16 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { Role } from "@prisma/client";
 import { authService } from "../modules/auth/auth.service";
-
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    role: Role;
-  };
-}
+import logger from "../logger";
 
 export const requireAuth = (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -28,17 +22,18 @@ export const requireAuth = (
     req.user = {
       id: payload.userId,
       role: payload.role,
+      agencyId: payload.agencyId,
     };
 
     return next();
   } catch (err) {
-    console.error("Auth error:", err);
+    logger.error({ err }, "Auth error");
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
 export const requireRole = (roles: Role[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
