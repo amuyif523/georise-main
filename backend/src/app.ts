@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import compression from "compression";
-import rateLimit from "express-rate-limit";
+import { apiLimiter, authLimiter } from "./middleware/rateLimiter";
 import authRoutes from "./modules/auth/auth.routes";
 import incidentRoutes from "./modules/incident/incident.routes";
 import adminRoutes from "./modules/admin/admin.routes";
@@ -41,11 +41,7 @@ app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 
 // Global rate limiter
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000,
-});
-app.use(globalLimiter);
+app.use(apiLimiter);
 
 // Health check
 app.get("/health", (_req, res) => {
@@ -53,12 +49,6 @@ app.get("/health", (_req, res) => {
 });
 
 // Routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { message: "Too many login attempts, please try again later." },
-});
-
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/admin", adminRoutes);
