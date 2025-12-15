@@ -10,6 +10,7 @@ interface User {
   fullName: string;
   email: string;
   role: Role;
+  agencyId?: number | null;
   trustScore?: number;
   totalReports?: number;
   validReports?: number;

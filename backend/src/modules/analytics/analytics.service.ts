@@ -73,7 +73,7 @@ class AnalyticsService {
     const rows: any[] = await prisma.$queryRawUnsafe(`
       SELECT
         ST_Y(i.location) AS lat,
-        ST_X(i.location) AS lon,
+        ST_X(i.location) AS lng,
         COALESCE(i."severityScore", 3) AS weight
       FROM "Incident" i
       WHERE i.location IS NOT NULL

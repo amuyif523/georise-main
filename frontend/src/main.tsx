@@ -11,6 +11,7 @@ import AgencyDashboard from "./pages/AgencyDashboard";
 import CitizenDashboard from "./pages/CitizenDashboard";
 import MyReportsPage from "./pages/MyReportsPage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
 import RoleRedirect from "./pages/RoleRedirect";
 
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <OnlineStatusBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/redirect-after-login"
             element={
