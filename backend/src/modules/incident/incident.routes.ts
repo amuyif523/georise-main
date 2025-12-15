@@ -16,6 +16,7 @@ import { validateBody } from "../../middleware/validate";
 import { createIncidentSchema } from "./incident.validation";
 import { emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
 import { reputationService } from "../reputation/reputation.service";
+import { alertService } from "../alert/alert.service";
 import { logActivity } from "./activity.service";
 import { getIO } from "../../socket";
 import rateLimit from "express-rate-limit";
@@ -422,8 +423,15 @@ router.post(
       });
 
       if (incident.reporterId) {
-        if (decision === "APPROVE") await reputationService.onIncidentValidated(incident.reporterId);
+        if (decision === "APPROVE") {
+          await reputationService.onIncidentValidated(incident.reporterId);
+          // Check for proximity alerts
+          await alertService.checkProximityAndAlert(updated.id);
+        }
         else await reputationService.onIncidentRejected(incident.reporterId);
+      } else if (decision === "APPROVE") {
+          // Even if no reporter, we should alert if approved
+          await alertService.checkProximityAndAlert(updated.id);
       }
 
       emitIncidentUpdated(toIncidentPayload(updated));

@@ -250,7 +250,7 @@ export class IncidentService {
       include: { agency: true }
     });
 
-    await logActivity(incidentId, null, "SYSTEM", `Incident shared with ${shared.agency.name}: ${reason}`);
+    await logActivity(incidentId, "SYSTEM", `Incident shared with ${shared.agency.name}: ${reason}`);
     
     // Emit update
     const incident = await prisma.incident.findUnique({ where: { id: incidentId } });

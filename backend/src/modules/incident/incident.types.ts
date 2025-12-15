@@ -3,6 +3,7 @@ export interface CreateIncidentRequest {
   description: string;
   latitude?: number;
   longitude?: number;
+  isReporterAtScene?: boolean;
 }
 
 export interface IncidentListItem {

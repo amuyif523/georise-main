@@ -379,7 +379,7 @@ router.patch(
         action: "TOGGLE_SHADOW_BAN",
         targetType: "User",
         targetId: userId,
-        details: { isShadowBanned },
+        note: JSON.stringify({ isShadowBanned }),
       },
     });
 

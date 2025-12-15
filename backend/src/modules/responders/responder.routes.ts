@@ -37,7 +37,7 @@ router.post("/", requireAuth, requireRole([Role.ADMIN, Role.AGENCY_STAFF]), asyn
 
     // If userId provided, ensure it exists and isn't already a responder
     if (userId) {
-      const existing = await prisma.responder.findUnique({ where: { userId: Number(userId) } });
+      const existing = await prisma.responder.findFirst({ where: { userId: Number(userId) } });
       if (existing) return res.status(400).json({ message: "User is already linked to a responder" });
     }
 

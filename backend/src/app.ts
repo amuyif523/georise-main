@@ -12,6 +12,7 @@ import verificationRoutes from "./modules/verification/verification.routes";
 import responderRoutes from "./modules/responders/responder.routes";
 import dispatchRoutes from "./modules/dispatch/dispatch.routes";
 import demoRoutes from "./modules/demo/demo.routes";
+import userRoutes from "./modules/user/user.routes";
 import logger from "./logger";
 
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api/verification", verificationRoutes);
 app.use("/api/responders", responderRoutes);
 app.use("/api/dispatch", dispatchRoutes);
 app.use("/api/demo", demoRoutes);
+app.use("/api/users", userRoutes);
 
 // Error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

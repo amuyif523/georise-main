@@ -98,6 +98,26 @@ model User {
   activityLogs        ActivityLog[]
   responders          Responder[]
   chatMessages        IncidentChat[]
+  notifications       Notification[]
+
+  lastLatitude  Float?
+  lastLongitude Float?
+  location      Unsupported("geometry(Point, 4326)")?
+
+  @@index([location], name: "user_location_idx", type: Gist)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    Int
+  title     String
+  message   String
+  type      String   // "PROXIMITY_ALERT", "SYSTEM", etc.
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  data      Json?    // Extra data like incidentId
+
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Agency {
