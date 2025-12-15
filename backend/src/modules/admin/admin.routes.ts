@@ -356,6 +356,37 @@ router.patch(
   }
 );
 
+// Toggle shadow ban
+router.patch(
+  "/users/:id/shadow-ban",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  validateBody(z.object({ isShadowBanned: z.boolean() })),
+  async (req, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    const userId = parsed.data.id;
+    const { isShadowBanned } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isShadowBanned },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: "TOGGLE_SHADOW_BAN",
+        targetType: "User",
+        targetId: userId,
+        details: { isShadowBanned },
+      },
+    });
+
+    res.json({ user });
+  }
+);
+
 // Export incidents CSV (basic)
 router.get(
   "/export/incidents",

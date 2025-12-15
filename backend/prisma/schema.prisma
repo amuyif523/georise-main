@@ -76,6 +76,7 @@ model User {
   passwordHash String
   role         Role      @default(CITIZEN)
   isActive     Boolean   @default(true)
+  isShadowBanned Boolean @default(false)
   tokenVersion Int       @default(0)
   failedLoginAttempts Int @default(0)
   lockedUntil  DateTime?

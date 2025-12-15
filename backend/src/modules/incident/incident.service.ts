@@ -25,7 +25,7 @@ export class IncidentService {
 
     const user = await prisma.user.findUnique({
       where: { id: reporterId },
-      select: { trustScore: true, lastReportAt: true, citizenVerification: { select: { status: true } } },
+      select: { trustScore: true, lastReportAt: true, isShadowBanned: true, citizenVerification: { select: { status: true } } },
     });
     if (user?.lastReportAt) {
       const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
@@ -43,10 +43,15 @@ export class IncidentService {
     }
 
     let reviewStatus: any = "NOT_REQUIRED";
-    const tier = await reputationService.getTier(reporterId);
-    // Tier 0 (Unverified) always requires review
-    if (tier === 0) {
-      reviewStatus = "PENDING_REVIEW";
+    
+    if (user?.isShadowBanned) {
+      reviewStatus = "REJECTED";
+    } else {
+      const tier = await reputationService.getTier(reporterId);
+      // Tier 0 (Unverified) always requires review
+      if (tier === 0) {
+        reviewStatus = "PENDING_REVIEW";
+      }
     }
 
     const incident = await prisma.incident.create({
