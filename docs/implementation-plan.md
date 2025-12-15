@@ -26,8 +26,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 1.3 Rate Limiting & Anti-Abuse (Feature 4.2)
 - **Goal:** Protect the system from DDoS and spam bots.
 - **Tasks:**
-  - [ ] **Backend:** Implement Redis-based rate limiting per IP/User.
-  - [ ] **Backend:** Add "Shadow Ban" functionality for admins.
+  - [x] **Backend:** Implement Redis-based rate limiting per IP/User.
+  - [x] **Backend:** Add "Shadow Ban" functionality for admins.
 
 ---
 
