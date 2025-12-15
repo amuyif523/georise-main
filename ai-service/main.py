@@ -33,15 +33,29 @@ def load_model():
     Load a local fine-tuned model if present; otherwise fall back to base model.
     This keeps the endpoint working even before you drop trained weights.
     """
-    model_path = MODEL_DIR if MODEL_DIR.exists() else DEFAULT_MODEL_NAME
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
+        model_path = MODEL_DIR
+        print(f"Loading local model from {model_path}")
+    else:
+        model_path = DEFAULT_MODEL_NAME
+        print(f"Loading default base model {model_path}")
+        
+    tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
     model.eval()
     return tokenizer, model, str(model_path)
 
 
 tokenizer, model, model_version = load_model()
 
+def heuristic_category(text: str) -> str:
+    t = text.lower()
+    if any(w in t for w in ["fire", "smoke", "flame", "burn", "እሳት"]): return "FIRE"
+    if any(w in t for w in ["medical", "injury", "blood", "hurt", "pain", "sick", "hospital", "ambulance", "ሕክምና", "ደም"]): return "MEDICAL"
+    if any(w in t for w in ["crime", "theft", "robbery", "assault", "kill", "gun", "shoot", "police", "ወንጀል", "ፖሊስ"]): return "POLICE"
+    if any(w in t for w in ["traffic", "accident", "crash", "car", "vehicle", "road", "collision", "ትራፊክ", "መኪና"]): return "TRAFFIC"
+    if any(w in t for w in ["flood", "storm", "quake", "disaster", "water", "electric", "power", "light", "መብራት", "ውሃ"]): return "INFRASTRUCTURE"
+    return "OTHER"
 
 @app.get("/health")
 def health():
@@ -50,40 +64,62 @@ def health():
 
 @app.post("/classify", response_model=ClassifyResponse)
 def classify(req: ClassifyRequest):
-    text = (req.title.strip() + " " + req.description.strip()).strip()
-    if not text:
-        return ClassifyResponse(
-            predicted_category="OTHER",
-            severity_score=1,
-            confidence=0.0,
-            model_version=f"{model_version}-empty",
-            summary="Empty description",
+    try:
+        text = (req.title.strip() + " " + req.description.strip()).strip()
+        if not text:
+            return ClassifyResponse(
+                predicted_category="OTHER",
+                severity_score=1,
+                confidence=0.0,
+                model_version=f"{model_version}-empty",
+                summary="Empty description",
+            )
+
+        inputs = tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            padding="max_length",
+            max_length=128,
         )
 
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        padding="max_length",
-        max_length=128,
-    )
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            probs = torch.softmax(logits, dim=-1).cpu().numpy()[0]
 
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits
-        probs = torch.softmax(logits, dim=-1).cpu().numpy()[0]
+        pred_id = int(probs.argmax())
+        
+        # If using base model (not fine-tuned), id2label might be generic LABEL_0, etc.
+        # Or if confidence is very low, fallback to heuristic.
+        if "afro-xlmr-base" in str(model_version) and not MODEL_DIR.exists():
+             pred_label = heuristic_category(text)
+             confidence = 0.5
+        else:
+            pred_label = model.config.id2label.get(pred_id, "OTHER")
+            confidence = float(probs[pred_id])
+            
+            # Fallback if label is generic
+            if pred_label.startswith("LABEL_"):
+                pred_label = heuristic_category(text)
 
-    pred_id = int(probs.argmax())
-    pred_label = model.config.id2label.get(pred_id, "OTHER")
-    confidence = float(probs[pred_id])
+        severity = infer_severity(pred_label, text)
+        summary = req.title if req.title else text[:120]
 
-    severity = infer_severity(pred_label, text)
-    summary = req.title if req.title else text[:120]
-
-    return ClassifyResponse(
-        predicted_category=pred_label,
-        severity_score=severity,
-        confidence=confidence,
-        model_version=model_version,
-        summary=summary,
-    )
+        return ClassifyResponse(
+            predicted_category=pred_label,
+            severity_score=severity,
+            confidence=confidence,
+            model_version=model_version,
+            summary=summary,
+        )
+    except Exception as e:
+        print(f"Classification error: {e}")
+        # Fallback response
+        return ClassifyResponse(
+            predicted_category="OTHER",
+            severity_score=2,
+            confidence=0.0,
+            model_version="error-fallback",
+            summary="Error processing request"
+        )
