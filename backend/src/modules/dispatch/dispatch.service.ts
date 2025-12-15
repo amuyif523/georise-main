@@ -1,9 +1,11 @@
 import prisma from "../../prisma";
+import { routingService } from "../gis/routing.service";
 
 interface DispatchCandidate {
   agencyId: number;
   unitId: number | null;
   distanceKm: number | null;
+  estimatedDurationMin?: number | null;
   jurisdictionScore: number;
   severityScore: number;
   proximityScore: number;
@@ -32,6 +34,8 @@ export class DispatchService {
       SELECT id,
              severityScore,
              location,
+             latitude,
+             longitude,
              category
       FROM "Incident"
       WHERE id = ${incidentId}
@@ -119,13 +123,34 @@ export class DispatchService {
 
       for (const unit of agencyUnits) {
         const distanceKm = unit.distance_km as number | null;
+        
+        // Calculate drive time if location is available
+        let durationMin = 0;
+        if (incident.location && unit.lastLat && unit.lastLon) {
+             // We could await here, but doing it sequentially for many units is slow.
+             // For MVP, we'll do it for the top candidates later, or just use the heuristic inside routingService which is fast.
+             // Since our routingService is currently heuristic (sync math), we can call it.
+             // If it were async API, we'd want to Promise.all outside the loop.
+             const route = await routingService.calculateRoute(
+                 unit.lastLat, unit.lastLon, 
+                 incident.latitude, incident.longitude
+             );
+             durationMin = route.durationMin;
+        }
+
         const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
         const catBonus = categoryPreferred(incident.category, agency.type);
-        const totalScore = jurisdictionScore * 0.35 + severityNorm * 0.3 + proximityScore * 0.25 + catBonus;
+        
+        // Adjust score based on duration (shorter is better)
+        // If duration > 30 mins, penalty
+        const durationPenalty = durationMin > 30 ? 0.2 : 0;
+
+        const totalScore = jurisdictionScore * 0.35 + severityNorm * 0.3 + proximityScore * 0.25 + catBonus - durationPenalty;
         candidates.push({
           agencyId: agency.id,
           unitId: unit.id,
           distanceKm,
+          estimatedDurationMin: durationMin,
           jurisdictionScore,
           severityScore: severityNorm,
           proximityScore,
