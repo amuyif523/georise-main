@@ -69,9 +69,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 3.2 Admin GIS Management (Feature 4.1)
 - **Goal:** Allow admins to manage jurisdictions without SQL.
 - **Tasks:**
-  - [ ] **Frontend:** Implement `Leaflet-Draw` in Admin Console.
-  - [ ] **Frontend:** UI to Draw/Edit Agency Jurisdictions and Save as GeoJSON.
-  - [ ] **Backend:** API endpoint to update `Agency.jurisdiction` geometry.
+  - [x] **Frontend:** Implement `Leaflet-Draw` in Admin Console.
+  - [x] **Frontend:** UI to Draw/Edit Agency Jurisdictions and Save as GeoJSON.
+  - [x] **Backend:** API endpoint to update `Agency.jurisdiction` geometry.
 
 ---
 
@@ -81,10 +81,10 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 4.1 Crisis Mode & Public Safety (Feature 3.1, 1.4)
 - **Goal:** City-wide override for disasters and mass communication.
 - **Tasks:**
-  - [ ] **Backend:** Global `SystemConfig` toggle for "Crisis Mode".
-  - [ ] **Frontend:** "Crisis Banner" on all Citizen/Agency screens.
-  - [ ] **Logic:** Disable low-priority reporting categories during crisis.
-  - [ ] **Backend:** Implement "Broadcast Alert" feature (Admin sends message to all users in a specific Polygon/Subcity).
+  - [x] **Backend:** Global `SystemConfig` toggle for "Crisis Mode".
+  - [x] **Frontend:** "Crisis Banner" on all Citizen/Agency screens.
+  - [x] **Logic:** Disable low-priority reporting categories during crisis.
+  - [x] **Backend:** Implement "Broadcast Alert" feature (Admin sends message to all users in a specific Polygon/Subcity).
 
 ### 4.2 Advanced Analytics (Feature 2.7, 3.2)
 - **Goal:** Data-driven decision making.

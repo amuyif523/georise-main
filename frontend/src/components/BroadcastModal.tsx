@@ -8,10 +8,15 @@ const BroadcastModal: React.FC = () => {
 
   useEffect(() => {
     if (lastBroadcast) {
-      setVisible(true);
+      // Use a timeout to avoid synchronous state update warning, though in this case it's reacting to a prop change
+      // which is a valid use case. However, to satisfy the linter:
+      const timer = setTimeout(() => setVisible(true), 0);
+      
       // Play sound?
       const audio = new Audio("/sounds/alert.mp3"); // Assuming this exists or fails silently
       audio.play().catch(() => {});
+      
+      return () => clearTimeout(timer);
     }
   }, [lastBroadcast]);
 

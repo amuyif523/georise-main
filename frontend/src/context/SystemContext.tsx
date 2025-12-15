@@ -11,11 +11,19 @@ interface SystemContextType {
 
 interface BroadcastMessage {
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   targetGeoJSON?: any;
   sentAt: string;
 }
 
 const SystemContext = createContext<SystemContextType | null>(null);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useSystem = () => {
+  const context = useContext(SystemContext);
+  if (!context) throw new Error("useSystem must be used within SystemProvider");
+  return context;
+};
 
 export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [crisisMode, setCrisisMode] = useState(false);
@@ -69,10 +77,4 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </SystemContext.Provider>
   );
-};
-
-export const useSystem = () => {
-  const context = useContext(SystemContext);
-  if (!context) throw new Error("useSystem must be used within SystemProvider");
-  return context;
 };

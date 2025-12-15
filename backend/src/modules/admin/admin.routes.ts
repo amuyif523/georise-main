@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "../../middleware/auth";
 import prisma from "../../prisma";
 import { z } from "zod";
 import { validateBody } from "../../middleware/validate";
+import * as systemController from "./system.controller";
 
 const router = Router();
 const idSchema = z.object({ id: z.string().transform((v) => Number(v)).pipe(z.number().int().positive()) });
@@ -19,6 +20,45 @@ router.get(
       orderBy: { createdAt: "desc" },
     });
     res.json({ agencies });
+  }
+);
+
+// List all agencies
+router.get(
+  "/agencies",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (_req, res) => {
+    const agencies = await prisma.agency.findMany({
+      orderBy: { name: "asc" },
+    });
+    res.json({ agencies });
+  }
+);
+
+// Get agency details with boundary
+router.get(
+  "/agencies/:id",
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (req, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    const agencyId = parsed.data.id;
+
+    const agency = await prisma.agency.findUnique({ where: { id: agencyId } });
+    if (!agency) return res.status(404).json({ message: "Agency not found" });
+
+    // Fetch boundary as GeoJSON
+    const boundaryResult: any[] = await prisma.$queryRaw`
+      SELECT ST_AsGeoJSON(jurisdiction) as geojson
+      FROM "Agency"
+      WHERE id = ${agencyId}
+    `;
+    
+    const geojson = boundaryResult[0]?.geojson ? JSON.parse(boundaryResult[0].geojson) : null;
+
+    res.json({ agency: { ...agency, boundary: geojson } });
   }
 );
 
@@ -63,7 +103,7 @@ router.patch(
 
     await prisma.$executeRaw`
       UPDATE "Agency"
-      SET boundary = ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326)
+      SET jurisdiction = ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326)
       WHERE id = ${agencyId};
     `;
 
@@ -269,7 +309,7 @@ router.get(
     });
 
     const agencies: any[] = await prisma.$queryRaw`
-      SELECT id, name, type, "isActive", "isApproved", city, description, ST_AsGeoJSON(boundary) as boundary
+      SELECT id, name, type, "isActive", "isApproved", city, description, ST_AsGeoJSON(jurisdiction) as boundary
       FROM "Agency"
     `;
 
@@ -439,5 +479,10 @@ router.get(
     res.send(csv);
   }
 );
+
+// System Config
+router.get("/config", requireAuth, requireRole([Role.ADMIN]), systemController.getSystemConfig);
+router.patch("/config", requireAuth, requireRole([Role.ADMIN]), systemController.updateSystemConfig);
+router.post("/broadcast", requireAuth, requireRole([Role.ADMIN]), systemController.sendBroadcast);
 
 export default router;

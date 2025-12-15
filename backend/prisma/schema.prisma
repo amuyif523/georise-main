@@ -98,6 +98,7 @@ model User {
   activityLogs        ActivityLog[]
   responders          Responder[]
   chatMessages        IncidentChat[]
+  broadcasts          BroadcastLog[]
   notifications       Notification[]
 
   lastLatitude  Float?
@@ -359,5 +360,21 @@ model Responder {
   incident     Incident? @relation("IncidentResponders", fields: [incidentId], references: [id])
   assignedIncidents Incident[] @relation("IncidentAssignedResponder")
   user         User?    @relation(fields: [userId], references: [id])
+}
+
+model SystemConfig {
+  key         String   @id
+  value       String
+  updatedAt   DateTime @updatedAt
+}
+
+model BroadcastLog {
+  id          Int      @id @default(autoincrement())
+  message     String
+  targetArea  Unsupported("geometry(Polygon,4326)")?
+  sentBy      Int
+  sentAt      DateTime @default(now())
+  
+  sender      User     @relation(fields: [sentBy], references: [id])
 }
 
