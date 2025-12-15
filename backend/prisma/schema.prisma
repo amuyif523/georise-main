@@ -188,6 +188,7 @@ model Incident {
   resolvedAt       DateTime?
   isDemo           Boolean        @default(false)
   demoScenarioCode String?
+  isReporterAtScene Boolean       @default(true)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

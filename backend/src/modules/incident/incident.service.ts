@@ -60,6 +60,7 @@ export class IncidentService {
         woredaId,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
+        isReporterAtScene: data.isReporterAtScene ?? true,
       },
     });
 

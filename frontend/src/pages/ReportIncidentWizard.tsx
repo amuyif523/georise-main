@@ -15,6 +15,7 @@ type WizardForm = {
   latitude?: number;
   longitude?: number;
   image?: File | null;
+  notAtScene?: boolean;
 };
 
 const defaultCenter: [number, number] = [9.03, 38.74];
@@ -152,6 +153,19 @@ const Step2Location: React.FC<{
           ? `Selected location: ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
           : "Click anywhere on the map to set the incident location."}
       </p>
+      
+      <div className="form-control">
+        <label className="label cursor-pointer justify-start gap-3">
+          <input 
+            type="checkbox" 
+            className="checkbox checkbox-primary"
+            checked={form.notAtScene || false}
+            onChange={(e) => setForm(prev => ({ ...prev, notAtScene: e.target.checked }))}
+          />
+          <span className="label-text text-slate-200">I am not at the scene (reduces location confidence)</span>
+        </label>
+      </div>
+
       <div>
         <label className="label">
           <span className="label-text text-slate-200">Attach image (optional)</span>
@@ -276,7 +290,10 @@ const ReportIncidentWizard: React.FC = () => {
     try {
       setSubmitting(true);
       setError(null);
-      const payload = form;
+      const payload = {
+        ...form,
+        isReporterAtScene: !form.notAtScene
+      };
       if (online) {
         await api.post("/incidents", payload);
         navigate("/citizen/my-reports");
