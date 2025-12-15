@@ -97,6 +97,7 @@ model User {
   reviewedIncidents   Incident[]             @relation("IncidentReviewUser")
   activityLogs        ActivityLog[]
   responders          Responder[]
+  chatMessages        IncidentChat[]
 }
 
 model Agency {
@@ -122,6 +123,7 @@ model Agency {
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
   jurisdictions AgencyJurisdiction[]
   responders  Responder[]
+  sharedIncidents SharedIncident[]
 
   @@index([boundary], name: "agency_boundary_idx", type: Gist)
   @@index([jurisdiction], name: "agency_jurisdiction_idx", type: Gist)
@@ -204,8 +206,34 @@ model Incident {
   activityLogs   ActivityLog[]
   responders     Responder[]          @relation("IncidentResponders")
   language       String?              @default("ENGLISH") // AMHARIC, ENGLISH, etc.
+  sharedWith     SharedIncident[]
+  chatMessages   IncidentChat[]
 
   @@index([location], name: "incident_location_idx", type: Gist)
+}
+
+model SharedIncident {
+  id          Int      @id @default(autoincrement())
+  incidentId  Int
+  agencyId    Int
+  sharedAt    DateTime @default(now())
+  reason      String?  // e.g., "Requesting Backup", "Jurisdiction Overlap"
+  
+  incident    Incident @relation(fields: [incidentId], references: [id])
+  agency      Agency   @relation(fields: [agencyId], references: [id])
+
+  @@unique([incidentId, agencyId])
+}
+
+model IncidentChat {
+  id          Int      @id @default(autoincrement())
+  incidentId  Int
+  senderId    Int
+  message     String
+  createdAt   DateTime @default(now())
+  
+  incident    Incident @relation(fields: [incidentId], references: [id])
+  sender      User     @relation(fields: [senderId], references: [id])
 }
 
 model IncidentAIOutput {
