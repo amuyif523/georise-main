@@ -44,10 +44,10 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 2.2 Inter-Agency Coordination (Feature 2.5)
 - **Goal:** Allow Police, Fire, and Medical to collaborate on a single incident.
 - **Tasks:**
-  - [ ] **Database:** Add `SharedIncident` relation to allow multiple agencies to view one record.
-  - [ ] **Backend:** Implement `IncidentChat` (Socket.io namespace for inter-agency messaging).
-  - [ ] **Frontend:** Add "Chat" tab in Agency Incident Detail pane.
-  - [ ] **Frontend:** Add "Request Handoff" or "Request Backup" workflow.
+  - [x] **Database:** Add `SharedIncident` relation to allow multiple agencies to view one record.
+  - [x] **Backend:** Implement `IncidentChat` (Socket.io namespace for inter-agency messaging).
+  - [x] **Frontend:** Add "Chat" tab in Agency Incident Detail pane.
+  - [x] **Frontend:** Add "Request Handoff" or "Request Backup" workflow.
 
 ### 2.3 Proximity Alerts (Feature 1.4)
 - **Goal:** Warn citizens of danger nearby.
