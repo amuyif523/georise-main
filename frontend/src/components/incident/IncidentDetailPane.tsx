@@ -30,6 +30,10 @@ type Incident = {
   } | null;
 };
 
+type DuplicateIncident = Incident & {
+  distance?: number;
+};
+
 type Agency = {
   id: number;
   name: string;
@@ -100,7 +104,7 @@ const IncidentDetailPane: React.FC<Props> = ({
     proximityScore?: number;
   }>>([]);
   const [recsLoading, setRecsLoading] = useState(false);
-  const [duplicates, setDuplicates] = useState<Incident[]>([]);
+  const [duplicates, setDuplicates] = useState<DuplicateIncident[]>([]);
   const [mergingId, setMergingId] = useState<number | null>(null);
 
   // Chat & Share State
@@ -199,7 +203,7 @@ const IncidentDetailPane: React.FC<Props> = ({
           },
         });
         // Filter out self
-        const dups = (res.data.duplicates || []).filter((d: Incident) => d.id !== incident.id);
+        const dups = (res.data.duplicates || []).filter((d: DuplicateIncident) => d.id !== incident.id);
         setDuplicates(dups);
       } catch (err) {
         console.warn("Failed to check duplicates", err);
