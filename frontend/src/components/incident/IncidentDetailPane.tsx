@@ -69,8 +69,18 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const isOpen = Boolean(incident);
-  const [recs, setRecs] = useState<Array<{ agencyId: number; unitId: number | null; distanceKm?: number | null; totalScore?: number }>>([]);
+  const [recs, setRecs] = useState<Array<{ 
+    agencyId: number; 
+    unitId: number | null; 
+    distanceKm?: number | null; 
+    totalScore?: number;
+    jurisdictionScore?: number;
+    severityScore?: number;
+    proximityScore?: number;
+  }>>([]);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [mergingId, setMergingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -90,6 +100,48 @@ const IncidentDetailPane: React.FC<Props> = ({
     };
     fetchTimeline();
   }, [incident]);
+
+  useEffect(() => {
+    const checkDups = async () => {
+      if (!incident || !incident.latitude || !incident.longitude) return;
+      try {
+        const res = await api.get("/incidents/duplicates", {
+          params: {
+            lat: incident.latitude,
+            lng: incident.longitude,
+            title: incident.title,
+          },
+        });
+        // Filter out self
+        const dups = (res.data.duplicates || []).filter((d: any) => d.id !== incident.id);
+        setDuplicates(dups);
+      } catch (err) {
+        console.warn("Failed to check duplicates", err);
+      }
+    };
+    checkDups();
+  }, [incident]);
+
+  const handleMerge = async (targetId: number) => {
+    if (!incident || !confirm("Are you sure you want to merge this duplicate into the current incident? The duplicate will be closed.")) return;
+    
+    setMergingId(targetId);
+    try {
+      await api.post("/incidents/merge", {
+        primaryId: incident.id,
+        duplicateId: targetId
+      });
+      // Remove from list
+      setDuplicates(prev => prev.filter(d => d.id !== targetId));
+      // Refresh timeline
+      const res = await api.get(`/incidents/${incident.id}/timeline`);
+      setLogs(res.data.logs?.reverse() || []);
+    } catch (err) {
+      alert("Failed to merge incidents");
+    } finally {
+      setMergingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchRecs = async () => {
@@ -215,7 +267,7 @@ const IncidentDetailPane: React.FC<Props> = ({
                           Agency #{rec.agencyId} {rec.unitId && <>• Unit {rec.unitId}</>}
                         </div>
                         <span className="text-[11px] text-cyan-300">
-                          Score {(rec.totalScore * 100).toFixed(0)}
+                          Score {((rec.totalScore || 0) * 100).toFixed(0)}
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-400">
@@ -224,7 +276,7 @@ const IncidentDetailPane: React.FC<Props> = ({
                           : "No position"}
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        Jurisdiction {Math.round(rec.jurisdictionScore * 100)}% • Severity {Math.round(rec.severityScore * 100)}% • Proximity {Math.round(rec.proximityScore * 100)}%
+                        Jurisdiction {Math.round((rec.jurisdictionScore || 0) * 100)}% • Severity {Math.round((rec.severityScore || 0) * 100)}% • Proximity {Math.round((rec.proximityScore || 0) * 100)}%
                       </div>
                       <button
                         className="btn btn-xs btn-accent mt-2"
@@ -251,6 +303,38 @@ const IncidentDetailPane: React.FC<Props> = ({
           )}
 
           {error && <div className="alert alert-error text-sm">{error}</div>}
+
+          {duplicates.length > 0 && (
+            <div className="p-3 rounded-lg border border-orange-500/30 bg-orange-500/10">
+              <div className="text-sm font-semibold text-orange-200 mb-2">
+                Potential Duplicates ({duplicates.length})
+              </div>
+              <div className="space-y-2">
+                {duplicates.map((d) => (
+                  <div key={d.id} className="text-xs text-slate-300 flex justify-between items-center">
+                    <span>
+                      #{d.id} - {d.title}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500">
+                        {d.distance ? Math.round(d.distance) + "m" : ""}
+                      </span>
+                      <button 
+                        className="btn btn-xs btn-outline btn-warning"
+                        disabled={mergingId === d.id}
+                        onClick={() => handleMerge(d.id)}
+                      >
+                        {mergingId === d.id ? "Merging..." : "Merge"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 text-[10px] text-slate-400">
+                Consider merging or rejecting if identical.
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-2">
