@@ -14,17 +14,24 @@ import {
   RegisterRequestBody,
 } from "./auth.types";
 
+import { smsService } from "../sms/sms.service";
+
 const LOCK_THRESHOLD = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
 
 export class AuthService {
   async register(data: RegisterRequestBody) {
-    const existing = await prisma.user.findUnique({
-      where: { email: data.email },
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+          { phone: data.phone }
+        ]
+      },
     });
 
     if (existing) {
-      throw new Error("Email already in use");
+      throw new Error("Email or Phone already in use");
     }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
@@ -52,7 +59,95 @@ export class AuthService {
       },
     });
 
+    // If phone is provided, automatically trigger OTP for verification
+    if (data.phone) {
+      try {
+        const otp = smsService.generateOTP();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        await prisma.citizenVerification.create({
+          data: {
+            userId: user.id,
+            nationalId: "PENDING",
+            phone: data.phone,
+            otpCode: otp,
+            otpExpiresAt: expiresAt,
+          },
+        });
+
+        await smsService.sendSMS(data.phone, `Welcome to GEORISE! Your verification code is: ${otp}`);
+      } catch (error) {
+        // Log error but don't fail registration
+        console.error("Failed to send initial OTP:", error);
+      }
+    }
+
     return user;
+  }
+
+  async requestOtp(phone: string) {
+    const user = await prisma.user.findUnique({ where: { phone } });
+    if (!user) throw new Error("User not found with this phone number");
+
+    const otp = smsService.generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    // Upsert verification record
+    await prisma.citizenVerification.upsert({
+      where: { userId: user.id },
+      update: { otpCode: otp, otpExpiresAt: expiresAt },
+      create: {
+        userId: user.id,
+        nationalId: "PENDING", // Placeholder
+        phone: phone,
+        otpCode: otp,
+        otpExpiresAt: expiresAt,
+      },
+    });
+
+    await smsService.sendSMS(phone, `Your GEORISE verification code is: ${otp}`);
+    return { message: "OTP sent" };
+  }
+
+  async verifyOtpLogin(phone: string, code: string) {
+    const user = await prisma.user.findUnique({ 
+      where: { phone },
+      include: { citizenVerification: true, agencyStaff: true }
+    });
+    
+    if (!user || !user.citizenVerification) throw new Error("Invalid request");
+    
+    const { otpCode, otpExpiresAt } = user.citizenVerification;
+    if (!otpCode || !otpExpiresAt || otpExpiresAt < new Date()) {
+      throw new Error("OTP expired or invalid");
+    }
+    if (otpCode !== code) {
+      throw new Error("Invalid OTP code");
+    }
+
+    // Clear OTP
+    await prisma.citizenVerification.update({
+      where: { userId: user.id },
+      data: { otpCode: null, otpExpiresAt: null }
+    });
+
+    // Generate tokens
+    const agencyId = user.agencyStaff?.agencyId || null;
+    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
+    const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
+
+    return {
+      token: access,
+      refreshToken: refresh,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        agencyId,
+        trustScore: user.trustScore ?? 0,
+      },
+    };
   }
 
   async login(data: LoginRequestBody) {

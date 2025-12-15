@@ -35,6 +35,28 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const requestOtp = async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: "Phone required" });
+    const result = await authService.requestOtp(phone);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(400).json({ message: err?.message || "Failed to send OTP" });
+  }
+};
+
+export const verifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.status(400).json({ message: "Phone and code required" });
+    const result = await authService.verifyOtpLogin(phone, code);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(400).json({ message: err?.message || "OTP verification failed" });
+  }
+};
+
 export const me = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
