@@ -30,6 +30,26 @@ type Incident = {
   } | null;
 };
 
+type Agency = {
+  id: number;
+  name: string;
+  type: string;
+};
+
+type ChatMessage = {
+  senderId: number;
+  sender?: {
+    fullName: string;
+    agencyStaff?: {
+      agency?: {
+        name: string;
+      };
+    };
+  };
+  message: string;
+  createdAt: string;
+};
+
 interface Props {
   incident: Incident | null;
   onClose: () => void;
@@ -80,15 +100,15 @@ const IncidentDetailPane: React.FC<Props> = ({
     proximityScore?: number;
   }>>([]);
   const [recsLoading, setRecsLoading] = useState(false);
-  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [duplicates, setDuplicates] = useState<Incident[]>([]);
   const [mergingId, setMergingId] = useState<number | null>(null);
 
   // Chat & Share State
   const [activeTab, setActiveTab] = useState<"timeline" | "chat">("timeline");
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
-  const [agencies, setAgencies] = useState<any[]>([]);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
   const [selectedAgency, setSelectedAgency] = useState<string>("");
   const [shareReason, setShareReason] = useState("");
 
@@ -105,7 +125,7 @@ const IncidentDetailPane: React.FC<Props> = ({
       const socket = getSocket();
       if (socket) {
         socket.emit("join_incident", incident.id);
-        socket.on("incident:chat", (msg: any) => {
+        socket.on("incident:chat", (msg: ChatMessage) => {
           setChatMessages(prev => [...prev, msg]);
         });
       }
@@ -125,7 +145,7 @@ const IncidentDetailPane: React.FC<Props> = ({
     try {
       await api.post(`/incidents/${incident.id}/chat`, { message: chatInput.trim() });
       setChatInput("");
-    } catch (e) { console.error(e); }
+    } catch (err) { console.error(err); }
   };
 
   const openShareModal = async () => {
@@ -145,7 +165,7 @@ const IncidentDetailPane: React.FC<Props> = ({
       });
       setShowShareModal(false);
       alert("Incident shared successfully");
-    } catch (e) { alert("Failed to share incident"); }
+    } catch { alert("Failed to share incident"); }
   };
 
   useEffect(() => {
@@ -179,7 +199,7 @@ const IncidentDetailPane: React.FC<Props> = ({
           },
         });
         // Filter out self
-        const dups = (res.data.duplicates || []).filter((d: any) => d.id !== incident.id);
+        const dups = (res.data.duplicates || []).filter((d: Incident) => d.id !== incident.id);
         setDuplicates(dups);
       } catch (err) {
         console.warn("Failed to check duplicates", err);
@@ -202,7 +222,7 @@ const IncidentDetailPane: React.FC<Props> = ({
       // Refresh timeline
       const res = await api.get(`/incidents/${incident.id}/timeline`);
       setLogs(res.data.logs?.reverse() || []);
-    } catch (err) {
+    } catch {
       alert("Failed to merge incidents");
     } finally {
       setMergingId(null);

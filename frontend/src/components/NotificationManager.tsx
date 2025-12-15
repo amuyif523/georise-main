@@ -36,7 +36,12 @@ const NotificationManager: React.FC = () => {
     const socket = getSocket();
     if (!socket) return;
 
-    const handleAlert = (data: any) => {
+    interface AlertData {
+      title: string;
+      message: string;
+    }
+
+    const handleAlert = (data: AlertData) => {
       console.log("Received alert:", data);
       
       // Browser Notification
