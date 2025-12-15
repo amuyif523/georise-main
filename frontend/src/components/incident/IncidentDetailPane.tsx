@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, MessageSquare, Shield, User, Clock, X, MapPin } from "lucide-react";
+import { Activity, MessageSquare, Shield, User, Clock, X, MapPin, Share2, Send } from "lucide-react";
 import api from "../../lib/api";
 import { severityBadgeClass, severityLabel } from "../../utils/severity";
 import { useAuth } from "../../context/AuthContext";
 import TrustBadge from "../user/TrustBadge";
+import { getSocket } from "../../lib/socket";
 
 type ActivityLog = {
   id: string;
@@ -81,6 +82,71 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [recsLoading, setRecsLoading] = useState(false);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [mergingId, setMergingId] = useState<number | null>(null);
+
+  // Chat & Share State
+  const [activeTab, setActiveTab] = useState<"timeline" | "chat">("timeline");
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [selectedAgency, setSelectedAgency] = useState<string>("");
+  const [shareReason, setShareReason] = useState("");
+
+  useEffect(() => {
+    if (activeTab === 'chat' && incident) {
+      const loadChat = async () => {
+        try {
+          const res = await api.get(`/incidents/${incident.id}/chat`);
+          setChatMessages(res.data.messages || []);
+        } catch (e) { console.error(e); }
+      };
+      loadChat();
+
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("join_incident", incident.id);
+        socket.on("incident:chat", (msg: any) => {
+          setChatMessages(prev => [...prev, msg]);
+        });
+      }
+
+      return () => {
+        if (socket) {
+          socket.emit("leave_incident", incident.id);
+          socket.off("incident:chat");
+        }
+      };
+    }
+  }, [activeTab, incident]);
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !incident) return;
+    try {
+      await api.post(`/incidents/${incident.id}/chat`, { message: chatInput.trim() });
+      setChatInput("");
+    } catch (e) { console.error(e); }
+  };
+
+  const openShareModal = async () => {
+    setShowShareModal(true);
+    try {
+      const res = await api.get("/incidents/resources/agencies");
+      setAgencies(res.data.agencies || []);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleShare = async () => {
+    if (!selectedAgency || !shareReason || !incident) return;
+    try {
+      await api.post(`/incidents/${incident.id}/share`, {
+        agencyId: Number(selectedAgency),
+        reason: shareReason
+      });
+      setShowShareModal(false);
+      alert("Incident shared successfully");
+    } catch (e) { alert("Failed to share incident"); }
+  };
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -213,9 +279,22 @@ const IncidentDetailPane: React.FC<Props> = ({
               </div>
             )}
           </div>
-          <button className="btn btn-circle btn-ghost btn-xs text-slate-300" onClick={onClose} aria-label="Close">
-            <X size={16} />
-          </button>
+          <div className="flex gap-2">
+            {user?.role !== "CITIZEN" && (
+              <button className="btn btn-circle btn-ghost btn-xs text-slate-300" onClick={openShareModal} title="Share Incident">
+                <Share2 size={16} />
+              </button>
+            )}
+            <button className="btn btn-circle btn-ghost btn-xs text-slate-300" onClick={onClose} aria-label="Close">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="tabs tabs-boxed bg-slate-900 mx-4 mt-4">
+          <a className={`tab ${activeTab === 'timeline' ? 'tab-active' : ''}`} onClick={() => setActiveTab('timeline')}>Timeline</a>
+          <a className={`tab ${activeTab === 'chat' ? 'tab-active' : ''}`} onClick={() => setActiveTab('chat')}>Inter-Agency Chat</a>
         </div>
 
         {onAssignResponder && responders.length > 0 && (
@@ -242,7 +321,9 @@ const IncidentDetailPane: React.FC<Props> = ({
           </div>
         )}
 
-        <div className="p-4 space-y-4 h-[calc(100%-180px)] overflow-y-auto">
+        <div className="p-4 space-y-4 h-[calc(100%-240px)] overflow-y-auto">
+          {activeTab === 'timeline' ? (
+            <>
           {user?.role !== "CITIZEN" && (
             <div className="p-3 rounded-lg border border-cyan-600/30 bg-slate-900/70">
               <div className="flex items-center justify-between mb-2">
@@ -392,6 +473,35 @@ const IncidentDetailPane: React.FC<Props> = ({
               </button>
             </div>
           )}
+          </>
+        ) : (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                {chatMessages.map((msg, idx) => (
+                  <div key={idx} className={`chat ${msg.senderId === user?.id ? 'chat-end' : 'chat-start'}`}>
+                    <div className="chat-header text-xs opacity-50">
+                      {msg.sender?.fullName} • {msg.sender?.agencyStaff?.agency?.name || 'Admin'}
+                    </div>
+                    <div className="chat-bubble chat-bubble-primary text-sm">{msg.message}</div>
+                    <div className="chat-footer opacity-50 text-[10px]">
+                      {new Date(msg.createdAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))}
+                {chatMessages.length === 0 && <div className="text-center text-slate-500 text-sm mt-10">No messages yet. Start the coordination.</div>}
+              </div>
+              <form onSubmit={handleSendChat} className="flex gap-2">
+                <input 
+                  type="text" 
+                  className="input input-bordered input-sm flex-1 bg-slate-900" 
+                  placeholder="Type a message..." 
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                />
+                <button type="submit" className="btn btn-sm btn-primary"><Send size={14} /></button>
+              </form>
+            </div>
+        )}
         </div>
 
         <div className="p-3 border-t border-slate-800 bg-[#0C1322] flex flex-wrap gap-2">
@@ -412,6 +522,29 @@ const IncidentDetailPane: React.FC<Props> = ({
           )}
         </div>
       </aside>
+
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-auto">
+          <div className="bg-slate-900 p-6 rounded-lg w-full max-w-md border border-slate-700 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4">Share Incident</h3>
+            <div className="form-control mb-4">
+              <label className="label"><span className="label-text text-slate-300">Select Agency</span></label>
+              <select className="select select-bordered w-full bg-slate-800 text-white" value={selectedAgency} onChange={e => setSelectedAgency(e.target.value)}>
+                <option value="">Select...</option>
+                {agencies.map(a => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+              </select>
+            </div>
+            <div className="form-control mb-4">
+              <label className="label"><span className="label-text text-slate-300">Reason</span></label>
+              <textarea className="textarea textarea-bordered w-full bg-slate-800 text-white" value={shareReason} onChange={e => setShareReason(e.target.value)} placeholder="Requesting backup..." />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button className="btn btn-ghost" onClick={() => setShowShareModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleShare}>Share</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
