@@ -3,8 +3,8 @@ import prisma from "../../prisma";
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 export class ReputationService {
-  private MIN = -5;
-  private MAX = 20;
+  private MIN = -20;
+  private MAX = 100;
 
   async adjustTrust(userId: number, delta: number) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { trustScore: true } });
@@ -15,6 +15,19 @@ export class ReputationService {
       data: { trustScore: newScore },
     });
     return newScore;
+  }
+
+  async getTier(userId: number) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { trustScore: true, citizenVerification: true } });
+    if (!user) return 0;
+    
+    const score = user.trustScore ?? 0;
+    const isVerified = user.citizenVerification?.status === "VERIFIED";
+
+    if (score >= 50 && isVerified) return 3; // Trusted Reporter
+    if (isVerified) return 2; // ID Verified
+    if (score >= 10) return 1; // Phone Verified (simulated)
+    return 0; // Unverified
   }
 
   async onIncidentCreated(userId: number) {
@@ -29,7 +42,7 @@ export class ReputationService {
       where: { id: userId },
       data: { validReports: { increment: 1 } },
     });
-    return this.adjustTrust(userId, 1);
+    return this.adjustTrust(userId, 5);
   }
 
   async onIncidentRejected(userId: number) {
@@ -37,7 +50,7 @@ export class ReputationService {
       where: { id: userId },
       data: { rejectedReports: { increment: 1 } },
     });
-    return this.adjustTrust(userId, -3);
+    return this.adjustTrust(userId, -10);
   }
 
   async onVerificationApproved(userId: number) {
