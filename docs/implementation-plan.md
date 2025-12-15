@@ -52,8 +52,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 2.3 Proximity Alerts (Feature 1.4)
 - **Goal:** Warn citizens of danger nearby.
 - **Tasks:**
-  - [ ] **Backend:** Geo-fencing service. When incident = `CONFIRMED` & Severity > 4, find users within 2km.
-  - [ ] **Mobile:** Implement Push Notifications (Firebase FCM or Web Push) for "Danger Nearby".
+  - [x] **Backend:** Geo-fencing service. When incident = `CONFIRMED` & Severity > 4, find users within 2km.
+  - [x] **Mobile:** Implement Push Notifications (Firebase FCM or Web Push) for "Danger Nearby".
 
 ---
 
