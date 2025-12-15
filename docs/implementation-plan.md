@@ -37,9 +37,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 2.1 SMS & OTP Integration (Feature 1.1, 6.2)
 - **Goal:** Support non-smartphone users and verify identity.
 - **Tasks:**
-  - [ ] **Backend:** Integrate SMS provider (e.g., Twilio or local Ethio-Telecom gateway stub).
-  - [ ] **Frontend:** Replace/Augment Email Registration with Phone + OTP flow.
-  - [ ] **Backend:** Implement SMS fallback for critical alerts.
+  - [x] **Backend:** Integrate SMS provider (e.g., Twilio or local Ethio-Telecom gateway stub).
+  - [x] **Frontend:** Replace/Augment Email Registration with Phone + OTP flow.
+  - [x] **Backend:** Implement SMS fallback for critical alerts.
 
 ### 2.2 Inter-Agency Coordination (Feature 2.5)
 - **Goal:** Allow Police, Fire, and Medical to collaborate on a single incident.
