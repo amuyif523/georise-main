@@ -63,8 +63,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 3.1 Smart Routing & SLAs (Feature 2.3)
 - **Goal:** Automate unit selection and ensure timely responses.
 - **Tasks:**
-  - [ ] **Backend:** Implement OSRM (Open Source Routing Machine) or Google Routes API integration to calculate *drive time* instead of just linear distance.
-  - [ ] **Backend:** Implement SLA Background Job (Cron). Check `createdAt` vs `dispatchedAt`. If > Threshold, trigger "Escalation" alert to Supervisor.
+  - [x] **Backend:** Implement OSRM (Open Source Routing Machine) or Google Routes API integration to calculate *drive time* instead of just linear distance.
+  - [x] **Backend:** Implement SLA Background Job (Cron). Check `createdAt` vs `dispatchedAt`. If > Threshold, trigger "Escalation" alert to Supervisor.
 
 ### 3.2 Admin GIS Management (Feature 4.1)
 - **Goal:** Allow admins to manage jurisdictions without SQL.
