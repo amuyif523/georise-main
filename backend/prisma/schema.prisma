@@ -121,7 +121,9 @@ model Agency {
   incidents Incident[]   @relation("IncidentsAssignedToAgency")
   jurisdictions AgencyJurisdiction[]
   responders  Responder[]
-  responderUnits ResponderUnit[]
+
+  @@index([boundary], name: "agency_boundary_idx", type: Gist)
+  @@index([jurisdiction], name: "agency_jurisdiction_idx", type: Gist)
 }
 
 model AuditLog {
@@ -199,7 +201,9 @@ model Incident {
   statusHistory  IncidentStatusHistory[]
   activityLogs   ActivityLog[]
   responders     Responder[]          @relation("IncidentResponders")
-  assignments    IncidentAssignment[]
+  language       String?              @default("ENGLISH") // AMHARIC, ENGLISH, etc.
+
+  @@index([location], name: "incident_location_idx", type: Gist)
 }
 
 model IncidentAIOutput {
@@ -250,6 +254,8 @@ model SubCity {
   agencies  Agency[]
   woredas   Woreda[]
   incidents Incident[]
+
+  @@index([jurisdiction], name: "subcity_jurisdiction_idx", type: Gist)
 }
 
 model Woreda {
@@ -262,6 +268,7 @@ model Woreda {
   subCity   SubCity  @relation(fields: [subCityId], references: [id])
   incidents Incident[]
   agencies  Agency[]
+  @@index([boundary], name: "woreda_boundary_idx", type: Gist)
 
   @@unique([subCityId, name])
 }
@@ -292,6 +299,9 @@ model Responder {
   userId       Int?
   latitude     Float?
   longitude    Float?
+  lastSeenAt   DateTime?
+  isDemo       Boolean  @default(false)
+  demoScenarioCode String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -299,38 +309,5 @@ model Responder {
   incident     Incident? @relation("IncidentResponders", fields: [incidentId], references: [id])
   assignedIncidents Incident[] @relation("IncidentAssignedResponder")
   user         User?    @relation(fields: [userId], references: [id])
-}
-
-// Sprint 25: lightweight unit + assignment models for recommendations
-model ResponderUnit {
-  id         Int      @id @default(autoincrement())
-  agencyId   Int
-  name       String
-  type       String?
-  isActive   Boolean  @default(true)
-  status     String   @default("AVAILABLE")
-  lastLat    Float?
-  lastLon    Float?
-  lastSeenAt DateTime?
-  isDemo     Boolean  @default(false)
-  demoScenarioCode String?
-
-  agency      Agency              @relation(fields: [agencyId], references: [id])
-  assignments IncidentAssignment[]
-}
-
-model IncidentAssignment {
-  id         Int      @id @default(autoincrement())
-  incidentId Int
-  unitId     Int
-  assignedAt DateTime @default(now())
-  acceptedAt DateTime?
-  arrivedAt  DateTime?
-  completedAt DateTime?
-  isDemo     Boolean  @default(false)
-  demoScenarioCode String?
-
-  incident Incident     @relation(fields: [incidentId], references: [id])
-  unit     ResponderUnit @relation(fields: [unitId], references: [id])
 }
 
