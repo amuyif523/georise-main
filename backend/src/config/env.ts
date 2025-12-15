@@ -13,3 +13,4 @@ export const JWT_SECRET = required(process.env.JWT_SECRET, "JWT_SECRET");
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET;
 export const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+export const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
