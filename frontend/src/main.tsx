@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 import OnlineStatusBanner from "./components/OnlineStatusBanner";
+import NotificationManager from "./components/NotificationManager";
 import { AuthProvider } from "./context/AuthContext";
 import { registerSW } from "virtual:pwa-register";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -43,6 +44,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <AuthProvider>
       <BrowserRouter>
         <OnlineStatusBanner />
+        <NotificationManager />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
