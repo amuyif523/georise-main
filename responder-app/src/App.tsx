@@ -5,6 +5,7 @@ import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { useLocationTracker } from "./hooks/useLocationTracker";
 import NetworkBanner from "./components/NetworkBanner";
 import InstallAppBanner from "./components/InstallAppBanner";
+import LoginForm from "./components/LoginForm";
 import { MapPin, Navigation2, CheckCircle, AlertCircle } from "lucide-react";
 
 type Incident = {
@@ -16,25 +17,34 @@ type Incident = {
 };
 
 const App: React.FC = () => {
-  const [email, setEmail] = useState("police1@example.com");
-  const [password, setPassword] = useState("password123");
   const [token, setToken] = useState<string | null>(localStorage.getItem("responder_token"));
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const online = useNetworkStatus();
   const coords = useLocationTracker();
 
-  const connect = async () => {
+  const handleLogin = async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.post("/auth/login", { email, password });
       const t = res.data.token;
+      
+      // Verify role
+      if (res.data.user.role !== "AGENCY_STAFF" && res.data.user.role !== "ADMIN") {
+        throw new Error("Unauthorized: Only agency staff can access this app.");
+      }
+
       localStorage.setItem("responder_token", t);
       setToken(t);
       connectSocket(t);
       setMessage("Connected as responder.");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Login failed");
+      setError(err?.response?.data?.message || err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,6 +54,12 @@ const App: React.FC = () => {
     setToken(null);
     setActiveIncident(null);
   };
+
+  useEffect(() => {
+    if (token) {
+      connectSocket(token);
+    }
+  }, [token]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -84,6 +100,10 @@ const App: React.FC = () => {
     }
   };
 
+  if (!token) {
+    return <LoginForm onLogin={handleLogin} loading={loading} error={error} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
       <NetworkBanner />
@@ -93,32 +113,11 @@ const App: React.FC = () => {
           <div className="text-[11px] text-slate-400">GEORISE Responder</div>
           <div className="text-sm font-semibold">On Duty</div>
         </div>
-        {token ? (
-          <button className="btn btn-xs btn-outline" onClick={logout}>Logout</button>
-        ) : null}
+        <button className="btn btn-xs btn-outline text-slate-400 hover:text-white" onClick={logout}>Logout</button>
       </header>
 
       <main className="flex-1 p-4 flex flex-col gap-4 max-w-md mx-auto w-full">
-        {!token && (
-          <div className="card p-4 space-y-3">
-            <div className="text-sm font-semibold">Sign in</div>
-            {error && <div className="alert alert-error text-xs">{error}</div>}
-            <input
-              className="input input-bordered w-full input-sm bg-slate-900"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              className="input input-bordered w-full input-sm bg-slate-900"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button className="btn btn-primary w-full btn-sm" onClick={connect}>Connect</button>
-          </div>
-        )}
+
 
         {token && (
           <>
