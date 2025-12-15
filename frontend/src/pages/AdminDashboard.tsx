@@ -39,6 +39,9 @@ const AdminDashboard: React.FC = () => {
           <Link to="/admin/analytics" className="btn btn-accent btn-sm">
             Analytics
           </Link>
+          <Link to="/admin/system" className="btn btn-error btn-outline btn-sm">
+            System Control
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-3">

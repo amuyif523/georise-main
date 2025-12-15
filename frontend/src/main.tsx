@@ -15,9 +15,13 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
 import RoleRedirect from "./pages/RoleRedirect";
+import { SystemProvider } from "./context/SystemContext";
+import CrisisBanner from "./components/CrisisBanner";
+import BroadcastModal from "./components/BroadcastModal";
 
 const AgencyMap = React.lazy(() => import("./pages/AgencyMap"));
 const AgenciesPage = React.lazy(() => import("./pages/admin/AgenciesPage"));
+const SystemPage = React.lazy(() => import("./pages/admin/SystemPage"));
 const UsersPage = React.lazy(() => import("./pages/admin/UsersPage"));
 const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogsPage"));
 const AnalyticsPage = React.lazy(() => import("./pages/admin/AnalyticsPage"));
@@ -42,11 +46,14 @@ const updateSW = registerSW({
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AuthProvider>
-      <BrowserRouter>
-        <OnlineStatusBanner />
-        <NotificationManager />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+      <SystemProvider>
+        <BrowserRouter>
+          <OnlineStatusBanner />
+          <NotificationManager />
+          <CrisisBanner />
+          <BroadcastModal />
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/redirect-after-login"
@@ -199,6 +206,16 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             }
           />
           <Route
+            path="/admin/system"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading...</div>}>
+                  <SystemPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/demo"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -218,7 +235,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             }
           />
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </SystemProvider>
     </AuthProvider>
   </React.StrictMode>
 );

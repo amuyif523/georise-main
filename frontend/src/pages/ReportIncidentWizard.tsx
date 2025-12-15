@@ -2,10 +2,11 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { Map, MessageSquare, ShieldCheck } from "lucide-react";
+import { Map, MessageSquare, ShieldCheck, AlertTriangle } from "lucide-react";
 import api from "../lib/api";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { addToIncidentQueue } from "../offline/incidentQueue";
+import { useSystem } from "../context/SystemContext";
 
 type Step = 1 | 2 | 3;
 
@@ -57,7 +58,10 @@ const Step1Describe: React.FC<{
   setForm: React.Dispatch<React.SetStateAction<WizardForm>>;
   onNext: () => void;
   error: string | null;
-}> = ({ form, setForm, onNext, error }) => (
+}> = ({ form, setForm, onNext, error }) => {
+  const { crisisMode } = useSystem();
+  
+  return (
   <div className="space-y-4">
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -68,6 +72,12 @@ const Step1Describe: React.FC<{
         </p>
       </div>
     </div>
+    {crisisMode && (
+      <div className="alert alert-error text-sm font-bold animate-pulse">
+        <AlertTriangle size={20} />
+        <span>CRISIS MODE ACTIVE: Please only report life-threatening emergencies. Minor issues will be deprioritized.</span>
+      </div>
+    )}
     {error && <div className="alert alert-error text-sm">{error}</div>}
     <div className="space-y-3">
       <div>
@@ -104,7 +114,8 @@ const Step1Describe: React.FC<{
       </button>
     </div>
   </div>
-);
+  );
+};
 
 const Step2Location: React.FC<{
   form: WizardForm;
