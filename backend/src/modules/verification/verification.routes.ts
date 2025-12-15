@@ -1,45 +1,57 @@
 import { Router } from "express";
-import { requireAuth, requireRole, AuthenticatedRequest } from "../../middleware/auth";
+import type { Request } from "express";
+import { requireAuth, requireRole } from "../../middleware/auth";
 import prisma from "../../prisma";
 import { reputationService } from "../reputation/reputation.service";
 import { VerificationStatus } from "@prisma/client";
+import logger from "../../logger";
 
 const router = Router();
 
-router.post("/request", requireAuth, async (req: AuthenticatedRequest, res) => {
-  const userId = req.user!.id;
-  const { nationalId, phone } = req.body;
-  if (!nationalId || !phone) {
-    return res.status(400).json({ message: "nationalId and phone are required" });
+router.post("/request", requireAuth, async (req: Request, res) => {
+  try {
+    const userId = req.user!.id;
+    const { nationalId, phone } = req.body;
+    if (!nationalId || !phone) {
+      return res.status(400).json({ message: "nationalId and phone are required" });
+    }
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const verification = await prisma.citizenVerification.upsert({
+      where: { userId },
+      update: { nationalId, phone, status: "PENDING", otpCode, otpExpiresAt },
+      create: { userId, nationalId, phone, status: "PENDING", otpCode, otpExpiresAt },
+    });
+    return res.json({ message: "Verification request created", otpCodeDemo: otpCode, verification });
+  } catch (err: any) {
+    logger.error({ err }, "Verification request error");
+    return res.status(400).json({ message: err.message || "Failed to request verification" });
   }
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-  const verification = await prisma.citizenVerification.upsert({
-    where: { userId },
-    update: { nationalId, phone, status: "PENDING", otpCode, otpExpiresAt },
-    create: { userId, nationalId, phone, status: "PENDING", otpCode, otpExpiresAt },
-  });
-  return res.json({ message: "Verification request created", otpCodeDemo: otpCode, verification });
 });
 
-router.post("/confirm-otp", requireAuth, async (req: AuthenticatedRequest, res) => {
-  const userId = req.user!.id;
-  const { otpCode } = req.body;
-  const verification = await prisma.citizenVerification.findUnique({ where: { userId } });
-  if (!verification || !verification.otpCode || !verification.otpExpiresAt) {
-    return res.status(400).json({ message: "No active OTP" });
+router.post("/confirm-otp", requireAuth, async (req: Request, res) => {
+  try {
+    const userId = req.user!.id;
+    const { otpCode } = req.body;
+    const verification = await prisma.citizenVerification.findUnique({ where: { userId } });
+    if (!verification || !verification.otpCode || !verification.otpExpiresAt) {
+      return res.status(400).json({ message: "No active OTP" });
+    }
+    if (verification.otpExpiresAt < new Date()) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+    if (verification.otpCode !== otpCode) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+    const updated = await prisma.citizenVerification.update({
+      where: { userId },
+      data: { otpCode: null, otpExpiresAt: null, status: "PENDING" },
+    });
+    return res.json({ message: "OTP confirmed. Awaiting admin decision.", verification: updated });
+  } catch (err: any) {
+    logger.error({ err }, "OTP confirmation error");
+    return res.status(400).json({ message: err.message || "Failed to confirm OTP" });
   }
-  if (verification.otpExpiresAt < new Date()) {
-    return res.status(400).json({ message: "OTP expired" });
-  }
-  if (verification.otpCode !== otpCode) {
-    return res.status(400).json({ message: "Invalid OTP" });
-  }
-  const updated = await prisma.citizenVerification.update({
-    where: { userId },
-    data: { otpCode: null, otpExpiresAt: null, status: "PENDING" },
-  });
-  return res.json({ message: "OTP confirmed. Awaiting admin decision.", verification: updated });
 });
 
 router.get("/pending", requireAuth, requireRole(["ADMIN"]), async (_req, res) => {
