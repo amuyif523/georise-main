@@ -6,6 +6,7 @@ import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../
 import { gisService } from "../gis/gis.service";
 import { reputationService } from "../reputation/reputation.service";
 import { logActivity } from "./activity.service";
+import { smsService } from "../sms/sms.service";
 import logger from "../../logger";
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
@@ -122,6 +123,18 @@ export class IncidentService {
     await reputationService.onIncidentCreated(reporterId);
     if (reviewStatus !== "PENDING_REVIEW") {
       emitIncidentCreated(toIncidentPayload(updated));
+      
+      // Critical Alert Fallback (SMS)
+      // If severity > 4 (High/Critical), notify admins/responders via SMS if needed
+      // For now, we simulate notifying the reporter that help is on the way if it's high severity
+      if (updated.severityScore && updated.severityScore >= 4) {
+        const reporter = await prisma.user.findUnique({ where: { id: reporterId } });
+        if (reporter?.phone) {
+          // In a real scenario, we'd check if they have push notifications enabled first
+          // Here we just simulate the fallback logic
+          await smsService.sendSMS(reporter.phone, `GEORISE Alert: Your report #${updated.id} is marked as HIGH severity. Responders are being notified.`);
+        }
+      }
     }
     return updated;
   }
