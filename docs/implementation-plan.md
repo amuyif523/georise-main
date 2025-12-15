@@ -8,20 +8,20 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 1.1 Duplicate Incident Detection (Feature 5.3)
 - **Goal:** Prevent dispatcher overload during major events (e.g., 50 reports for one fire).
 - **Tasks:**
-  - [ ] **Backend:** Implement `findPotentialDuplicates` service using PostGIS `ST_DWithin` (spatial) + Time window + Category match.
-  - [ ] **AI:** Add text similarity check (Cosine similarity on description) to refine spatial matches.
-  - [ ] **UI (Agency):** Add "Merge Incidents" interface in the Incident Detail view.
-  - [ ] **UI (Citizen):** "It looks like this has already been reported" prompt if reporting near an active cluster.
-  - [ ] **UI (Citizen):** Add "I am not at the scene" toggle in Report Wizard (Feature 1.2) to adjust location confidence score.
+  - [x] **Backend:** Implement `findPotentialDuplicates` service using PostGIS `ST_DWithin` (spatial) + Time window + Category match.
+  - [x] **AI:** Add text similarity check (Cosine similarity on description) to refine spatial matches.
+  - [x] **UI (Agency):** Add "Merge Incidents" interface in the Incident Detail view.
+  - [x] **UI (Citizen):** "It looks like this has already been reported" prompt if reporting near an active cluster.
+  - [x] **UI (Citizen):** Add "I am not at the scene" toggle in Report Wizard (Feature 1.2) to adjust location confidence score.
 
 ### 1.2 Reputation & Trust System (Feature 1.5)
 - **Goal:** Auto-verify reports from trusted citizens and filter spam.
 - **Tasks:**
-  - [ ] **Backend:** Implement `TrustScore` logic.
+  - [x] **Backend:** Implement `TrustScore` logic.
     - +5 for Verified Report (Agency marks "Resolved").
     - -10 for False Report (Agency marks "Rejected").
-  - [ ] **Backend:** Implement `Tier` logic (Tier 0 to Tier 3) based on score thresholds.
-  - [ ] **Middleware:** Update `incident.controller.ts` to auto-flag reports from Tier 0 users as "Pending Review".
+  - [x] **Backend:** Implement `Tier` logic (Tier 0 to Tier 3) based on score thresholds.
+  - [x] **Middleware:** Update `incident.controller.ts` to auto-flag reports from Tier 0 users as "Pending Review".
 
 ### 1.3 Rate Limiting & Anti-Abuse (Feature 4.2)
 - **Goal:** Protect the system from DDoS and spam bots.
