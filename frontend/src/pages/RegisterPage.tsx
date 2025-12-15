@@ -23,9 +23,8 @@ const RegisterPage: React.FC = () => {
         email,
         password,
         phone: phone || undefined,
-        role: "CITIZEN", // Default to citizen registration
+        role: "CITIZEN",
       });
-      // Redirect to login with success message (could be improved with toast)
       navigate("/login?registered=true");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Registration failed");
@@ -38,8 +37,9 @@ const RegisterPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-200">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title mb-4">Create an Account</h2>
-          {error && <div className="alert alert-error mb-3">{error}</div>}
+          <h2 className="card-title mb-4 justify-center text-2xl font-bold text-primary">Create Account</h2>
+          {error && <div className="alert alert-error mb-3 text-sm">{error}</div>}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="form-control">
               <label className="label">
@@ -70,14 +70,18 @@ const RegisterPage: React.FC = () => {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Phone (Optional)</span>
+                <span className="label-text">Phone (Recommended)</span>
               </label>
               <input
                 type="tel"
                 className="input input-bordered w-full"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                placeholder="+251..."
               />
+              <label className="label">
+                <span className="label-text-alt text-gray-500">Used for urgent alerts and OTP login</span>
+              </label>
             </div>
 
             <div className="form-control">
@@ -94,10 +98,11 @@ const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div className="form-control mt-4">
+            <div className="form-control mt-6">
               <button
                 className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
                 type="submit"
+                disabled={loading}
               >
                 {loading ? "Creating Account..." : "Sign Up"}
               </button>
