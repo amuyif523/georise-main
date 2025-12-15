@@ -3,7 +3,7 @@ import { userService } from "./user.service";
 
 export const updateLocation = async (req: Request, res: Response) => {
   const { lat, lng } = req.body;
-  if (!lat || !lng) return res.status(400).json({ message: "lat/lng required" });
+  if (lat === undefined || lng === undefined) return res.status(400).json({ message: "lat/lng required" });
   await userService.updateLocation(req.user!.id, Number(lat), Number(lng));
   res.json({ success: true });
 };

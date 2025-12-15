@@ -29,7 +29,7 @@ export class AlertService {
           ST_SetSRID(ST_MakePoint(${incident.longitude}, ${incident.latitude}), 4326)::geography,
           2000
         )
-        AND id != ${incident.reporterId}
+        AND (${incident.reporterId} IS NULL OR id != ${incident.reporterId})
       `;
 
       if (users.length === 0) return;

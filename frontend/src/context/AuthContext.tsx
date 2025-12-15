@@ -22,6 +22,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  setAuth: (user: User, token: string, refreshToken?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -88,8 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     disconnectSocket();
   };
 
+  const setAuth = (userData: User, token: string, refreshToken?: string) => {
+    localStorage.setItem("georise_token", token);
+    if (refreshToken) localStorage.setItem("georise_refresh_token", refreshToken);
+    setUser(userData);
+    connectSocket(token);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, setAuth }}>
       {children}
     </AuthContext.Provider>
   );

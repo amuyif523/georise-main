@@ -9,6 +9,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
+    // @ts-expect-error - ioredis types mismatch with rate-limit-redis
     sendCommand: (...args: string[]) => redis.call(...args),
   }),
   handler: (req, res) => {
@@ -25,6 +26,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
+    // @ts-expect-error - ioredis types mismatch with rate-limit-redis
     sendCommand: (...args: string[]) => redis.call(...args),
   }),
   message: "Too many login attempts, please try again later.",
