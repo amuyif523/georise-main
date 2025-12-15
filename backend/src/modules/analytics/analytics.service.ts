@@ -51,12 +51,11 @@ class AnalyticsService {
 
     const timeAgg: any[] = await prisma.$queryRawUnsafe(`
       SELECT
-        AVG(EXTRACT(EPOCH FROM (ia."arrivedAt" - i."createdAt"))/60.0) AS avg_response_minutes,
-        AVG(EXTRACT(EPOCH FROM (ia."completedAt" - i."createdAt"))/60.0) AS avg_resolution_minutes
+        AVG(EXTRACT(EPOCH FROM (i."arrivalAt" - i."createdAt"))/60.0) AS avg_response_minutes,
+        AVG(EXTRACT(EPOCH FROM (i."resolvedAt" - i."createdAt"))/60.0) AS avg_resolution_minutes
       FROM "Incident" i
-      JOIN "IncidentAssignment" ia ON ia."incidentId" = i.id
       WHERE 1=1 ${where}
-        AND ia."arrivedAt" IS NOT NULL
+        AND i."arrivalAt" IS NOT NULL
     `);
 
     return {

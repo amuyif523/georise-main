@@ -30,25 +30,19 @@ router.post("/assign", requireAuth, requireRole(["AGENCY_STAFF", "ADMIN"]), asyn
       where: { id: incidentId },
       data: {
         assignedAgencyId: agencyId,
+        assignedResponderId: unitId || null, // unitId is now responderId
         status: IncidentStatus.ASSIGNED,
       },
     });
 
-    let assignment = null;
     if (unitId) {
-      assignment = await prisma.incidentAssignment.create({
-        data: {
-          incidentId,
-          unitId,
-        },
-      });
-      await prisma.responderUnit.update({
+      await prisma.responder.update({
         where: { id: unitId },
-        data: { status: "BUSY" },
+        data: { status: "ASSIGNED" },
       });
     }
 
-    res.json({ incident, assignment });
+    res.json({ incident });
   } catch (err: any) {
     console.error("assign error", err);
     res.status(400).json({ message: err.message || "Failed to assign" });
@@ -64,19 +58,19 @@ router.post("/auto-assign/:incidentId", requireAuth, requireRole(["AGENCY_STAFF"
     const top = recs[0];
     const incident = await prisma.incident.update({
       where: { id },
-      data: { assignedAgencyId: top.agencyId, status: IncidentStatus.ASSIGNED },
+      data: { 
+        assignedAgencyId: top.agencyId, 
+        assignedResponderId: top.unitId || null,
+        status: IncidentStatus.ASSIGNED 
+      },
     });
-    let assignment = null;
     if (top.unitId) {
-      assignment = await prisma.incidentAssignment.create({
-        data: { incidentId: id, unitId: top.unitId },
-      });
-      await prisma.responderUnit.update({
+      await prisma.responder.update({
         where: { id: top.unitId },
-        data: { status: "BUSY" },
+        data: { status: "ASSIGNED" },
       });
     }
-    res.json({ incident, assignment, selected: top });
+    res.json({ incident, selected: top });
   } catch (err: any) {
     console.error("auto-assign error", err);
     res.status(400).json({ message: err.message || "Failed to auto-assign" });

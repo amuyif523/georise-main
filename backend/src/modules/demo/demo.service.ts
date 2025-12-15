@@ -7,11 +7,10 @@ const addMinutes = (date: Date, mins: number) => new Date(date.getTime() + mins 
 
 export class DemoService {
   async resetDemoData() {
-    await prisma.incidentAssignment.deleteMany({ where: { isDemo: true } });
     await prisma.incidentStatusHistory.deleteMany({ where: { incident: { isDemo: true } } });
     await prisma.incidentAIOutput.deleteMany({ where: { incident: { isDemo: true } } });
     await prisma.incident.deleteMany({ where: { isDemo: true } });
-    await prisma.responderUnit.deleteMany({ where: { isDemo: true } });
+    await prisma.responder.deleteMany({ where: { isDemo: true } });
   }
 
   async seedAddisScenario1() {
@@ -24,18 +23,18 @@ export class DemoService {
       this.ensureAgency("Addis Medical / Ambulance", "MEDICAL"),
     ]);
 
-    await prisma.responderUnit.createMany({
+    await prisma.responder.createMany({
       data: [
-        { agencyId: police.id, name: "Police Unit P-1", type: "PATROL", lastLat: 9.01, lastLon: 38.74, lastSeenAt: subMinutes(now, 5), isDemo: true, demoScenarioCode: DEMO_CODE },
-        { agencyId: police.id, name: "Police Unit P-2", type: "PATROL", lastLat: 9.02, lastLon: 38.75, lastSeenAt: subMinutes(now, 3), isDemo: true, demoScenarioCode: DEMO_CODE },
-        { agencyId: fire.id, name: "Fire Truck F-1", type: "FIRE_TRUCK", lastLat: 9.0, lastLon: 38.76, lastSeenAt: subMinutes(now, 7), isDemo: true, demoScenarioCode: DEMO_CODE },
-        { agencyId: fire.id, name: "Fire Truck F-2", type: "FIRE_TRUCK", lastLat: 8.995, lastLon: 38.77, lastSeenAt: subMinutes(now, 12), isDemo: true, demoScenarioCode: DEMO_CODE },
-        { agencyId: medical.id, name: "Ambulance M-1", type: "AMBULANCE", lastLat: 9.015, lastLon: 38.755, lastSeenAt: subMinutes(now, 4), isDemo: true, demoScenarioCode: DEMO_CODE },
-        { agencyId: medical.id, name: "Ambulance M-2", type: "AMBULANCE", lastLat: 9.025, lastLon: 38.745, lastSeenAt: subMinutes(now, 2), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: police.id, name: "Police Unit P-1", type: "PATROL", latitude: 9.01, longitude: 38.74, lastSeenAt: subMinutes(now, 5), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: police.id, name: "Police Unit P-2", type: "PATROL", latitude: 9.02, longitude: 38.75, lastSeenAt: subMinutes(now, 3), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: fire.id, name: "Fire Truck F-1", type: "FIRE_TRUCK", latitude: 9.0, longitude: 38.76, lastSeenAt: subMinutes(now, 7), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: fire.id, name: "Fire Truck F-2", type: "FIRE_TRUCK", latitude: 8.995, longitude: 38.77, lastSeenAt: subMinutes(now, 12), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: medical.id, name: "Ambulance M-1", type: "AMBULANCE", latitude: 9.015, longitude: 38.755, lastSeenAt: subMinutes(now, 4), isDemo: true, demoScenarioCode: DEMO_CODE },
+        { agencyId: medical.id, name: "Ambulance M-2", type: "AMBULANCE", latitude: 9.025, longitude: 38.745, lastSeenAt: subMinutes(now, 2), isDemo: true, demoScenarioCode: DEMO_CODE },
       ],
     });
 
-    const units = await prisma.responderUnit.findMany({ where: { isDemo: true, demoScenarioCode: DEMO_CODE } });
+    const units = await prisma.responder.findMany({ where: { isDemo: true, demoScenarioCode: DEMO_CODE } });
     const policeUnit = units.find((u) => u.agencyId === police.id)!;
     const fireUnit = units.find((u) => u.agencyId === fire.id)!;
     const medicalUnit = units.find((u) => u.agencyId === medical.id)!;
@@ -143,38 +142,33 @@ export class DemoService {
     const locationWkt = `SRID=4326;POINT(${params.lon} ${params.lat})`;
     const reporter = await this.ensureDemoCitizen();
 
-    const incidentRows: any[] = await prisma.$queryRawUnsafe(`
-      INSERT INTO "Incident"
-        ("reporterId","assignedAgencyId","title","description","category",
-         "severityScore","status","location","createdAt","updatedAt","isDemo","demoScenarioCode")
-      VALUES
-        (${reporter.id}, ${params.agency.id}, '${params.title.replace(/'/g, "''")}',
-         '${params.description.replace(/'/g, "''")}', '${params.category}',
-         ${params.severityScore}, '${params.statuses[params.statuses.length - 1]}',
-         ST_GeomFromText('${locationWkt}'),
-         '${createdAt.toISOString()}', '${now.toISOString()}', true, '${DEMO_CODE}')
-      RETURNING *;
-    `);
-    const incident = incidentRows[0];
-
     const assignedAt = addMinutes(createdAt, 5);
     const arrivedAt =
       params.statuses.includes("RESPONDING") || params.statuses.includes("RESOLVED")
         ? addMinutes(createdAt, 15)
         : null;
-    const completedAt = params.statuses.includes("RESOLVED") ? addMinutes(createdAt, 35) : null;
+    const resolvedAt = params.statuses.includes("RESOLVED") ? addMinutes(createdAt, 35) : null;
 
-    await prisma.incidentAssignment.create({
-      data: {
-        incidentId: incident.id,
-        unitId: params.unit.id,
-        assignedAt,
-        arrivedAt: arrivedAt ?? undefined,
-        completedAt: completedAt ?? undefined,
-        isDemo: true,
-        demoScenarioCode: DEMO_CODE,
-      },
-    });
+    const assignedResponderId = params.statuses.includes("ASSIGNED") || params.statuses.includes("RESPONDING") || params.statuses.includes("RESOLVED") ? params.unit.id : "NULL";
+    const dispatchedAtVal = params.statuses.includes("ASSIGNED") ? `'${assignedAt.toISOString()}'` : "NULL";
+    const arrivedAtVal = arrivedAt ? `'${arrivedAt.toISOString()}'` : "NULL";
+    const resolvedAtVal = resolvedAt ? `'${resolvedAt.toISOString()}'` : "NULL";
+
+    const incidentRows: any[] = await prisma.$queryRawUnsafe(`
+      INSERT INTO "Incident"
+        ("reporterId","assignedAgencyId","assignedResponderId","title","description","category",
+         "severityScore","status","location","createdAt","updatedAt","isDemo","demoScenarioCode",
+         "dispatchedAt", "arrivalAt", "resolvedAt")
+      VALUES
+        (${reporter.id}, ${params.agency.id}, ${assignedResponderId}, '${params.title.replace(/'/g, "''")}',
+         '${params.description.replace(/'/g, "''")}', '${params.category}',
+         ${params.severityScore}, '${params.statuses[params.statuses.length - 1]}',
+         ST_GeomFromText('${locationWkt}'),
+         '${createdAt.toISOString()}', '${now.toISOString()}', true, '${DEMO_CODE}',
+         ${dispatchedAtVal}, ${arrivedAtVal}, ${resolvedAtVal})
+      RETURNING *;
+    `);
+    const incident = incidentRows[0];
 
     let currentTime = createdAt;
     let prevStatus: string | null = null;

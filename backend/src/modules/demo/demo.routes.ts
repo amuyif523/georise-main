@@ -28,7 +28,7 @@ router.post("/start", requireAuth, requireRole([Role.ADMIN]), async (_req, res) 
 
 router.get("/status", requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
   const countInc = await prisma.incident.count({ where: { isDemo: true } });
-  const countUnits = await prisma.responderUnit.count({ where: { isDemo: true } });
+  const countUnits = await prisma.responder.count({ where: { isDemo: true } });
   res.json({ hasDemoData: countInc > 0 || countUnits > 0, demoCode: countInc > 0 ? "ADDIS_SCENARIO_1" : null });
 });
 

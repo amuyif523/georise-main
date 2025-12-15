@@ -59,19 +59,18 @@ export class DispatchService {
              u."agencyId",
              u.name,
              u.status,
-             u."lastLat",
-             u."lastLon",
+             u.latitude as "lastLat",
+             u.longitude as "lastLon",
              CASE
-               WHEN u."lastLat" IS NOT NULL AND u."lastLon" IS NOT NULL THEN
+               WHEN u.latitude IS NOT NULL AND u.longitude IS NOT NULL THEN
                  ST_DistanceSphere(
-                   ST_SetSRID(ST_MakePoint(u."lastLon", u."lastLat"), 4326),
+                   ST_SetSRID(ST_MakePoint(u.longitude, u.latitude), 4326),
                    ${incident.location}
                  ) / 1000
                ELSE NULL
              END AS distance_km
-      FROM "ResponderUnit" u
-      WHERE u."isActive" = true
-        AND u.status = 'AVAILABLE';
+      FROM "Responder" u
+      WHERE u.status = 'AVAILABLE';
     `;
 
     const candidates: DispatchCandidate[] = [];
