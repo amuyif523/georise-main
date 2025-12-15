@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { incidentService } from "./incident.service";
 import sanitizeHtml from "sanitize-html";
 import logger from "../../logger";
+import { getIO } from "../../socket";
 
 export const createIncident = async (req: Request, res: Response) => {
   try {
@@ -90,5 +91,51 @@ export const mergeIncidents = async (req: Request, res: Response) => {
   } catch (err: any) {
     logger.error({ err }, "Merge incidents error");
     return res.status(400).json({ message: "Failed to merge incidents" });
+  }
+};
+
+export const shareIncident = async (req: Request, res: Response) => {
+  try {
+    const { incidentId } = req.params;
+    const { agencyId, reason } = req.body;
+    
+    if (!agencyId || !reason) {
+      return res.status(400).json({ message: "agencyId and reason required" });
+    }
+
+    const result = await incidentService.shareIncident(Number(incidentId), Number(agencyId), reason);
+    return res.json(result);
+  } catch (err: any) {
+    logger.error({ err }, "Share incident error");
+    return res.status(400).json({ message: "Failed to share incident" });
+  }
+};
+
+export const getIncidentChat = async (req: Request, res: Response) => {
+  try {
+    const { incidentId } = req.params;
+    const messages = await incidentService.getIncidentChat(Number(incidentId));
+    return res.json({ messages });
+  } catch (err: any) {
+    logger.error({ err }, "Get chat error");
+    return res.status(400).json({ message: "Failed to get chat" });
+  }
+};
+
+export const postChatMessage = async (req: Request, res: Response) => {
+  try {
+    const { incidentId } = req.params;
+    const { message } = req.body;
+    
+    if (!message) return res.status(400).json({ message: "Message required" });
+
+    const chat = await incidentService.addChatMessage(Number(incidentId), req.user!.id, message);
+    
+    getIO().to(`incident:${incidentId}`).emit("incident:chat", chat);
+    
+    return res.json(chat);
+  } catch (err: any) {
+    logger.error({ err }, "Post chat error");
+    return res.status(400).json({ message: "Failed to post message" });
   }
 };

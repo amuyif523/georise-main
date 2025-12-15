@@ -231,6 +231,54 @@ export class IncidentService {
     
     return true;
   }
+
+  async shareIncident(incidentId: number, agencyId: number, reason: string) {
+    const existing = await prisma.sharedIncident.findUnique({
+      where: {
+        incidentId_agencyId: { incidentId, agencyId }
+      }
+    });
+    
+    if (existing) return existing;
+
+    const shared = await prisma.sharedIncident.create({
+      data: {
+        incidentId,
+        agencyId,
+        reason
+      },
+      include: { agency: true }
+    });
+
+    await logActivity(incidentId, null, "SYSTEM", `Incident shared with ${shared.agency.name}: ${reason}`);
+    
+    // Emit update
+    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (incident) emitIncidentUpdated(toIncidentPayload(incident));
+
+    return shared;
+  }
+
+  async getIncidentChat(incidentId: number) {
+    return prisma.incidentChat.findMany({
+      where: { incidentId },
+      include: { sender: { select: { id: true, fullName: true, role: true, agencyStaff: { include: { agency: true } } } } },
+      orderBy: { createdAt: 'asc' }
+    });
+  }
+
+  async addChatMessage(incidentId: number, senderId: number, message: string) {
+    const chat = await prisma.incidentChat.create({
+      data: {
+        incidentId,
+        senderId,
+        message
+      },
+      include: { sender: { select: { id: true, fullName: true, role: true, agencyStaff: { include: { agency: true } } } } }
+    });
+    
+    return chat;
+  }
 }
 
 export const incidentService = new IncidentService();

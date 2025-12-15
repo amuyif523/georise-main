@@ -8,6 +8,9 @@ import {
   getMyIncidents,
   checkDuplicates,
   mergeIncidents,
+  shareIncident,
+  getIncidentChat,
+  postChatMessage,
 } from "./incident.controller";
 import { validateBody } from "../../middleware/validate";
 import { createIncidentSchema } from "./incident.validation";
@@ -39,6 +42,19 @@ router.get("/my", requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get("/my/:id", requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
 router.get("/duplicates", requireAuth, checkDuplicates);
 router.post("/merge", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), mergeIncidents);
+
+// Inter-Agency Coordination
+router.get("/resources/agencies", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async (req, res) => {
+  const agencies = await prisma.agency.findMany({
+    where: { isActive: true, isApproved: true },
+    select: { id: true, name: true, type: true }
+  });
+  res.json({ agencies });
+});
+
+router.post("/:incidentId/share", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), shareIncident);
+router.get("/:incidentId/chat", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), getIncidentChat);
+router.post("/:incidentId/chat", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), postChatMessage);
 
 // Timeline (role-checked)
 router.get("/:id/timeline", requireAuth, async (req, res) => {

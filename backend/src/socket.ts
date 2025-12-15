@@ -56,6 +56,16 @@ export const initSocketServer = (server: HttpServer) => {
         }
       }
 
+      // Incident Chat Rooms
+      socket.on("join_incident", (incidentId: number) => {
+        socket.join(`incident:${incidentId}`);
+        logger.info({ userId, incidentId }, "Joined incident room");
+      });
+
+      socket.on("leave_incident", (incidentId: number) => {
+        socket.leave(`incident:${incidentId}`);
+      });
+
       // Join responder room if linked
       try {
         const resp = await prisma.responder.findFirst({
