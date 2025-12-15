@@ -6,6 +6,7 @@ import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../
 import { gisService } from "../gis/gis.service";
 import { reputationService } from "../reputation/reputation.service";
 import { logActivity } from "./activity.service";
+import logger from "../../logger";
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
 
@@ -79,7 +80,7 @@ export class IncidentService {
       });
       aiOutput = res.data;
     } catch (err) {
-      console.error("AI classification failed, using fallback:", err);
+      logger.error({ err }, "AI classification failed, using fallback");
       aiOutput = {
         predicted_category: "UNSPECIFIED",
         severity_score: 2,

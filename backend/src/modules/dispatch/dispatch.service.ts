@@ -54,24 +54,39 @@ export class DispatchService {
     `;
 
     // load available units with last known position
-    const units: any[] = await prisma.$queryRaw`
-      SELECT u.id,
-             u."agencyId",
-             u.name,
-             u.status,
-             u.latitude as "lastLat",
-             u.longitude as "lastLon",
-             CASE
-               WHEN u.latitude IS NOT NULL AND u.longitude IS NOT NULL THEN
-                 ST_DistanceSphere(
-                   ST_SetSRID(ST_MakePoint(u.longitude, u.latitude), 4326),
-                   ${incident.location}
-                 ) / 1000
-               ELSE NULL
-             END AS distance_km
-      FROM "Responder" u
-      WHERE u.status = 'AVAILABLE';
-    `;
+    let units: any[] = [];
+    
+    if (incident.location) {
+      units = await prisma.$queryRaw`
+        SELECT u.id,
+               u."agencyId",
+               u.name,
+               u.status,
+               u.latitude as "lastLat",
+               u.longitude as "lastLon",
+               ST_DistanceSphere(
+                 ST_SetSRID(ST_MakePoint(u.longitude, u.latitude), 4326),
+                 ${incident.location}
+               ) / 1000 AS distance_km
+        FROM "Responder" u
+        WHERE u.status = 'AVAILABLE'
+          AND u.latitude IS NOT NULL 
+          AND u.longitude IS NOT NULL;
+      `;
+    } else {
+      // Fallback if incident has no location: just get available units
+      units = await prisma.$queryRaw`
+        SELECT u.id,
+               u."agencyId",
+               u.name,
+               u.status,
+               u.latitude as "lastLat",
+               u.longitude as "lastLon",
+               NULL as distance_km
+        FROM "Responder" u
+        WHERE u.status = 'AVAILABLE';
+      `;
+    }
 
     const candidates: DispatchCandidate[] = [];
 

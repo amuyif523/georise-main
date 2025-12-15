@@ -1,9 +1,9 @@
-import type { Response } from "express";
-import type { AuthenticatedRequest } from "../../middleware/auth";
+import type { Request, Response } from "express";
 import { incidentService } from "./incident.service";
 import sanitizeHtml from "sanitize-html";
+import logger from "../../logger";
 
-export const createIncident = async (req: AuthenticatedRequest, res: Response) => {
+export const createIncident = async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
@@ -17,21 +17,21 @@ export const createIncident = async (req: AuthenticatedRequest, res: Response) =
     const incident = await incidentService.createIncident(sanitizedBody, req.user.id);
     return res.status(201).json({ incident });
   } catch (err: any) {
-    console.error("Create incident error:", err);
+    logger.error({ err }, "Create incident error");
     return res
       .status(400)
       .json({ message: err?.message || "Failed to create incident" });
   }
 };
 
-export const getMyIncidents = async (req: AuthenticatedRequest, res: Response) => {
+export const getMyIncidents = async (req: Request, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const incidents = await incidentService.getMyIncidents(req.user.id);
     return res.json({ incidents });
   } catch (err: any) {
-    console.error("Get my incidents error:", err);
+    logger.error({ err }, "Get my incidents error");
     return res
       .status(400)
       .json({ message: err?.message || "Failed to fetch incidents" });
@@ -39,7 +39,7 @@ export const getMyIncidents = async (req: AuthenticatedRequest, res: Response) =
 };
 
 export const getMyIncidentById = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response
 ) => {
   try {
@@ -52,7 +52,7 @@ export const getMyIncidentById = async (
 
     return res.json({ incident });
   } catch (err: any) {
-    console.error("Get incident error:", err);
+    logger.error({ err }, "Get incident error");
     return res
       .status(400)
       .json({ message: err?.message || "Failed to fetch incident" });
