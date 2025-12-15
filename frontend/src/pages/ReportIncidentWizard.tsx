@@ -241,12 +241,34 @@ const ReportIncidentWizard: React.FC = () => {
     setStep(2);
   };
 
-  const handleNextFromStep2 = () => {
+  const handleNextFromStep2 = async () => {
     if (form.latitude == null || form.longitude == null) {
       setError("Please select a location on the map.");
       return;
     }
     setError(null);
+
+    // Check for duplicates
+    if (online) {
+      try {
+        const res = await api.get("/incidents/duplicates", {
+          params: {
+            lat: form.latitude,
+            lng: form.longitude,
+            title: form.title,
+            description: form.description,
+          },
+        });
+        const duplicates = res.data.duplicates || [];
+        if (duplicates.length > 0) {
+          const confirmMsg = `We found ${duplicates.length} similar report(s) nearby. Are you sure you want to submit a new one?`;
+          if (!window.confirm(confirmMsg)) return;
+        }
+      } catch (err) {
+        console.warn("Failed to check duplicates", err);
+      }
+    }
+
     setStep(3);
   };
 
