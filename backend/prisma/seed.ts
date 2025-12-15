@@ -1,4 +1,4 @@
-import { PrismaClient, Role, AgencyType } from "@prisma/client";
+import { PrismaClient, Role, AgencyType, ResponderStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -125,6 +125,59 @@ async function main() {
     },
   });
 
+  // Additional Citizens
+  const citizen2 = await prisma.user.upsert({
+    where: { email: "citizen2@example.com" },
+    update: {},
+    create: {
+      fullName: "Citizen Two",
+      email: "citizen2@example.com",
+      passwordHash,
+      role: Role.CITIZEN,
+    },
+  });
+
+  const citizen3 = await prisma.user.upsert({
+    where: { email: "citizen3@example.com" },
+    update: {},
+    create: {
+      fullName: "Citizen Three",
+      email: "citizen3@example.com",
+      passwordHash,
+      role: Role.CITIZEN,
+    },
+  });
+
+  // Ensure every agency has at least one staff member and one responder
+  const agencyStaffUsers = [];
+  for (const agency of createdAgencies) {
+    // Skip if we already created specific users for these types above
+    if (["POLICE", "FIRE", "MEDICAL", "TRAFFIC"].includes(agency.type)) continue;
+
+    const email = `${agency.type.toLowerCase()}1@example.com`;
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        fullName: `${agency.type} Officer`,
+        email,
+        passwordHash,
+        role: Role.AGENCY_STAFF,
+      },
+    });
+
+    await prisma.agencyStaff.upsert({
+      where: { userId: user.id },
+      update: { agencyId: agency.id },
+      create: {
+        userId: user.id,
+        agencyId: agency.id,
+        position: "Operator",
+      },
+    });
+    agencyStaffUsers.push({ user, agency });
+  }
+
   const policeAgencyId = createdAgencies.find((a) => a.type === "POLICE")?.id ?? createdAgencies[0]?.id;
   await prisma.agencyStaff.upsert({
     where: { userId: agencyUser.id },
@@ -163,6 +216,48 @@ async function main() {
     });
   }
 
+  // Seed Responders (linked to the staff users for demo purposes)
+  // In a real scenario, responders might be different from office staff, but for demo we use the same accounts.
+  const responders = [
+    { user: agencyUser, agencyId: policeAgencyId, type: "PATROL", lat: 9.01, lng: 38.78 },
+    { user: fireUser, agencyId: fireAgencyId, type: "TRUCK", lat: 9.03, lng: 38.75 },
+    { user: medicalUser, agencyId: medicalAgencyId, type: "AMBULANCE", lat: 9.04, lng: 38.83 },
+    { user: trafficUser, agencyId: trafficAgencyId, type: "MOTORCYCLE", lat: 9.01, lng: 38.74 },
+  ];
+
+  // Add responders for the other agencies we just created staff for
+  for (const item of agencyStaffUsers) {
+    responders.push({
+      user: item.user,
+      agencyId: item.agency.id,
+      type: "UNIT",
+      lat: (item.agency.centerLatitude || 9.0) + 0.005, // slightly offset from HQ
+      lng: (item.agency.centerLongitude || 38.7) + 0.005,
+    });
+  }
+
+  for (const r of responders) {
+    if (r.agencyId) {
+      // Check if responder exists for this user
+      const existing = await prisma.responder.findFirst({ where: { userId: r.user.id } });
+      if (!existing) {
+        await prisma.responder.create({
+          data: {
+            name: `${r.user.fullName} (Unit)`,
+            type: r.type,
+            status: ResponderStatus.AVAILABLE,
+            agencyId: r.agencyId,
+            userId: r.user.id,
+            latitude: r.lat,
+            longitude: r.lng,
+            lastSeenAt: new Date(),
+            isDemo: true,
+          },
+        });
+      }
+    }
+  }
+
   const incidents = [
     {
       title: "Apartment fire near Bole",
@@ -187,6 +282,22 @@ async function main() {
       severityScore: 3,
       latitude: 9.032,
       longitude: 38.7615,
+    },
+    {
+      title: "Power outage in Yeka",
+      description: "Transformer sparked and power is out for the whole block.",
+      category: "ELECTRIC",
+      severityScore: 2,
+      latitude: 9.045,
+      longitude: 38.810,
+    },
+    {
+      title: "Flooding in Akaki",
+      description: "River overflowing near the bridge, road blocked.",
+      category: "DISASTER",
+      severityScore: 4,
+      latitude: 8.965,
+      longitude: 38.805,
     },
   ];
 
@@ -224,6 +335,17 @@ async function main() {
       defaultAgencyType: r.defaultAgencyType as AgencyType,
     })),
   });
+
+  // Seed basic SubCities for development (Placeholders)
+  const subCities = ["Bole", "Arada", "Yeka", "Lideta", "Akaki", "Gullele", "Addis Ketema", "Kirkos", "Nifas Silk-Lafto", "Kolfe Keranio"];
+  for (const name of subCities) {
+    await prisma.subCity.upsert({
+      where: { name },
+      update: {},
+      create: { name, code: name.substring(0, 3).toUpperCase() },
+    });
+    // Note: Real geometry would be seeded here from GeoJSON
+  }
 
   console.log("Seed complete");
 }
