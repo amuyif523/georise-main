@@ -6,6 +6,8 @@ import {
   createIncident,
   getMyIncidentById,
   getMyIncidents,
+  checkDuplicates,
+  mergeIncidents,
 } from "./incident.controller";
 import { validateBody } from "../../middleware/validate";
 import { createIncidentSchema } from "./incident.validation";
@@ -35,6 +37,8 @@ router.post(
 );
 router.get("/my", requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get("/my/:id", requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
+router.get("/duplicates", requireAuth, checkDuplicates);
+router.post("/merge", requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), mergeIncidents);
 
 // Timeline (role-checked)
 router.get("/:id/timeline", requireAuth, async (req, res) => {

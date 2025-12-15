@@ -43,9 +43,9 @@ export class IncidentService {
     }
 
     let reviewStatus: any = "NOT_REQUIRED";
-    const trust = user?.trustScore ?? 0;
-    const isVerified = user?.citizenVerification?.status === "VERIFIED";
-    if (trust <= -2 || (!isVerified && trust <= 0)) {
+    const tier = await reputationService.getTier(reporterId);
+    // Tier 0 (Unverified) always requires review
+    if (tier === 0) {
       reviewStatus = "PENDING_REVIEW";
     }
 
@@ -135,6 +135,82 @@ export class IncidentService {
       include: { aiOutput: true, statusHistory: true },
     });
     return incident;
+  }
+
+  async findPotentialDuplicates(lat: number, lng: number, title?: string, description?: string) {
+    // 200 meters radius, last 2 hours
+    const radius = 200;
+    const timeWindow = 2 * 60 * 60 * 1000; // 2 hours in ms
+    const since = new Date(Date.now() - timeWindow);
+
+    const duplicates = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT id, title, description, category, "severityScore", status, "createdAt",
+             ST_Distance(
+               location::geography,
+               ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+             ) as distance
+      FROM "Incident"
+      WHERE location IS NOT NULL
+        AND "createdAt" >= '${since.toISOString()}'
+        AND status NOT IN ('RESOLVED', 'REJECTED', 'CANCELLED')
+        AND ST_DWithin(
+          location::geography,
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+          ${radius}
+        )
+      ORDER BY distance ASC
+      LIMIT 10
+    `);
+
+    if (title || description) {
+      const targetText = ((title || "") + " " + (description || "")).toLowerCase();
+      duplicates.forEach((d) => {
+        const otherText = ((d.title || "") + " " + (d.description || "")).toLowerCase();
+        d.similarity = this.calculateSimilarity(targetText, otherText);
+      });
+      // Sort by similarity descending, then distance ascending
+      duplicates.sort((a, b) => {
+        if (Math.abs(b.similarity - a.similarity) > 0.1) {
+          return b.similarity - a.similarity;
+        }
+        return a.distance - b.distance;
+      });
+    }
+
+    return duplicates.slice(0, 5);
+  }
+
+  private calculateSimilarity(s1: string, s2: string) {
+    const w1 = s1.match(/\w+/g) || [];
+    const w2 = s2.match(/\w+/g) || [];
+    const set1 = new Set(w1);
+    const set2 = new Set(w2);
+    const intersection = [...set1].filter((x) => set2.has(x)).length;
+    const union = new Set([...w1, ...w2]).size;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  async mergeIncidents(primaryId: number, duplicateId: number, agencyUserId: number) {
+    const duplicate = await prisma.incident.findUnique({ where: { id: duplicateId } });
+    if (!duplicate) throw new Error("Duplicate incident not found");
+
+    // Mark duplicate as resolved (merged)
+    await prisma.incident.update({
+      where: { id: duplicateId },
+      data: {
+        status: "RESOLVED", // Or a specific MERGED status if enum allows, using RESOLVED for now
+        reviewStatus: "APPROVED",
+      },
+    });
+
+    // Log activity on both
+    await logActivity(primaryId, "SYSTEM", `Merged with incident #${duplicateId}`, agencyUserId);
+    await logActivity(duplicateId, "STATUS_CHANGE", `Merged into incident #${primaryId}`, agencyUserId);
+
+    // Emit update
+    emitIncidentUpdated(toIncidentPayload(await prisma.incident.findUnique({ where: { id: duplicateId } }) as any));
+    
+    return true;
   }
 }
 
