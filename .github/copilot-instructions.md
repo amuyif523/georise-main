@@ -1,48 +1,61 @@
-# GEORISE Project Instructions
+﻿# GEORISE Project Instructions
 
-## Architecture Overview
-- **Monorepo Structure:**
-  - `frontend/`: React + Vite + Tailwind + Leaflet (PWA capabilities).
-  - `backend/`: Node.js + Express + Prisma (PostgreSQL + PostGIS).
-  - `ai-service/`: Python FastAPI (AfroXLMR model for incident classification).
-  - `infra/`: Docker Compose for PostgreSQL/PostGIS.
+## 1. Architecture & Monorepo Structure
+- **`frontend/`**: Public/Admin web portal (React + Vite + Tailwind + Leaflet).
+- **`responder-app/`**: Mobile-first PWA for field agents (React + Vite + Socket.IO).
+- **`backend/`**: REST API & Socket.IO server (Node.js + Express + Prisma + PostGIS).
+- **`ai-service/`**: Incident classification service (Python FastAPI + AfroXLMR).
+- **`infra/`**: Docker Compose for PostgreSQL/PostGIS database.
 
-## Core Workflows
-- **Development:**
-  - Backend: `npm run dev` (Port 4000).
-  - Frontend: `npm run dev` (Port 5173).
-  - AI Service: `uvicorn main:app --reload --port 8001`.
-  - Database: `docker compose up -d` (in `infra/`).
-- **Database Management:**
-  - Migrations: `npx prisma migrate dev`.
-  - Seeding: `npx prisma db seed` (Populates agencies, users, and demo incidents).
-  - **GIS Note:** Uses `postgis` extension. Raw SQL (`prisma.$executeRaw`) is often required for spatial operations (e.g., `ST_MakePoint`, `ST_Buffer`).
+## 2. Core Workflows & Commands
+### Development
+- **Backend**: `npm run dev` (Port 4000).
+- **Frontend**: `npm run dev` (Port 5173).
+- **Responder App**: `npm run dev` (Port 5174 - check console).
+- **AI Service**: `uvicorn main:app --reload --port 8001`.
+- **Database**: `docker compose up -d` (in `infra/`).
 
-## Code Conventions
-### Frontend
-- **Layouts:**
-  - **Unified Layout:** Use `AppLayout` for ALL pages (Admin, Agency, Citizen).
-  - `AppLayout` handles role-based navigation via `AppSidebar`.
-  - **Do not use** `CommandLayout`, `CitizenLayout`, or `PageWrapper` (deprecated/unused).
-- **State Management:** Context API (`AuthContext`) for auth.
-- **Maps:** `react-leaflet` with `react-leaflet-cluster`.
-- **Styling:** Tailwind CSS with DaisyUI. "Cyber" theme for Command Center.
+### Database & Simulation
+- **Migrations**: `npx prisma migrate dev` (Backend).
+- **Seeding**: `npm run seed` (Backend) - Populates agencies, users, and demo incidents.
+- **Simulation**: `npm run simulate:responder` (Backend) - Simulates responder movement for testing live tracking.
 
-### Backend
-- **Modular Structure:** `src/modules/{domain}/` (e.g., `incident`, `dispatch`, `auth`).
-  - Each module contains: `*.controller.ts`, `*.service.ts`, `*.routes.ts`.
-- **Type Safety:**
-  - **Avoid `any`**. Use generated Prisma types (`Incident`, `User`) or Zod schemas.
-  - Request objects should be typed (extend `Express.Request`).
-- **GIS Operations:**
-  - Store coordinates as `Float` (lat/lng) AND `geometry` (PostGIS).
-  - Use `prisma.$queryRaw` for spatial queries (e.g., "find nearby").
+## 3. Backend Conventions (`backend/`)
+- **Modular Architecture**: `src/modules/{domain}/` (e.g., `incident`, `dispatch`, `auth`).
+  - **Files**: `*.controller.ts`, `*.service.ts`, `*.routes.ts`.
+  - **Validation**: Use `zod` schemas in `*.schema.ts` or inline with `validate` middleware.
+- **Database Access**:
+  - Use `prisma` client for standard CRUD.
+  - Use `prisma.$queryRaw` for **PostGIS** spatial queries (e.g., `ST_DWithin`, `ST_Distance`).
+  - **GeoJSON**: Store coordinates as `Float` (lat/lng) for API ease, but sync with `geometry` column for spatial queries.
+- **Logging**: Use `src/logger.ts` (Pino) instead of `console.log`.
 
-### AI Service
-- **Model:** AfroXLMR (fine-tuned).
-- **Fallback:** Loads base model if fine-tuned weights are missing.
+## 4. Frontend & Responder App Conventions
+- **State Management**:
+  - **Auth**: `AuthContext` (JWT storage, user role).
+  - **Offline**: Use `idb-keyval` for caching incidents/forms when offline.
+- **Maps (Leaflet)**:
+  - Use `react-leaflet` components.
+  - **Clustering**: `react-leaflet-cluster` for incident markers.
+  - **Heatmaps**: `leaflet.heat` for analytics.
+- **Styling**: Tailwind CSS + DaisyUI.
+  - **Theme**: "Cyber" theme for Command Center; simpler themes for mobile.
+- **Real-time**: `socket.io-client` for listening to `incident:new`, `responder:update`.
 
-## Integration Points
-- **Frontend -> Backend:** `src/lib/api.ts` (Axios instance with interceptors).
-- **Backend -> AI:** HTTP calls to `http://localhost:8001`.
-- **Real-time:** Socket.IO for live incident updates and responder tracking.
+## 5. AI Service Integration (`ai-service/`)
+- **API Contract**:
+  - **Input**: `POST /classify` with `{ title: str, description: str }`.
+  - **Output**: `{ predicted_category, severity_score, confidence }`.
+- **Model Loading**: Checks `models/` directory; falls back to HuggingFace base model if local weights are missing.
+
+## 6. Critical Integration Points
+- **Authentication**: JWT-based. Backend `auth` middleware attaches user to `req.user`.
+- **GIS Data**: Frontend sends `{ lat, lng }`; Backend converts to PostGIS `POINT(lng lat)`.
+- **Dispatch Logic**:
+  - **Auto-Assignment**: Backend `dispatch` module finds nearest available responder via PostGIS.
+  - **Socket Events**: Backend emits events to specific rooms (e.g., `agency:{id}`, `responder:{id}`).
+
+## 7. Common Pitfalls
+- **PostGIS Syntax**: Remember PostGIS uses `(longitude, latitude)` order for points, while Leaflet uses `[latitude, longitude]`.
+- **Prisma Types**: Always generate Prisma client after schema changes (`npx prisma generate`).
+- **Env Variables**: Ensure `.env` exists in EACH service directory (`backend`, `frontend`, `ai-service`).
