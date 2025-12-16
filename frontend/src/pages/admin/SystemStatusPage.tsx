@@ -6,7 +6,8 @@ import {
   Cpu, 
   CheckCircle, 
   XCircle,
-  RefreshCw
+  RefreshCw,
+  type LucideIcon
 } from "lucide-react";
 
 interface ServiceHealth {
@@ -22,6 +23,11 @@ interface SystemHealth {
     redis: ServiceHealth;
     ai: ServiceHealth;
   };
+}
+
+interface CustomCSS extends React.CSSProperties {
+  "--value"?: number;
+  "--size"?: string;
 }
 
 const SystemStatusPage: React.FC = () => {
@@ -64,7 +70,7 @@ const SystemStatusPage: React.FC = () => {
     data 
   }: { 
     title: string; 
-    icon: any; 
+    icon: LucideIcon; 
     data?: ServiceHealth 
   }) => (
     <div className="card bg-base-100 shadow-xl border border-base-200">
@@ -155,7 +161,7 @@ const SystemStatusPage: React.FC = () => {
         <div className="card-body">
           <h3 className="card-title">Overall System Health</h3>
           <div className="flex items-center gap-4 mt-2">
-            <div className={`radial-progress ${getStatusColor(health?.status || "unknown")}`} style={{"--value": 100, "--size": "4rem"} as any}>
+            <div className={`radial-progress ${getStatusColor(health?.status || "unknown")}`} style={{"--value": 100, "--size": "4rem"} as CustomCSS}>
               {health?.status === "ok" ? "100%" : "ERR"}
             </div>
             <div>
