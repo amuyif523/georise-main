@@ -31,6 +31,7 @@ const AgencyAnalyticsPage = React.lazy(() => import("./pages/AgencyAnalyticsPage
 const CitizenVerificationPage = React.lazy(() => import("./pages/CitizenVerificationPage"));
 const ReviewQueuePage = React.lazy(() => import("./pages/admin/ReviewQueuePage"));
 const VerificationPage = React.lazy(() => import("./pages/admin/VerificationPage"));
+const SystemStatusPage = React.lazy(() => import("./pages/admin/SystemStatusPage"));
 
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -171,6 +172,16 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
                   <AnalyticsPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/system-status"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Suspense fallback={<div className="p-4 text-slate-200">Loading system status…</div>}>
+                  <SystemStatusPage />
                 </Suspense>
               </ProtectedRoute>
             }

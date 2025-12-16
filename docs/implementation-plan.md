@@ -89,17 +89,17 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 4.2 Advanced Analytics (Feature 2.7, 3.2)
 - **Goal:** Data-driven decision making.
 - **Tasks:**
-  - [ ] **Frontend:** Implement Chart.js / Recharts for:
+  - [x] **Frontend:** Implement Chart.js / Recharts for:
     - Response Time Distribution (Histogram).
     - Heatmap by Time-of-Day (Grid).
     - Resource Utilization (Busy vs Idle time).
-  - [ ] **Backend:** Aggregation pipelines for complex stats.
+  - [x] **Backend:** Aggregation pipelines for complex stats.
 
 ### 4.3 System Health Monitoring (Feature 4.3)
 - **Goal:** Ensure uptime.
 - **Tasks:**
-  - [ ] **Backend:** `/health` endpoint checking DB connection, Redis, and AI Service latency.
-  - [ ] **Frontend:** Admin "System Status" dashboard.
+  - [x] **Backend:** `/health` endpoint checking DB connection, Redis, and AI Service latency.
+  - [x] **Frontend:** Admin "System Status" dashboard.
 
 ---
 

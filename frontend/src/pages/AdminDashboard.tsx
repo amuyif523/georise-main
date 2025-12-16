@@ -39,6 +39,9 @@ const AdminDashboard: React.FC = () => {
           <Link to="/admin/analytics" className="btn btn-accent btn-sm">
             Analytics
           </Link>
+          <Link to="/admin/system-status" className="btn btn-info btn-sm">
+            System Status
+          </Link>
           <Link to="/admin/system" className="btn btn-error btn-outline btn-sm">
             System Control
           </Link>
