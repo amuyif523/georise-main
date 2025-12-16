@@ -47,6 +47,21 @@ router.get("/heatmap", requireAuth, async (req, res) => {
   res.json(rows);
 });
 
+router.get("/distribution/response-time", requireAuth, async (req, res) => {
+  const rows = await analyticsService.getResponseTimeDistribution(buildFilters(req));
+  res.json(rows);
+});
+
+router.get("/heatmap/time-of-day", requireAuth, async (req, res) => {
+  const rows = await analyticsService.getTimeOfDayHeatmap(buildFilters(req));
+  res.json(rows);
+});
+
+router.get("/utilization/resource", requireAuth, async (req, res) => {
+  const rows = await analyticsService.getResourceUtilization(buildFilters(req));
+  res.json(rows);
+});
+
 // K-means clustering (default k=5) for last 30 days
 router.get("/clusters", requireAuth, async (_req, res) => {
   const rows = await prisma.$queryRawUnsafe<any[]>(`
