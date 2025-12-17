@@ -1,9 +1,12 @@
 {
   "scripts": {
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,scss,html,yaml,yml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,scss,html,yaml,yml}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,scss,html,yaml,yml}\"",
+    "prepare": "husky install"
   },
   "devDependencies": {
+    "husky": "^9.1.6",
+    "lint-staged": "^15.3.0",
     "prettier": "^3.4.2"
   },
   "dependencies": {
