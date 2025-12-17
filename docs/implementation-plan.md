@@ -195,9 +195,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Replace simulated SMS with a real provider.
 - **Tasks:**
-  - [ ] **Backend:** Integrate a real SMS gateway (Twilio or local Ethio-Telecom).
-  - [ ] **Backend:** Add delivery/error handling and retry logic for OTP and alerts.
-  - [ ] **Config:** Add provider credentials + environment configuration.
+  - [x] **Backend:** Integrate a real SMS gateway (Twilio or local Ethio-Telecom).
+  - [x] **Backend:** Add delivery/error handling and retry logic for OTP and alerts.
+  - [x] **Config:** Add provider credentials + environment configuration.
 
 ### 6.2 Push Notifications (Feature 2.3)
 

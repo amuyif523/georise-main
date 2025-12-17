@@ -1,6 +1,6 @@
 {
   "*.{ts,tsx,js,jsx,json,md,css,scss,html,yaml,yml}": "prettier --write",
-  "backend/**/*.{ts,tsx}": "npm --prefix backend run lint",
-  "frontend/**/*.{ts,tsx}": "npm --prefix frontend run lint",
-  "responder-app/**/*.{ts,tsx}": "npm --prefix responder-app run lint"
+  "backend/**/*.{ts,tsx}": "npx --prefix backend eslint --config backend/eslint.config.js",
+  "frontend/**/*.{ts,tsx}": "npx --prefix frontend eslint --config frontend/eslint.config.js",
+  "responder-app/**/*.{ts,tsx}": "npx --prefix responder-app eslint --config responder-app/eslint.config.js"
 }
