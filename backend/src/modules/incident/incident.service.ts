@@ -80,21 +80,33 @@ export class IncidentService {
     }
 
     let aiOutput: any = null;
-    try {
-      const res = await axios.post(AI_ENDPOINT, {
-        title: incident.title,
-        description: incident.description,
-      });
-      aiOutput = res.data;
-    } catch (err) {
-      logger.error({ err }, "AI classification failed, using fallback");
+    
+    // If category is manually provided (e.g. INFRASTRUCTURE), skip AI or use it only for summary
+    if (data.category === "INFRASTRUCTURE") {
       aiOutput = {
-        predicted_category: "UNSPECIFIED",
-        severity_score: 2,
-        confidence: 0,
-        model_version: "stub-v0",
+        predicted_category: "INFRASTRUCTURE",
+        severity_score: 1, // Low severity for hazards
+        confidence: 1.0,
+        model_version: "manual",
         summary: null,
       };
+    } else {
+      try {
+        const res = await axios.post(AI_ENDPOINT, {
+          title: incident.title,
+          description: incident.description,
+        });
+        aiOutput = res.data;
+      } catch (err) {
+        logger.error({ err }, "AI classification failed, using fallback");
+        aiOutput = {
+          predicted_category: "UNSPECIFIED",
+          severity_score: 2,
+          confidence: 0,
+          model_version: "stub-v0",
+          summary: null,
+        };
+      }
     }
 
     const updated = await prisma.incident.update({

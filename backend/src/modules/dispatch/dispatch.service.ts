@@ -25,6 +25,12 @@ const categoryPreferred = (category?: string | null, agencyType?: string | null)
   if (type === "medical" && (cat.includes("medical") || cat.includes("injury") || cat.includes("ambulance"))) return 0.2;
   if (type === "police" && (cat.includes("crime") || cat.includes("assault") || cat.includes("robbery"))) return 0.15;
   if (type === "traffic" && (cat.includes("traffic") || cat.includes("accident") || cat.includes("crash"))) return 0.15;
+  
+  // Infrastructure routing
+  if (cat === "infrastructure" || cat.includes("hazard") || cat.includes("pothole") || cat.includes("light")) {
+    if (type === "construction" || type === "electric" || type === "water" || type === "administration") return 0.3;
+  }
+  
   return 0;
 };
 
