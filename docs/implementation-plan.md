@@ -8,15 +8,15 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 0.1 Backend Test Harness
 - **Goal:** Enable unit/integration coverage for core API flows.
 - **Tasks:**
-  - [ ] **Setup:** Add test runner (e.g., Vitest/Jest) and config for TypeScript.
-  - [ ] **Infra:** Create test DB config + migrations/seed for test runs.
-  - [ ] **Tests:** Auth (login/OTP/refresh), incident creation/review, dispatch assign.
+  - [x] **Setup:** Add test runner (e.g., Vitest/Jest) and config for TypeScript.
+  - [x] **Infra:** Create test DB config + migrations/seed for test runs.
+  - [x] **Tests:** Auth (login/OTP/refresh), incident creation/review, dispatch assign.
 
 ### 0.2 Frontend Test Harness
 - **Goal:** Validate critical UI flows with automated tests.
 - **Tasks:**
-  - [ ] **Setup:** Add component test runner (Vitest + React Testing Library).
-  - [ ] **Tests:** Report incident wizard, login/register, admin review queue.
+  - [x] **Setup:** Add component test runner (Vitest + React Testing Library).
+  - [x] **Tests:** Report incident wizard, login/register, admin review queue.
 
 ### 0.3 E2E Smoke Tests
 - **Goal:** End-to-end confidence for key user roles.
