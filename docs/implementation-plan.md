@@ -27,9 +27,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 0.4 Linting & Formatting Baseline
 - **Goal:** Consistent code quality checks across services.
 - **Tasks:**
-  - [ ] **Backend:** Add ESLint config + real `npm run lint`.
-  - [ ] **Responder app:** Add ESLint config + lint script.
-  - [ ] **Repo:** Add Prettier config + format script (shared).
+  - [x] **Backend:** Add ESLint config + real `npm run lint`.
+  - [x] **Responder app:** Add ESLint config + lint script.
+  - [x] **Repo:** Add Prettier config + format script (shared).
 
 ### 0.5 CI & Coverage
 - **Goal:** Automated checks on every push/PR.
