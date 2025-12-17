@@ -34,8 +34,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 0.5 CI & Coverage
 - **Goal:** Automated checks on every push/PR.
 - **Tasks:**
-  - [ ] **CI:** Add GitHub Actions workflow for lint + test + build.
-  - [ ] **Coverage:** Enable coverage output + minimum thresholds.
+  - [x] **CI:** Add GitHub Actions workflow for lint + test + build.
+  - [x] **Coverage:** Enable coverage output + minimum thresholds.
 
 ### 0.6 Pre-commit Hooks
 - **Goal:** Prevent bad commits locally.

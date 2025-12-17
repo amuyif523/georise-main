@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint_test_build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: georise_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d georise_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root tooling
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Write backend test env
+        run: |
+          cat <<'EOF' > backend/.env.test
+          NODE_ENV=test
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+          JWT_SECRET=ci_test_secret
+          JWT_REFRESH_SECRET=ci_test_refresh_secret
+          JWT_EXPIRES_IN=1h
+          JWT_REFRESH_EXPIRES_IN=7d
+          REDIS_URL=redis://localhost:6379
+          CLIENT_ORIGIN=http://localhost:5173
+          AI_ENDPOINT=http://localhost:9999/classify
+          EOF
+
+      - name: Backend lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Backend migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Backend tests (coverage)
+        working-directory: backend
+        run: npm run test:coverage
+
+      - name: Backend build
+        working-directory: backend
+        run: npm run build
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend tests (coverage)
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install responder app deps
+        working-directory: responder-app
+        run: npm ci
+
+      - name: Responder app lint
+        working-directory: responder-app
+        run: npm run lint
+
+      - name: Responder app build
+        working-directory: responder-app
+        run: npm run build
