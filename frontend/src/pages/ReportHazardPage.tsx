@@ -76,9 +76,10 @@ const ReportHazardPage: React.FC = () => {
         await addToIncidentQueue(payload);
       }
       navigate("/citizen/my-reports");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || "Failed to submit report");
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e?.response?.data?.message || "Failed to submit report");
     } finally {
       setLoading(false);
     }
