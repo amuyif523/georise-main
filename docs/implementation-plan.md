@@ -203,9 +203,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Real push delivery for proximity alerts and status updates.
 - **Tasks:**
-  - [ ] **Backend:** Store device tokens and opt-in settings.
-  - [ ] **Backend:** Send push via FCM/Web Push for alerts and status changes.
-  - [ ] **Frontend:** Register service worker push handlers and token lifecycle.
+  - [x] **Backend:** Store device tokens and opt-in settings.
+  - [x] **Backend:** Send push via FCM/Web Push for alerts and status changes.
+  - [x] **Frontend:** Register service worker push handlers and token lifecycle.
 
 ---
 
