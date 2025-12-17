@@ -115,8 +115,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 5.2 Infrastructure Hazard Workflow (Feature 3.2)
 - **Goal:** Handle non-emergency reports differently.
 - **Tasks:**
-  - [ ] **Backend:** Create separate workflow for "Infrastructure" category (no SLA timer, routed to City Admin instead of Emergency Dispatch).
-  - [ ] **Frontend:** "Report Hazard" simplified flow for potholes/broken lights.
+  - [x] **Backend:** Create separate workflow for "Infrastructure" category (no SLA timer, routed to City Admin instead of Emergency Dispatch).
+  - [x] **Frontend:** "Report Hazard" simplified flow for potholes/broken lights.
 
 ---
 
