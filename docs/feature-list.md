@@ -1,682 +1,134 @@
-1) Citizen Features
-1.1 Onboarding & Identity
-
-Account creation
-
-Phone number + OTP (primary, Ethiopia-friendly)
-
-Optional email
-
-Name, gender optional, age bracket optional
-
-Home area (kebele / subcity optional)
-
-Verification tiers (anti-abuse)
-
-Tier 0: unverified (limited submissions/day)
-
-Tier 1: phone verified (default)
-
-Tier 2: ID verified (optional, for high trust)
-
-Tier 3: trusted reporter (earned via reputation)
-
-Consent + privacy
-
-Consent screen for location use
-
-Clear statement of how data is shared with agencies (only for dispatch)
-
-Profile
-
-Personal details
-
-Emergency contacts
-
-Medical info (optional): blood type, allergies, conditions (privacy controls)
-
-1.2 Incident Reporting
-
-Report types
-
-Fire, Medical, Crime, Traffic Accident, Disaster, Infrastructure hazard, Other
-
-Subcategories per type (e.g., Fire→building/vehicle/forest; Medical→injury/heart/birth)
-
-Report input modes
-
-Quick report (30 seconds): type + location + short text
-
-Detailed report: add media, number of victims, weapon mention checkbox (careful UX), hazards
-
-Location capture
-
-Auto GPS with accuracy indicator
-
-Manual pin drop + search landmark
-
-“I’m not at the scene” toggle (reporting for someone else)
-
-Location confidence score (GPS accuracy + user edits)
-
-Media uploads
-
-Photos (compressed)
-
-Short video (optional, size-limited)
-
-Audio note (optional)
-
-Upload progress + retry (low network)
-
-Safety UX
-
-“Call emergency” quick action buttons
-
-“Do not approach” warning banners for fire/crime
-
-AI assist (citizen-facing)
-
-Suggest incident category while typing
-
-Ask 1–3 follow-up questions to increase dispatch quality (“Is anyone bleeding?”, “Is fire spreading?”)
-
-Show severity preview in plain language (“High urgency”)
-
-Submission confirmation
-
-Reference ID
-
-“What happens next” timeline
-
-Expected next update (ETA estimate if available)
-
-Offline/low network behavior
-
-Cache draft locally
-
-“Queued upload” mode
-
-SMS fallback spec (optional stretch): minimal report via SMS shortcode
-
-1.3 Tracking & Notifications
-
-My Reports
-
-List with status chips: Submitted → Under Review → Verified → Dispatched → Resolved/Rejected
-
-Filters: date, category, status
-
-Report detail view: map + timeline + messages
-
-Status timeline
-
-Who changed status (system/agency)
-
-Timestamps
-
-Notes visible to citizen (sanitized)
-
-Push notifications / SMS
-
-Status changes
-
-“Responder en route” (if enabled)
-
-Safety alert near your location (geo-fenced)
-
-Citizen messaging
-
-“Add more info” channel for agencies to ask clarifying questions
-
-Citizen can send extra photos/text after submission
-
-Rate limit to prevent spam
-
-1.4 Alerts & Community Safety
-
-Proximity alerts
-
-Nearby fire, riots, road closures, flood zones
-
-Adjustable radius (1km/3km/5km)
-
-Safety feed
-
-Verified public incidents only (privacy protected)
-
-Aggregated heatmap view (no exact home addresses)
-
-Emergency guidance
-
-Basic instructions based on incident type (first aid tips, fire evacuation guidance)
-
-1.5 Reputation & Abuse Prevention (Citizen)
-
-Reputation scoring
-
-Verified helpful reports increase score
-
-False reports decrease score
-
-Rate limits
-
-New accounts limited reports/day
-
-Progressive trust unlocks more
-
-Report flagging
-
-Citizen can flag public alerts as inaccurate
-
-Blocklist
-
-Admin/system can suspend or shadow-ban abusive users
-
-2) Agency Staff Features (Police/Fire/EMS/Disaster)
-2.1 Agency Portal Core
-
-Login
-
-Role-specific login path (Agency Staff)
-
-MFA optional (OTP)
-
-Role types within agency
-
-Dispatcher
-
-Field Responder
-
-Supervisor
-
-Analyst (read-only)
-
-Shift management
-
-Start/end shift
-
-Availability status: Available/Busy/Off-duty
-
-Auto assignment respects shifts
-
-2.2 Incident Intake & Verification
-
-Incident queue views
-
-New (unverified)
-
-Awaiting verification
-
-Verified
-
-Assigned
-
-In progress
-
-Resolved
-
-Rejected/False
-
-Verification tools
-
-View citizen trust tier + past reliability
-
-Media preview + metadata (time, location accuracy)
-
-Duplicate detection suggestions (AI + spatial clustering)
-
-“Request more info” button (message citizen)
-
-“Call citizen” (optional, if policy allows)
-
-Decision outcomes
-
-Verify
-
-Reject (false report / insufficient info)
-
-Merge with existing incident
-
-Escalate to supervisor
-
-2.3 Dispatch & Resource Assignment
-
-Assignment
-
-Assign to unit/team (ambulance, patrol, fire truck)
-
-Attach resources list (vehicles, staff count)
-
-Priority override (manual)
-
-Smart routing (GIS)
-
-Recommend closest available unit by road distance (later: traffic-aware)
-
-Recommend staging points
-
-SLA timers
-
-Response time targets per category/severity
-
-Escalation if SLA breached
-
-2.4 Live Map Operations
-
-Unified GIS map
-
-Incident pins color-coded by severity + status
-
-Layers: hospitals, police stations, fire stations, risk zones
-
-Jurisdiction boundaries per agency
-
-Filtering
-
-Time window
-
-Severity range
-
-Incident type
-
-Subcity/kebele
-
-Verified only toggle
-
-Clustering + heatmaps
-
-Cluster at zoomed-out levels
-
-Heatmap for last 24h/7d/30d
-
-Incident detail drawer
-
-Timeline, chat, resources assigned, notes, citizen media
-
-2.5 Multi-Agency Coordination
-
-Cross-agency incident
-
-One incident can involve multiple agencies (fire+police+ems)
-
-Shared incident log with role-based visibility
-
-Inter-agency messaging
-
-Threaded updates per incident
-
-@mention roles (Supervisor)
-
-Handoffs
-
-Transfer ownership to another agency
-
-Escalate to city disaster unit
-
-Unified status language
-
-Standard workflow states shared across agencies
-
-2.6 Field Responder Tools (Mobile-first)
-
-Responder app mode (or responsive portal)
-
-Assigned incidents list
-
-Navigation link
-
-One-tap status updates:
-
-En route
-
-Arrived
-
-Needs backup
-
-Resolved
-
-Add notes + photos (evidence/progress)
-
-Responder safety
-
-Panic button (internal)
-
-“Need backup” broadcast within agency
-
-2.7 Analytics for Agencies
-
-Performance dashboards
-
-Response time distribution
-
-SLA adherence
-
-Top incident types
-
-Peak hours
-
-Operational insights
-
-Hotspots by type
-
-Repeat locations
-
-Resource utilization (unit busy time)
-
-Export
-
-CSV export by timeframe + filters (admin-controlled)
-
-3) Municipality / Government Features
-3.1 City Command Dashboard
-
-Citywide overview
-
-Total incidents today, verified, unresolved
-
-Heatmap + trend lines
-
-Policy view
-
-Agency readiness (on shift count)
-
-High-risk zones active alerts
-
-Crisis mode
-
-Disaster mode toggle (earthquake/flood/riot)
-
-Broadcast public alerts
-
-Override dispatch rules
-
-3.2 Urban Planning & Risk Analytics
-
-Infrastructure hazard tracking
-
-Road damage, fallen poles, open manholes
-
-Categorize as “non-emergency” tasks but still map
-
-Spatial analysis
-
-Buffer zones around schools/hospitals
-
-Incident density vs population proxies
-
-Reports
-
-Monthly PDF/CSV outputs
-
-Ward/subcity comparisons
-
-4) System Admin Features
-4.1 Administration Console
-
-User management
-
-Citizens: view trust, suspend, reset, verify tier change
-
-Agency users: add/disable, assign roles, shift permissions
-
-Agency management
-
-Create agencies: Police, Fire, EMS, Traffic, Disaster
-
-Assign jurisdictions (GeoJSON polygons)
-
-Configure operating hours, SLA rules
-
-Incident taxonomy
-
-Category/subcategory management
-
-Severity mapping per category
-
-Audit logs
-
-Every state change logged (who/when/what)
-
-Exportable for governance
-
-4.2 Policy & Safety Configuration
-
-Privacy rules
-
-What citizen data agencies can see
-
-Public feed redaction rules (blur location)
-
-Anti-abuse
-
-Rate limit configs by tier
-
-Suspicious pattern detection thresholds
-
-Notification settings
-
-SMS provider integration settings
-
-Templates management
-
-4.3 Platform Health & Ops
-
-System monitoring
-
-Service uptime
-
-AI service latency
-
-DB health
-
-Backups
-
-Daily backup schedule
-
-Restore testing checklist
-
-Incident retention policy
-
-Auto-delete sensitive media after X days (policy-based)
-
-5) AI & Intelligence Features
-5.1 Incident Classification (NLP)
-
-Input
-
-Citizen text + optional tags + metadata
-
-Output
-
-Category label(s)
-
-Confidence score
-
-Recommended follow-up questions
-
-Human-in-the-loop
-
-Agency can override category
-
-Overrides stored for retraining
-
-5.2 Severity Scoring
-
-Signals
-
-Keyword patterns (“bleeding”, “gun”, “explosion”)
-
-Citizen trust tier
-
-Location context (near schools, fuel stations)
-
-Time-of-day risk weighting (optional)
-
-Outputs
-
-Severity 1–5
-
-“Urgency reason” explanation for dispatchers
-
-5.3 Duplicate & Fraud Detection
-
-Duplicate grouping
-
-Same place/time cluster detection
-
-Merge suggestion UI
-
-Fraud signals
-
-High frequency same device
-
-Location spoof patterns
-
-Repeated rejected reports
-
-5.4 GIS Intelligence
-
-Hotspot clustering
-
-K-means or DBSCAN on incidents
-
-Heatmaps
-
-Time-window heatmap tiles
-
-Jurisdiction logic
-
-Determine correct agency based on polygon containment
-
-Suggested dispatch
-
-Closest unit selection (later: traffic-aware)
-
-6) Core Platform Features (Cross-Cutting)
-6.1 Workflow Engine
-
-Incident states
-
-Submitted
-
-Under Review
-
-Verified
-
-Dispatched
-
-En route
-
-On scene
-
-Resolved
-
-Rejected
-
-Merged
-
-State rules
-
-Who can change what
-
-Required fields for state transitions
-
-Auto-actions on transitions (notifications)
-
-6.2 Notifications System
-
-Event-based triggers
-
-Status change
-
-New nearby alert
-
-SLA breach escalation
-
-Channels
-
-Push (web/mobile)
-
-SMS fallback
-
-Email optional
-
-Template engine
-
-Multi-language support (English/Amharic later)
-
-6.3 Data Privacy & Compliance
-
-Redaction
-
-Citizen phone hidden from non-authorized staff
-
-Public feed location fuzzing
-
-Access boundaries
-
-Agency sees only its jurisdiction unless escalated
-
-Auditability
-
-Every data access logged (admin-visible)
-
-6.4 Performance & Reliability
-
-Caching
-
-Map tiles caching
-
-Recent incident caching
-
-Low bandwidth
-
-Aggressive media compression
-
-Lazy load heavy modules
-
-Fail-safe modes
-
-AI service down → fallback to manual category selection
-
-7) UI Feature Requirements (Aligned with your dark-cyber UI)
-7.1 Universal UI Components
-
-Role-based nav
-
-Status chips (color-coded)
-
-Map drawer panel
-
-Timeline component
-
-Notification toast system
-
-Cyber-grid backgrounds + subtle glow accents
-
-Accessibility: high contrast + scalable text
-
-7.2 Dashboards (Per Role)
-
-Citizen: Report button + My Reports + Alerts feed
-
-Agency: Queue + Map + Incident drawer + SLA timers
-
-Admin: Tables + audit logs + system health
-
-8) “Stretch / V2” Features (Optional but powerful)
-
-Live unit tracking (GPS responders)
-
-Traffic-aware routing via external APIs or local models
-
-CCTV/sensor ingestion (future)
-
-Voice hotline integration
-
-Multilingual (Amharic full support)
-
-Anonymous reporting mode with restrictions
-
-Public transparency dashboard (aggregated only)
+# GEORISE Platform: Complete Feature List (2025)
+
+This document enumerates **all features**—major and minor—implemented in the GEORISE platform as of December 2025. It covers backend, frontend, mobile, AI, GIS, admin, and infrastructure capabilities.
+
+---
+
+## 1. Incident Reporting & Citizen Experience
+- Multi-step Incident Report Wizard (title, description, location, photo, not-at-scene toggle)
+- Infrastructure Hazard Reporting (potholes, lights, leaks) with dedicated workflow
+- Real-time map for location selection (Leaflet)
+- Offline-first reporting (queue & sync when online)
+- Duplicate incident detection (spatial, time, text similarity)
+- "Already reported?" prompt for clustered incidents
+- Multilingual UI (English/Amharic, i18next)
+- Phone + OTP registration and login
+- Email registration (legacy)
+- My Reports dashboard (status, history, details)
+- Live in-app incident update notifications (Socket.io notification bell)
+- Push notifications for proximity alerts and status updates
+- "Crisis Mode" banner and reporting restrictions
+- Accessibility: mobile-friendly, keyboard navigation, color contrast
+
+## 2. Agency & Admin Features
+- Agency Dashboard (incident queue, map, analytics)
+- Incident Detail View (status, chat, merge, handoff, backup request)
+- Incident timeline/activity log with internal comments
+- Dispatch recommendation panel with scored suggestions (accept to assign)
+- Inter-agency chat (Socket.io, IncidentChat)
+- Merge Incidents (UI, backend logic)
+- Assign/dispatch responders (manual & auto)
+- Agency Analytics (response time, heatmaps, resource utilization)
+- Admin Dashboard (system status, user management, broadcast alerts)
+- Admin live activity feed (incident created/updated stream)
+- Admin review queue for pending incidents
+- Admin citizen verification queue (approve/reject)
+- Admin agency approval + activate/deactivate agencies
+- Admin user activation/deactivation
+- Admin demo scenario controls (reset/seed demo data)
+- Admin GIS Management (draw/edit agency jurisdictions, save as GeoJSON)
+- Admin can shadow-ban users
+- Admin can send broadcast alerts to all users or by polygon/subcity
+- Admin can view system health (DB, Redis, AI, uptime)
+- Admin can review/verify citizen reports
+- Audit logs for admin actions
+
+## 3. Dispatch & GIS
+- Auto-dispatch logic (find nearest available responder)
+- PostGIS-powered spatial queries (ST_DWithin, ST_Distance)
+- Smart routing (OSRM/Google API, drive time calculation)
+- SLA timer and escalation alerts
+- Agency jurisdiction enforcement (spatial)
+- Responder live tracking (Socket.io, map updates)
+- Responder field app (PWA) with GPS tracking, assignments, navigation, resolve
+- Responder unit management (create/list units, status tracking)
+- Nearby incident search (radius-based)
+- Boundary overlays and boundary-based incident queries (subcity/woreda/agency)
+- Simulation: fake responder movement for testing
+- Incident location stored as both lat/lng and PostGIS geometry
+- Geo-fencing for proximity alerts
+- Heatmap and cluster visualization (Leaflet, Chart.js)
+
+## 4. AI & Automation
+- Incident classification (AfroXLMR, FastAPI)
+- Severity scoring (AI or manual for hazards)
+- Confidence scoring
+- Amharic/English text support in AI
+- Fallback to base model if custom weights missing
+- AI bypass for infrastructure hazards
+- Text similarity for duplicate detection
+
+## 5. Security & Trust
+- JWT authentication (all clients)
+- Role-based access control (citizen, agency, admin)
+- Rate limiting (Redis, per user/IP)
+- TrustScore system (auto-verifies trusted users)
+- Tiered user reputation (Tier 0-3)
+- Shadow ban (admin)
+- OTP verification for phone numbers
+- Refresh token rotation
+- Account lockout after repeated failed logins
+- Citizen identity verification (national ID + phone OTP + admin approval)
+- Secure password reset
+- Audit logs for sensitive actions
+
+## 6. Offline & Resilience
+- Offline incident queue (idb-keyval)
+- Sync queue on reconnect
+- PWA support (service worker, offline cache)
+- PWA install prompts (citizen + responder apps)
+- Responder location offline queue (sync on reconnect)
+- Low-data mode with fallback polling when sockets disconnect
+- System health monitoring (DB, Redis, AI, uptime)
+- Crisis mode disables low-priority categories
+- Broadcast alerts (admin to all users)
+
+## 7. Analytics & Reporting
+- Response time distribution (histogram)
+- Heatmap by time-of-day
+- Resource utilization (busy/idle)
+- Agency and system-wide analytics dashboards
+- KPI cards (avg dispatch/arrival, resolution rate)
+- 30-day incident timeline trend
+- K-means hotspot clustering
+- Export incidents CSV (admin)
+- Export analytics data (CSV/JSON)
+
+## 8. Developer & Infrastructure
+- Modular monorepo (frontend, backend, ai-service, infra)
+- Docker Compose for local/dev deployment
+- Prisma ORM with PostGIS support
+- Automated database migrations & seeding
+- TypeScript (frontend/backend), Python (AI)
+- Centralized logging (Pino)
+- Environment variable management per service
+- Automated tests (unit/integration)
+
+## 9. Partially Implemented or Not Yet Implemented
+### Partial / Stubbed
+- Incident photo uploads (UI exists, no backend storage/processing)
+- SMS integration (OTP send simulated; no real provider configured)
+- Push notifications (browser notifications + sockets only; no FCM/Web Push)
+- Smart routing (heuristic drive time; OSRM/Google integration not wired)
+- Crisis mode restrictions (UI banner only; no backend category enforcement)
+- Responder simulation (demo data only; no automated fake movement)
+
+### Not Implemented / Unverified
+- Secure password reset flow (no endpoints/UI found)
+- Automated tests (no unit/integration suite beyond AI test script)
+- Analytics export (CSV/JSON) beyond incident CSV export
+- Email registration (legacy) not verified as maintained flow
+
+---
+
+**Features above are implemented unless listed in Section 9.**

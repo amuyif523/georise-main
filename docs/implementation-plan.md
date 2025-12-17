@@ -2,6 +2,48 @@
 
 This document outlines the remaining sprints required to bring the GEORISE platform from its current MVP state (~75%) to 100% feature completion as defined in `feature-list.md`.
 
+## Phase 0: Testing & QA Foundation (Sprint 3.5)
+**Focus:** Establish automated testing before new feature work.
+
+### 0.1 Backend Test Harness
+- **Goal:** Enable unit/integration coverage for core API flows.
+- **Tasks:**
+  - [ ] **Setup:** Add test runner (e.g., Vitest/Jest) and config for TypeScript.
+  - [ ] **Infra:** Create test DB config + migrations/seed for test runs.
+  - [ ] **Tests:** Auth (login/OTP/refresh), incident creation/review, dispatch assign.
+
+### 0.2 Frontend Test Harness
+- **Goal:** Validate critical UI flows with automated tests.
+- **Tasks:**
+  - [ ] **Setup:** Add component test runner (Vitest + React Testing Library).
+  - [ ] **Tests:** Report incident wizard, login/register, admin review queue.
+
+### 0.3 E2E Smoke Tests
+- **Goal:** End-to-end confidence for key user roles.
+- **Tasks:**
+  - [ ] **Setup:** Add Playwright/Cypress baseline config.
+  - [ ] **Tests:** Admin login + analytics load, agency map loads, citizen report submit.
+
+### 0.4 Linting & Formatting Baseline
+- **Goal:** Consistent code quality checks across services.
+- **Tasks:**
+  - [ ] **Backend:** Add ESLint config + real `npm run lint`.
+  - [ ] **Responder app:** Add ESLint config + lint script.
+  - [ ] **Repo:** Add Prettier config + format script (shared).
+
+### 0.5 CI & Coverage
+- **Goal:** Automated checks on every push/PR.
+- **Tasks:**
+  - [ ] **CI:** Add GitHub Actions workflow for lint + test + build.
+  - [ ] **Coverage:** Enable coverage output + minimum thresholds.
+
+### 0.6 Pre-commit Hooks
+- **Goal:** Prevent bad commits locally.
+- **Tasks:**
+  - [ ] **Setup:** Add Husky + lint-staged for lint/format on staged files.
+
+---
+
 ## Phase 1: Operational Intelligence (Sprint 4)
 **Focus:** Reducing noise, preventing spam, and managing high-volume events.
 
@@ -117,6 +159,86 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 - **Tasks:**
   - [x] **Backend:** Create separate workflow for "Infrastructure" category (no SLA timer, routed to City Admin instead of Emergency Dispatch).
   - [x] **Frontend:** "Report Hazard" simplified flow for potholes/broken lights.
+
+---
+
+## Phase 6: Notifications & Messaging Hardening (Sprint 9)
+**Focus:** Production-grade SMS and push notifications.
+
+### 6.1 SMS Provider Integration (Feature 2.1)
+- **Goal:** Replace simulated SMS with a real provider.
+- **Tasks:**
+  - [ ] **Backend:** Integrate a real SMS gateway (Twilio or local Ethio-Telecom).
+  - [ ] **Backend:** Add delivery/error handling and retry logic for OTP and alerts.
+  - [ ] **Config:** Add provider credentials + environment configuration.
+
+### 6.2 Push Notifications (Feature 2.3)
+- **Goal:** Real push delivery for proximity alerts and status updates.
+- **Tasks:**
+  - [ ] **Backend:** Store device tokens and opt-in settings.
+  - [ ] **Backend:** Send push via FCM/Web Push for alerts and status changes.
+  - [ ] **Frontend:** Register service worker push handlers and token lifecycle.
+
+---
+
+## Phase 7: Incident Evidence & Media (Sprint 10)
+**Focus:** Photo uploads for reports and review.
+
+### 7.1 Incident Photo Uploads
+- **Goal:** Allow citizens to upload and agencies to view images.
+- **Tasks:**
+  - [ ] **Backend:** Add upload endpoint, storage (local/S3), and file validation.
+  - [ ] **Backend:** Persist image metadata linked to incidents.
+  - [ ] **Frontend:** Upload images from report wizard and show in incident detail.
+
+---
+
+## Phase 8: Crisis Controls & Routing Realism (Sprint 11)
+**Focus:** Enforce crisis rules and improve routing accuracy.
+
+### 8.1 Crisis Mode Enforcement (Feature 4.1)
+- **Goal:** Block low-priority categories when crisis mode is active.
+- **Tasks:**
+  - [ ] **Backend:** Validate categories on incident creation when crisis mode is enabled.
+  - [ ] **Frontend:** Disable/gray out low-priority categories in reporting UI.
+
+### 8.2 Real Routing Integration (Feature 3.1)
+- **Goal:** Replace heuristic routing with OSRM or Google Routes.
+- **Tasks:**
+  - [ ] **Backend:** Integrate external routing API and cache route results.
+  - [ ] **Dispatch:** Update recommendation scoring to use real drive-time.
+  - [ ] **Ops:** Add configuration toggles and fallback behavior.
+
+---
+
+## Phase 9: Quality, Exports & Recovery (Sprint 12)
+**Focus:** Reliability, recovery paths, and reporting exports.
+
+### 9.1 Password Reset Flow (Feature 5.6)
+- **Goal:** Secure account recovery.
+- **Tasks:**
+  - [ ] **Backend:** Implement request + reset endpoints with secure tokens.
+  - [ ] **Frontend:** Add reset request + new password UI.
+  - [ ] **Email/SMS:** Deliver reset links or codes.
+
+### 9.2 Analytics Export (Feature 7.5)
+- **Goal:** Export analytics beyond incidents CSV.
+- **Tasks:**
+  - [ ] **Backend:** Provide CSV/JSON export for analytics datasets.
+  - [ ] **Frontend:** Add export controls to analytics dashboards.
+
+### 9.3 Automated Tests (Feature 8.8)
+- **Goal:** Add unit and integration coverage for core flows.
+- **Tasks:**
+  - [ ] **Backend:** Add unit/integration tests for auth, incidents, dispatch.
+  - [ ] **Frontend:** Add UI tests for critical pages (reporting, admin).
+  - [ ] **CI:** Wire tests into a repeatable script.
+
+### 9.4 Responder Simulation (Feature 3.7)
+- **Goal:** Simulate responder movement for demos.
+- **Tasks:**
+  - [ ] **Backend:** Add a demo job to move responders along a route.
+  - [ ] **Frontend:** Add a toggle to start/stop simulation.
 
 ---
 
