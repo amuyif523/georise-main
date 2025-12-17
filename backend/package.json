@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "echo \"lint placeholder\"",
+    "lint": "eslint .",
     "test": "dotenv -e .env.test -- vitest run",
     "test:watch": "dotenv -e .env.test -- vitest",
     "test:db:migrate": "dotenv -e .env.test -- prisma migrate deploy",
@@ -46,6 +46,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -56,10 +57,13 @@
     "@types/socket.io": "^3.0.1",
     "@types/supertest": "^2.0.16",
     "dotenv-cli": "^7.4.4",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
     "vitest": "^2.1.9"
   }
 }
