@@ -21,8 +21,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 0.3 E2E Smoke Tests
 - **Goal:** End-to-end confidence for key user roles.
 - **Tasks:**
-  - [ ] **Setup:** Add Playwright/Cypress baseline config.
-  - [ ] **Tests:** Admin login + analytics load, agency map loads, citizen report submit.
+  - [x] **Setup:** Add Playwright/Cypress baseline config.
+  - [x] **Tests:** Admin login + analytics load, agency map loads, citizen report submit.
 
 ### 0.4 Linting & Formatting Baseline
 - **Goal:** Consistent code quality checks across services.
