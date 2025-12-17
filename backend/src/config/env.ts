@@ -18,3 +18,6 @@ export const SMS_PROVIDER = (process.env.SMS_PROVIDER || 'console').toLowerCase(
 export const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 export const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 export const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
+export const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+export const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+export const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@georise.local';
