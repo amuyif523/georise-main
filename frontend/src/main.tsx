@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./index.css";
+import "./i18n"; // Initialize i18n
 import ProtectedRoute from "./components/ProtectedRoute";
 import OnlineStatusBanner from "./components/OnlineStatusBanner";
 import NotificationManager from "./components/NotificationManager";

@@ -3,8 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { login, setAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -22,9 +25,9 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
-      setSuccess("Account created successfully! Please log in.");
+      setSuccess(t("auth.create_account") + " " + t("common.success"));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ const LoginPage: React.FC = () => {
       await login(email, password);
       navigate("/redirect-after-login");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Login failed");
+      setError(err?.response?.data?.message || t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -75,14 +78,17 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
+    <div className="min-h-screen flex items-center justify-center bg-base-200 relative">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title mb-4 justify-center text-2xl font-bold text-primary">GEORISE Login</h2>
+          <h2 className="card-title mb-4 justify-center text-2xl font-bold text-primary">{t("auth.sign_in_to_account")}</h2>
           
           <div className="tabs tabs-boxed justify-center mb-4">
-            <a className={`tab ${mode === "EMAIL" ? "tab-active" : ""}`} onClick={() => setMode("EMAIL")}>Email</a>
-            <a className={`tab ${mode === "OTP" ? "tab-active" : ""}`} onClick={() => setMode("OTP")}>Phone OTP</a>
+            <a className={`tab ${mode === "EMAIL" ? "tab-active" : ""}`} onClick={() => setMode("EMAIL")}>{t("auth.email")}</a>
+            <a className={`tab ${mode === "OTP" ? "tab-active" : ""}`} onClick={() => setMode("OTP")}>{t("auth.phone")}</a>
           </div>
 
           {success && <div className="alert alert-success mb-3 text-sm">{success}</div>}
@@ -92,7 +98,7 @@ const LoginPage: React.FC = () => {
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Email</span>
+                  <span className="label-text">{t("auth.email")}</span>
                 </label>
                 <input
                   type="email"
@@ -105,7 +111,7 @@ const LoginPage: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Password</span>
+                  <span className="label-text">{t("auth.password")}</span>
                 </label>
                 <input
                   type="password"
@@ -121,7 +127,7 @@ const LoginPage: React.FC = () => {
                   className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
                   type="submit"
                 >
-                  {loading ? "Logging in..." : "Login"}
+                  {loading ? t("common.loading") : t("auth.login")}
                 </button>
               </div>
             </form>
@@ -130,7 +136,7 @@ const LoginPage: React.FC = () => {
               {!otpSent ? (
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Phone Number</span>
+                    <span className="label-text">{t("auth.phone")}</span>
                   </label>
                   <div className="flex gap-2">
                     <input

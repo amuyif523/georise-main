@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "GEORISE",
+    "subtitle": "የተቀናጀ የአደጋ ጊዜ ምላሽ ስርዓት",
+    "description": "ዜጎችን ከአደጋ ጊዜ ምላሽ ሰጪዎች ጋር በቅጽበት ማገናኘት።"
+  },
+  "auth": {
+    "login": "ግባ",
+    "register": "ተመዝገብ",
+    "logout": "ውጣ",
+    "email": "ኢሜይል",
+    "password": "የይለፍ ቃል",
+    "phone": "ስልክ ቁጥር",
+    "full_name": "ሙሉ ስም",
+    "sign_in_to_account": "ወደ መለያዎ ይግቡ",
+    "create_account": "መለያ ይፍጠሩ",
+    "have_account": "መለያ አለዎት?",
+    "no_account": "መለያ የለዎትም?"
+  },
+  "nav": {
+    "home": "መነሻ",
+    "dashboard": "ዳሽቦርድ",
+    "map": "ቀጥታ ካርታ",
+    "report": "አደጋ ሪፖርት አድርግ"
+  },
+  "incident": {
+    "report_new": "አዲስ አደጋ ሪፖርት አድርግ",
+    "type": "የአደጋ ዓይነት",
+    "description": "መግለጫ",
+    "location": "ቦታ",
+    "submit": "ሪፖርት ላክ",
+    "cancel": "ሰርዝ",
+    "severity": "ክብደት",
+    "status": "ሁኔታ"
+  },
+  "common": {
+    "loading": "በመጫን ላይ...",
+    "error": "ስህተት ተከስቷል",
+    "success": "ተሳክቷል",
+    "language": "ቋንቋ",
+    "amharic": "አማርኛ",
+    "english": "እንግሊዝኛ"
+  }
+}

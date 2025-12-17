@@ -7,6 +7,7 @@ import api from "../lib/api";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { addToIncidentQueue } from "../offline/incidentQueue";
 import { useSystem } from "../context/SystemContext";
+import { useTranslation } from "react-i18next";
 
 type Step = 1 | 2 | 3;
 
@@ -60,13 +61,14 @@ const Step1Describe: React.FC<{
   error: string | null;
 }> = ({ form, setForm, onNext, error }) => {
   const { crisisMode } = useSystem();
+  const { t } = useTranslation();
   
   return (
   <div className="space-y-4">
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-sm text-cyan-200">Step 1</p>
-        <h2 className="text-2xl font-bold text-white">Describe the incident</h2>
+        <h2 className="text-2xl font-bold text-white">{t("incident.report_new")}</h2>
         <p className="text-slate-400 text-sm mt-1">
           Add a clear title and description so dispatch can understand quickly.
         </p>
@@ -82,7 +84,7 @@ const Step1Describe: React.FC<{
     <div className="space-y-3">
       <div>
         <label className="label">
-          <span className="label-text text-slate-200">Title</span>
+          <span className="label-text text-slate-200">{t("incident.type")} / Title</span>
         </label>
         <input
           className="input input-bordered w-full bg-slate-900 border-slate-700 text-white"
@@ -93,7 +95,7 @@ const Step1Describe: React.FC<{
       </div>
       <div>
         <label className="label">
-          <span className="label-text text-slate-200">Description</span>
+          <span className="label-text text-slate-200">{t("incident.description")}</span>
         </label>
         <textarea
           className="textarea textarea-bordered w-full min-h-[120px] bg-slate-900 border-slate-700 text-white"
@@ -124,6 +126,7 @@ const Step2Location: React.FC<{
   onBack: () => void;
   error: string | null;
 }> = ({ form, setForm, onNext, onBack, error }) => {
+  const { t } = useTranslation();
   const center = useMemo<[number, number]>(() => {
     if (form.latitude && form.longitude) return [form.latitude, form.longitude];
     return defaultCenter;
@@ -134,7 +137,7 @@ const Step2Location: React.FC<{
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-cyan-200">Step 2</p>
-          <h2 className="text-2xl font-bold text-white">Choose location</h2>
+          <h2 className="text-2xl font-bold text-white">{t("incident.location")}</h2>
           <p className="text-slate-400 text-sm mt-1">
             Click on the map to pin the approximate spot.
           </p>

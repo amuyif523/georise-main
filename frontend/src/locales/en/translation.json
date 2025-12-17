@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "GEORISE",
+    "subtitle": "Integrated Emergency Response System",
+    "description": "Connecting citizens with emergency responders in real-time."
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone Number",
+    "full_name": "Full Name",
+    "sign_in_to_account": "Sign in to your account",
+    "create_account": "Create an account",
+    "have_account": "Already have an account?",
+    "no_account": "Don't have an account?"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "map": "Live Map",
+    "report": "Report Incident"
+  },
+  "incident": {
+    "report_new": "Report New Incident",
+    "type": "Incident Type",
+    "description": "Description",
+    "location": "Location",
+    "submit": "Submit Report",
+    "cancel": "Cancel",
+    "severity": "Severity",
+    "status": "Status"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "language": "Language",
+    "amharic": "Amharic",
+    "english": "English"
+  }
+}
