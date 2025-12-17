@@ -109,8 +109,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 ### 5.1 Multilingual Support (Feature 6.2, 8)
 - **Goal:** Full Amharic support for citizens.
 - **Tasks:**
-  - [ ] **Frontend:** Implement `i18next` for UI translations (English/Amharic).
-  - [ ] **AI:** Ensure classification model handles Amharic script (already supported by AfroXLMR, verify edge cases).
+  - [x] **Frontend:** Implement `i18next` for UI translations (English/Amharic).
+  - [x] **AI:** Ensure classification model handles Amharic script (already supported by AfroXLMR, verify edge cases).
 
 ### 5.2 Infrastructure Hazard Workflow (Feature 3.2)
 - **Goal:** Handle non-emergency reports differently.
