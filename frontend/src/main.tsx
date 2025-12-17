@@ -15,6 +15,7 @@ import MyReportsPage from "./pages/MyReportsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportIncidentWizard from "./pages/ReportIncidentWizard";
+import ReportHazardPage from "./pages/ReportHazardPage";
 import RoleRedirect from "./pages/RoleRedirect";
 import { SystemProvider } from "./context/SystemContext";
 import CrisisBanner from "./components/CrisisBanner";
@@ -78,6 +79,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             element={
               <ProtectedRoute allowedRoles={["CITIZEN"]}>
                 <ReportIncidentWizard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/citizen/report-hazard"
+            element={
+              <ProtectedRoute allowedRoles={["CITIZEN"]}>
+                <ReportHazardPage />
               </ProtectedRoute>
             }
           />

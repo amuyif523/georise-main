@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { Map, MessageSquare, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Map, MessageSquare, ShieldCheck, AlertTriangle, Construction } from "lucide-react";
 import api from "../lib/api";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { addToIncidentQueue } from "../offline/incidentQueue";
@@ -110,7 +110,11 @@ const Step1Describe: React.FC<{
         />
       </div>
     </div>
-    <div className="flex justify-end">
+    <div className="flex justify-between items-center pt-4">
+      <Link to="/citizen/report-hazard" className="text-sm text-slate-400 hover:text-warning flex items-center gap-2 transition-colors">
+        <Construction size={16} />
+        Report Infrastructure Hazard
+      </Link>
       <button className="btn btn-primary" onClick={onNext}>
         Continue to location
       </button>
