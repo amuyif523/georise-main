@@ -8,7 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "echo \"lint placeholder\"",
-    "test": "echo \"tests pending\"",
+    "test": "dotenv -e .env.test -- vitest run",
+    "test:watch": "dotenv -e .env.test -- vitest",
+    "test:db:migrate": "dotenv -e .env.test -- prisma migrate deploy",
+    "test:db:seed": "dotenv -e .env.test -- ts-node prisma/seed.test.ts",
+    "test:db:reset": "npm run test:db:migrate && npm run test:db:seed",
     "seed": "npm run prisma-seed",
     "prisma-seed": "ts-node prisma/seed.ts",
     "simulate:responder": "node scripts/emitResponderLocation.js"
@@ -50,8 +54,12 @@
     "@types/node": "^24.10.1",
     "@types/sanitize-html": "^2.16.0",
     "@types/socket.io": "^3.0.1",
+    "@types/supertest": "^2.0.16",
+    "dotenv-cli": "^7.4.4",
+    "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   }
 }
