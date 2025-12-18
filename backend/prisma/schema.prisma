@@ -101,6 +101,7 @@ model User {
   broadcasts          BroadcastLog[]
   notifications       Notification[]
   pushSubscriptions   PushSubscription[]
+  incidentPhotos      IncidentPhoto[] @relation("IncidentPhotoUploadedBy")
 
   lastLatitude  Float?
   lastLongitude Float?
@@ -321,7 +322,7 @@ model IncidentPhoto {
   createdAt    DateTime @default(now())
 
   incident   Incident @relation(fields: [incidentId], references: [id])
-  uploadedBy User?    @relation(fields: [uploadedById], references: [id])
+  uploadedBy User?    @relation("IncidentPhotoUploadedBy", fields: [uploadedById], references: [id])
 }
 
 model SubCity {
