@@ -16,8 +16,13 @@ const ForgotPasswordPage = () => {
     try {
       const res = await api.post('/auth/password-reset/request', { identifier });
       setStatus(res.data.message || 'If an account exists, reset instructions have been sent.');
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to send reset instructions.');
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? // @ts-expect-error - best-effort message extraction
+            err.response?.data?.message
+          : null;
+      setError(message || 'Failed to send reset instructions.');
     } finally {
       setLoading(false);
     }

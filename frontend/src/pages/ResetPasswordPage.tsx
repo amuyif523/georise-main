@@ -18,8 +18,13 @@ const ResetPasswordPage = () => {
     try {
       const res = await api.post('/auth/password-reset/confirm', { token, password });
       setStatus(res.data.message || 'Password updated. You can log in now.');
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Reset failed. Check your code and try again.');
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? // @ts-expect-error - best-effort message extraction
+            err.response?.data?.message
+          : null;
+      setError(message || 'Reset failed. Check your code and try again.');
     } finally {
       setLoading(false);
     }
