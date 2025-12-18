@@ -27,7 +27,7 @@ describe('Forgot and Reset Password pages', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/email or phone/i), {
+    fireEvent.change(screen.getByLabelText(/email or phone/i), {
       target: { value: 'user@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: /send reset code/i }));
@@ -48,8 +48,8 @@ describe('Forgot and Reset Password pages', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/paste code/i), { target: { value: 'token123' } });
-    fireEvent.change(screen.getByPlaceholderText(/new password/i), {
+    fireEvent.change(screen.getByLabelText(/reset code/i), { target: { value: 'token123' } });
+    fireEvent.change(screen.getByLabelText(/new password/i), {
       target: { value: 'newPass123' },
     });
     fireEvent.click(screen.getByRole('button', { name: /update password/i }));
