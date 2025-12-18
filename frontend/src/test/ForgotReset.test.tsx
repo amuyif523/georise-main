@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 
-const mockPost = vi.fn();
+const mockPost = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/api', () => ({
   __esModule: true,
