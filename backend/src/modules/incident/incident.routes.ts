@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { IncidentStatus, Role, Prisma } from '@prisma/client';
+import { IncidentStatus, Role, Prisma, ReviewStatus } from '@prisma/client';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import prisma from '../../prisma';
 import {
@@ -193,10 +193,17 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
     const { status, hours, reviewStatus } = req.query;
     const conditions: Prisma.IncidentWhereInput = {};
     if (status && typeof status === 'string') conditions.status = status as IncidentStatus;
-    if (reviewStatus && typeof reviewStatus === 'string') conditions.reviewStatus = reviewStatus;
-    if (hours) {
-      const since = new Date(Date.now() - Number(hours) * 3600 * 1000);
-      conditions.createdAt = { gte: since };
+    if (reviewStatus && typeof reviewStatus === 'string') {
+      conditions.reviewStatus = reviewStatus as ReviewStatus;
+    }
+    const createdAtFilter =
+      hours && Number(hours)
+        ? {
+            gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
+          }
+        : undefined;
+    if (createdAtFilter) {
+      conditions.createdAt = createdAtFilter;
     }
     if (req.query.subCityId) {
       conditions.subCityId = Number(req.query.subCityId);
@@ -234,8 +241,7 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
     const filters: string[] = [];
     if (conditions.status) filters.push(`status = '${conditions.status}'`);
     if (conditions.reviewStatus) filters.push(`"reviewStatus" = '${conditions.reviewStatus}'`);
-    if (conditions.createdAt?.gte)
-      filters.push(`"createdAt" >= '${conditions.createdAt.gte.toISOString()}'`);
+    if (createdAtFilter?.gte) filters.push(`"createdAt" >= '${createdAtFilter.gte.toISOString()}'`);
 
     const whereClause = filters.length ? `AND ${filters.join(' AND ')}` : '';
 
