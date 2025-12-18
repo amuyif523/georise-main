@@ -44,10 +44,11 @@ const ResetPasswordPage = () => {
           {error && <div className="alert alert-error text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="reset-code">
                 <span className="label-text">Reset code</span>
               </label>
               <input
+                id="reset-code"
                 type="text"
                 className="input input-bordered w-full"
                 value={token}
@@ -57,10 +58,11 @@ const ResetPasswordPage = () => {
               />
             </div>
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="new-password">
                 <span className="label-text">New password</span>
               </label>
               <input
+                id="new-password"
                 type="password"
                 className="input input-bordered w-full"
                 value={password}

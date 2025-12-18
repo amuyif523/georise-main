@@ -42,10 +42,11 @@ const ForgotPasswordPage = () => {
           {error && <div className="alert alert-error text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="identifier">
                 <span className="label-text">Email or Phone</span>
               </label>
               <input
+                id="identifier"
                 type="text"
                 className="input input-bordered w-full"
                 placeholder="you@example.com or +2519..."
