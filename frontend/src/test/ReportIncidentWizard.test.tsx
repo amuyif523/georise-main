@@ -48,7 +48,8 @@ describe('ReportIncidentWizard', () => {
     const [titleInput, descriptionInput] = screen.getAllByRole('textbox');
     await user.type(titleInput, 'Fire report');
     await user.type(descriptionInput, 'Smoke seen nearby.');
-    await user.click(screen.getByRole('button', { name: /continue to location/i }));
+    const [continueButton] = screen.getAllByRole('button', { name: /continue to location/i });
+    await user.click(continueButton);
 
     expect(screen.getByText('incident.location')).toBeInTheDocument();
     expect(screen.getByTestId('map')).toBeInTheDocument();

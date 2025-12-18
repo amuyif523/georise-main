@@ -42,12 +42,13 @@ const RegisterPage: React.FC = () => {
           </h2>
           {error && <div className="alert alert-error mb-3 text-sm">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form data-testid="register-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="fullName">
                 <span className="label-text">Full Name</span>
               </label>
               <input
+                id="fullName"
                 type="text"
                 className="input input-bordered w-full"
                 value={fullName}
@@ -58,10 +59,11 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="email">
                 <span className="label-text">Email</span>
               </label>
               <input
+                id="email"
                 type="email"
                 className="input input-bordered w-full"
                 value={email}
@@ -71,10 +73,11 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="phone">
                 <span className="label-text">Phone (Recommended)</span>
               </label>
               <input
+                id="phone"
                 type="tel"
                 className="input input-bordered w-full"
                 value={phone}
@@ -89,10 +92,11 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="password">
                 <span className="label-text">Password</span>
               </label>
               <input
+                id="password"
                 type="password"
                 className="input input-bordered w-full"
                 value={password}

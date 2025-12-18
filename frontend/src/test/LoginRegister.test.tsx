@@ -55,14 +55,17 @@ describe('Login/Register flows', () => {
       </MemoryRouter>,
     );
 
-    const inputs = screen.getAllByRole('textbox');
-    await user.type(inputs[0], 'Test User');
-    await user.type(inputs[1], 'test.user@example.com');
-    await user.type(inputs[2], '+251911000111');
-    await user.type(inputs[3], 'password123');
+    await user.type(screen.getByLabelText(/full name/i), 'Test User');
+    await user.type(screen.getByLabelText(/email/i), 'test.user@example.com');
+    await user.type(screen.getByLabelText(/phone/i), '+251911000111');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
 
     await user.click(screen.getByRole('button', { name: /sign up/i }));
 
+    const form = screen.getByTestId('register-form');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => expect(apiPostMock).toHaveBeenCalled());
     expect(apiPostMock).toHaveBeenCalledWith('/auth/register', {
       fullName: 'Test User',
       email: 'test.user@example.com',
