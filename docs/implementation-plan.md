@@ -260,8 +260,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Export analytics beyond incidents CSV.
 - **Tasks:**
-  - [ ] **Backend:** Provide CSV/JSON export for analytics datasets.
-  - [ ] **Frontend:** Add export controls to analytics dashboards.
+  - [x] **Backend:** Provide CSV/JSON export for analytics datasets.
+  - [x] **Frontend:** Add export controls to analytics dashboards.
 
 ### 9.3 Automated Tests (Feature 8.8)
 

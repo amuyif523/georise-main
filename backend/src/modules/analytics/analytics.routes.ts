@@ -14,10 +14,46 @@ const buildFilters = (req: any) => {
   return f;
 };
 
+const toCsv = (rows: Record<string, any>[]) => {
+  if (!rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.join(','),
+    ...rows.map((row) =>
+      headers
+        .map((h) => {
+          const value = row[h];
+          if (value === null || value === undefined) return '';
+          const str = String(value).replace(/"/g, '""');
+          return str.includes(',') ? `"${str}"` : str;
+        })
+        .join(','),
+    ),
+  ];
+  return lines.join('\n');
+};
+
+const sendCsv = (res: any, filename: string, rows: Record<string, any>[]) => {
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(toCsv(rows));
+};
+
 // Admin overview
 router.get('/overview/admin', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
   try {
     const data = await analyticsService.getOverview(buildFilters(req));
+    if (req.query.format === 'csv') {
+      const rows = [
+        { metric: 'summary', key: 'totalIncidents', value: data.totalIncidents },
+        { metric: 'summary', key: 'avgResponseMinutes', value: data.avgResponseMinutes },
+        { metric: 'summary', key: 'avgResolutionMinutes', value: data.avgResolutionMinutes },
+        ...data.byCategory.map((c) => ({ metric: 'category', key: c.category, value: c.count })),
+        ...data.byStatus.map((s) => ({ metric: 'status', key: s.status, value: s.count })),
+        ...data.byDay.map((d) => ({ metric: 'day', key: d.day, value: d.count })),
+      ];
+      return sendCsv(res, 'analytics-overview-admin.csv', rows);
+    }
     res.json(data);
   } catch (err: any) {
     console.error(err);
@@ -38,6 +74,17 @@ router.get(
       });
       const filters = buildFilters(req);
       const data = await analyticsService.getOverview({ ...filters, agencyId: staff?.agencyId });
+      if (req.query.format === 'csv') {
+        const rows = [
+          { metric: 'summary', key: 'totalIncidents', value: data.totalIncidents },
+          { metric: 'summary', key: 'avgResponseMinutes', value: data.avgResponseMinutes },
+          { metric: 'summary', key: 'avgResolutionMinutes', value: data.avgResolutionMinutes },
+          ...data.byCategory.map((c) => ({ metric: 'category', key: c.category, value: c.count })),
+          ...data.byStatus.map((s) => ({ metric: 'status', key: s.status, value: s.count })),
+          ...data.byDay.map((d) => ({ metric: 'day', key: d.day, value: d.count })),
+        ];
+        return sendCsv(res, 'analytics-overview-agency.csv', rows);
+      }
       res.json(data);
     } catch (err: any) {
       console.error(err);
@@ -49,21 +96,33 @@ router.get(
 // Heatmap points (lat/lng/severity)
 router.get('/heatmap', requireAuth, async (req, res) => {
   const rows = await analyticsService.getHeatmapPoints(buildFilters(req));
+  if (req.query.format === 'csv') {
+    return sendCsv(res, 'analytics-heatmap.csv', rows);
+  }
   res.json(rows);
 });
 
 router.get('/distribution/response-time', requireAuth, async (req, res) => {
   const rows = await analyticsService.getResponseTimeDistribution(buildFilters(req));
+  if (req.query.format === 'csv') {
+    return sendCsv(res, 'analytics-response-time.csv', rows);
+  }
   res.json(rows);
 });
 
 router.get('/heatmap/time-of-day', requireAuth, async (req, res) => {
   const rows = await analyticsService.getTimeOfDayHeatmap(buildFilters(req));
+  if (req.query.format === 'csv') {
+    return sendCsv(res, 'analytics-time-of-day.csv', rows);
+  }
   res.json(rows);
 });
 
 router.get('/utilization/resource', requireAuth, async (req, res) => {
   const rows = await analyticsService.getResourceUtilization(buildFilters(req));
+  if (req.query.format === 'csv') {
+    return sendCsv(res, 'analytics-resource-utilization.csv', rows);
+  }
   res.json(rows);
 });
 

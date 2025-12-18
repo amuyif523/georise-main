@@ -70,10 +70,35 @@ const AnalyticsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const rangeParams = () => {
     const now = new Date();
     const to = now.toISOString();
     const from = new Date(now.getTime() - range * 24 * 60 * 60 * 1000).toISOString();
+    return { from, to };
+  };
+
+  const downloadCsv = async (path: string, filename: string) => {
+    try {
+      const res = await api.get(path, {
+        params: { ...rangeParams(), format: 'csv' },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed', err);
+      setError('Failed to download CSV');
+    }
+  };
+
+  useEffect(() => {
+    const { from, to } = rangeParams();
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -220,6 +245,33 @@ const AnalyticsPage: React.FC = () => {
                 {r.label}
               </button>
             ))}
+            <button
+              className="btn btn-xs btn-outline btn-primary ml-3"
+              onClick={() =>
+                downloadCsv('/analytics/overview/admin', 'analytics-overview-admin.csv')
+              }
+            >
+              Export overview
+            </button>
+            <button
+              className="btn btn-xs btn-outline btn-secondary"
+              onClick={() =>
+                downloadCsv(
+                  '/analytics/distribution/response-time',
+                  'response-time-distribution.csv',
+                )
+              }
+            >
+              Export response time
+            </button>
+            <button
+              className="btn btn-xs btn-outline btn-accent"
+              onClick={() =>
+                downloadCsv('/analytics/utilization/resource', 'resource-utilization.csv')
+              }
+            >
+              Export utilization
+            </button>
           </div>
         </div>
 

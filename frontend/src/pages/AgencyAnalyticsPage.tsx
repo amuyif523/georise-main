@@ -59,10 +59,34 @@ const AgencyAnalyticsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const rangeParams = () => {
     const now = new Date();
     const to = now.toISOString();
     const from = new Date(now.getTime() - range * 24 * 60 * 60 * 1000).toISOString();
+    return { from, to };
+  };
+
+  const downloadCsv = async (path: string, filename: string) => {
+    try {
+      const res = await api.get(path, {
+        params: { ...rangeParams(), format: 'csv' },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed', err);
+      setError('Failed to download CSV');
+    }
+  };
+  useEffect(() => {
+    const { from, to } = rangeParams();
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -142,6 +166,18 @@ const AgencyAnalyticsPage: React.FC = () => {
             {r.label}
           </button>
         ))}
+        <button
+          className="btn btn-xs btn-outline btn-primary ml-3"
+          onClick={() => downloadCsv('/analytics/overview/agency', 'analytics-overview-agency.csv')}
+        >
+          Export overview
+        </button>
+        <button
+          className="btn btn-xs btn-outline btn-secondary"
+          onClick={() => downloadCsv('/analytics/heatmap', 'analytics-heatmap.csv')}
+        >
+          Export heatmap
+        </button>
       </div>
 
       {error && <div className="alert alert-error text-sm mb-3">{error}</div>}
