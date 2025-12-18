@@ -25,8 +25,17 @@ router.post('/register', validateBody(registerSchema), register);
 router.post('/login', validateBody(loginSchema), login);
 router.post('/otp/request', authLimiter, requestOtp);
 router.post('/otp/verify', authLimiter, verifyOtp);
-router.post('/password-reset/request', authLimiter, validateBody(passwordResetRequestSchema), requestPasswordReset);
-router.post('/password-reset/confirm', validateBody(passwordResetConfirmSchema), confirmPasswordReset);
+router.post(
+  '/password-reset/request',
+  authLimiter,
+  validateBody(passwordResetRequestSchema),
+  requestPasswordReset,
+);
+router.post(
+  '/password-reset/confirm',
+  validateBody(passwordResetConfirmSchema),
+  confirmPasswordReset,
+);
 router.get('/me', requireAuth, me);
 router.use('/', refreshRouter);
 
