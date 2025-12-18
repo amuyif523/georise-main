@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import { schedule, ScheduledTask } from 'node-cron';
 import prisma from '../prisma';
 import { getIO } from '../socket';
 import logger from '../logger';
@@ -34,7 +34,7 @@ const demoRoutes: RoutePoint[][] = [
 ];
 
 const progress = new Map<number, { routeIdx: number; pointIdx: number }>();
-let job: cron.ScheduledTask | null = null;
+let job: ScheduledTask | null = null;
 
 const stepResponders = async () => {
   try {
@@ -85,7 +85,7 @@ const stepResponders = async () => {
 
 export const startResponderSimulation = () => {
   if (job) return { running: true, message: 'Simulation already running' };
-  job = cron.schedule('*/10 * * * * *', stepResponders);
+  job = schedule('*/10 * * * * *', stepResponders);
   logger.info('Responder simulation started (10s interval)');
   return { running: true };
 };
