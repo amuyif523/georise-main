@@ -22,3 +22,12 @@ export const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 export const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 export const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@georise.local';
 export const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
+export const ROUTING_PROVIDER = (process.env.ROUTING_PROVIDER || 'osrm').toLowerCase();
+export const ROUTING_FALLBACK_PROVIDER = (
+  process.env.ROUTING_FALLBACK_PROVIDER || 'heuristic'
+).toLowerCase();
+export const OSRM_BASE_URL =
+  process.env.OSRM_BASE_URL || 'https://router.project-osrm.org/route/v1/driving';
+export const GOOGLE_ROUTES_API_KEY = process.env.GOOGLE_ROUTES_API_KEY;
+export const ROUTING_CACHE_TTL_SECONDS = Number(process.env.ROUTING_CACHE_TTL_SECONDS || 300);
+export const ROUTING_TIMEOUT_MS = Number(process.env.ROUTING_TIMEOUT_MS || 3500);

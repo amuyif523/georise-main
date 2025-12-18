@@ -151,15 +151,18 @@ export class DispatchService {
       }
 
       for (const unit of agencyUnits) {
-        const distanceKm = unit.distance_km as number | null;
+        const straightLineKm = unit.distance_km as number | null;
 
-        // Calculate drive time if location is available
+        // Calculate drive-time and road distance via routing provider (cached with fallback)
         let durationMin = 0;
-        if (incident.location && unit.lastLat && unit.lastLon) {
-          // We could await here, but doing it sequentially for many units is slow.
-          // For MVP, we'll do it for the top candidates later, or just use the heuristic inside routingService which is fast.
-          // Since our routingService is currently heuristic (sync math), we can call it.
-          // If it were async API, we'd want to Promise.all outside the loop.
+        let distanceKm = straightLineKm;
+        if (
+          incident.location &&
+          incident.latitude &&
+          incident.longitude &&
+          unit.lastLat &&
+          unit.lastLon
+        ) {
           const route = await routingService.calculateRoute(
             unit.lastLat,
             unit.lastLon,
@@ -167,6 +170,7 @@ export class DispatchService {
             incident.longitude,
           );
           durationMin = route.durationMin;
+          distanceKm = route.distanceKm ?? straightLineKm;
         }
 
         const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap

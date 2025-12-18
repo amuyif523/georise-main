@@ -238,9 +238,10 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Replace heuristic routing with OSRM or Google Routes.
 - **Tasks:**
-  - [ ] **Backend:** Integrate external routing API and cache route results.
-  - [ ] **Dispatch:** Update recommendation scoring to use real drive-time.
-  - [ ] **Ops:** Add configuration toggles and fallback behavior.
+  - [x] **Backend:** Integrate external routing API and cache route results.
+  - [x] **Dispatch:** Update recommendation scoring to use real drive-time.
+  - [x] **Ops:** Add configuration toggles and fallback behavior.
+- [ ] **Ops:** Add configuration toggles and fallback behavior.
 
 ---
 
