@@ -68,3 +68,23 @@ export const me = async (req: Request, res: Response) => {
     return res.status(400).json({ message: err?.message || 'Failed to fetch user' });
   }
 };
+
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  try {
+    const result = await authService.requestPasswordReset(req.body);
+    return res.json(result);
+  } catch (err: any) {
+    logger.error({ err }, 'Password reset request error');
+    return res.status(400).json({ message: err?.message || 'Password reset request failed' });
+  }
+};
+
+export const confirmPasswordReset = async (req: Request, res: Response) => {
+  try {
+    const result = await authService.confirmPasswordReset(req.body);
+    return res.json(result);
+  } catch (err: any) {
+    logger.error({ err }, 'Password reset confirm error');
+    return res.status(400).json({ message: err?.message || 'Password reset failed' });
+  }
+};

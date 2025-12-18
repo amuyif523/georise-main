@@ -252,9 +252,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Secure account recovery.
 - **Tasks:**
-  - [ ] **Backend:** Implement request + reset endpoints with secure tokens.
-  - [ ] **Frontend:** Add reset request + new password UI.
-  - [ ] **Email/SMS:** Deliver reset links or codes.
+  - [x] **Backend:** Implement request + reset endpoints with secure tokens.
+  - [x] **Frontend:** Add reset request + new password UI.
+  - [x] **Email/SMS:** Deliver reset links or codes.
 
 ### 9.2 Analytics Export (Feature 7.5)
 

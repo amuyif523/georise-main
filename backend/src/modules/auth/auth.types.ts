@@ -13,6 +13,15 @@ export interface LoginRequestBody {
   password: string;
 }
 
+export interface PasswordResetRequestBody {
+  identifier: string; // email or phone
+}
+
+export interface PasswordResetConfirmBody {
+  token: string;
+  password: string;
+}
+
 export interface AuthTokenPayload {
   userId: number;
   role: Role;

@@ -132,6 +132,11 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <div className="text-right mt-1">
+                  <Link to="/forgot-password" className="link link-secondary text-xs">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <div className="form-control mt-6">

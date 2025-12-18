@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
+import crypto from 'crypto';
 import prisma from '../../prisma';
 import {
   JWT_EXPIRES_IN,
@@ -8,9 +9,17 @@ import {
   JWT_REFRESH_SECRET,
   JWT_SECRET,
 } from '../../config/env';
-import { AuthTokenPayload, LoginRequestBody, RegisterRequestBody } from './auth.types';
+import {
+  AuthTokenPayload,
+  LoginRequestBody,
+  RegisterRequestBody,
+  PasswordResetRequestBody,
+  PasswordResetConfirmBody,
+} from './auth.types';
 
 import { smsService } from '../sms/sms.service';
+import logger from '../../logger';
+import { NODE_ENV } from '../../config/env';
 
 const LOCK_THRESHOLD = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
@@ -279,6 +288,86 @@ export class AuthService {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return;
     await this.bumpFailure(user.id, user.failedLoginAttempts ?? 0);
+  }
+
+  async requestPasswordReset(data: PasswordResetRequestBody) {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: data.identifier }, { phone: data.identifier }],
+      },
+    });
+
+    // Do not leak user existence
+    if (!user) {
+      return { message: 'If an account exists, reset instructions have been sent.' };
+    }
+
+    // Invalidate existing tokens for this user
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    // Deliver via SMS if phone exists; otherwise log for now (placeholder for email service)
+    if (user.phone) {
+      await smsService.sendSMS(
+        user.phone,
+        `Use this code to reset your GEORISE password: ${token}. It expires in 15 minutes.`,
+      );
+    } else {
+      logger.info({ email: user.email, token }, 'Password reset token generated');
+    }
+
+    return {
+      message: 'If an account exists, reset instructions have been sent.',
+      token: NODE_ENV === 'test' ? token : undefined, // exposed only for automated tests
+    };
+  }
+
+  async confirmPasswordReset(data: PasswordResetConfirmBody) {
+    const tokenHash = crypto.createHash('sha256').update(data.token).digest('hex');
+    const record = await prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!record) {
+      throw new Error('Invalid or expired reset token');
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: record.userId },
+        data: {
+          passwordHash,
+          tokenVersion: { increment: 1 }, // invalidate existing refresh tokens
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Password has been reset. You can now sign in with the new password.' };
   }
 }
 

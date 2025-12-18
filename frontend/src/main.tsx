@@ -20,6 +20,8 @@ import RoleRedirect from './pages/RoleRedirect';
 import { SystemProvider } from './context/SystemContext';
 import CrisisBanner from './components/CrisisBanner';
 import BroadcastModal from './components/BroadcastModal';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const AgencyMap = React.lazy(() => import('./pages/AgencyMap'));
 const AgenciesPage = React.lazy(() => import('./pages/admin/AgenciesPage'));
@@ -58,6 +60,8 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="/redirect-after-login"
               element={
