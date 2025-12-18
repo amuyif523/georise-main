@@ -10,7 +10,7 @@ const router = Router();
 router.get('/', requireAuth, async (req: any, res) => {
   try {
     const user = req.user!;
-    let where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (user.role === Role.AGENCY_STAFF) {
       const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
