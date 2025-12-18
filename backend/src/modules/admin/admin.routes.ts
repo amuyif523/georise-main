@@ -1,103 +1,88 @@
-import { Router } from "express";
-import { Role } from "@prisma/client";
-import { requireAuth, requireRole } from "../../middleware/auth";
-import prisma from "../../prisma";
-import { z } from "zod";
-import { validateBody } from "../../middleware/validate";
-import * as systemController from "./system.controller";
+import { Router } from 'express';
+import { Role } from '@prisma/client';
+import { requireAuth, requireRole } from '../../middleware/auth';
+import prisma from '../../prisma';
+import { z } from 'zod';
+import { validateBody } from '../../middleware/validate';
+import * as systemController from './system.controller';
 
 const router = Router();
-const idSchema = z.object({ id: z.string().transform((v) => Number(v)).pipe(z.number().int().positive()) });
+const idSchema = z.object({
+  id: z
+    .string()
+    .transform((v) => Number(v))
+    .pipe(z.number().int().positive()),
+});
 
 // Pending agencies
-router.get(
-  "/agencies/pending",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const agencies = await prisma.agency.findMany({
-      where: { isApproved: false },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json({ agencies });
-  }
-);
+router.get('/agencies/pending', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const agencies = await prisma.agency.findMany({
+    where: { isApproved: false },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ agencies });
+});
 
 // List all agencies
-router.get(
-  "/agencies",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const agencies = await prisma.agency.findMany({
-      orderBy: { name: "asc" },
-    });
-    res.json({ agencies });
-  }
-);
+router.get('/agencies', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const agencies = await prisma.agency.findMany({
+    orderBy: { name: 'asc' },
+  });
+  res.json({ agencies });
+});
 
 // Get agency details with boundary
-router.get(
-  "/agencies/:id",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
-    const agencyId = parsed.data.id;
+router.get('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const parsed = idSchema.safeParse(req.params);
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
+  const agencyId = parsed.data.id;
 
-    const agency = await prisma.agency.findUnique({ where: { id: agencyId } });
-    if (!agency) return res.status(404).json({ message: "Agency not found" });
+  const agency = await prisma.agency.findUnique({ where: { id: agencyId } });
+  if (!agency) return res.status(404).json({ message: 'Agency not found' });
 
-    // Fetch boundary as GeoJSON
-    const boundaryResult: any[] = await prisma.$queryRaw`
+  // Fetch boundary as GeoJSON
+  const boundaryResult: any[] = await prisma.$queryRaw`
       SELECT ST_AsGeoJSON(jurisdiction) as geojson
       FROM "Agency"
       WHERE id = ${agencyId}
     `;
-    
-    const geojson = boundaryResult[0]?.geojson ? JSON.parse(boundaryResult[0].geojson) : null;
 
-    res.json({ agency: { ...agency, boundary: geojson } });
-  }
-);
+  const geojson = boundaryResult[0]?.geojson ? JSON.parse(boundaryResult[0].geojson) : null;
+
+  res.json({ agency: { ...agency, boundary: geojson } });
+});
 
 // Approve agency
-router.patch(
-  "/agencies/:id/approve",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
-    const agencyId = parsed.data.id;
-    const agency = await prisma.agency.update({
-      where: { id: agencyId },
-      data: { isApproved: true, isActive: true },
-    });
+router.patch('/agencies/:id/approve', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const parsed = idSchema.safeParse(req.params);
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
+  const agencyId = parsed.data.id;
+  const agency = await prisma.agency.update({
+    where: { id: agencyId },
+    data: { isApproved: true, isActive: true },
+  });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: "APPROVE_AGENCY",
-        targetType: "Agency",
-        targetId: agencyId,
-      },
-    });
+  await prisma.auditLog.create({
+    data: {
+      actorId: req.user!.id,
+      action: 'APPROVE_AGENCY',
+      targetType: 'Agency',
+      targetId: agencyId,
+    },
+  });
 
-    res.json({ agency });
-  }
-);
+  res.json({ agency });
+});
 
 // Update boundary with GeoJSON polygon
 router.patch(
-  "/agencies/:id/boundary",
+  '/agencies/:id/boundary',
   requireAuth,
   requireRole([Role.ADMIN]),
   validateBody(z.object({ geojson: z.string().min(10) })),
   async (req, res) => {
     const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
     const agencyId = parsed.data.id;
     const { geojson } = req.body as { geojson: string };
 
@@ -110,242 +95,207 @@ router.patch(
     await prisma.auditLog.create({
       data: {
         actorId: req.user!.id,
-        action: "UPDATE_BOUNDARY",
-        targetType: "Agency",
+        action: 'UPDATE_BOUNDARY',
+        targetType: 'Agency',
         targetId: agencyId,
       },
     });
 
     res.json({ success: true });
-  }
+  },
 );
 
 // List users (basic)
-router.get(
-  "/users",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        citizenVerification: { select: { status: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json({ users });
-  }
-);
+router.get('/users', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      citizenVerification: { select: { status: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ users });
+});
 
 // Toggle user active status
-router.patch(
-  "/users/:id/toggle",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
-    const userId = parsed.data.id;
-    const current = await prisma.user.findUnique({ where: { id: userId } });
-    if (!current) return res.status(404).json({ message: "User not found" });
+router.patch('/users/:id/toggle', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const parsed = idSchema.safeParse(req.params);
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+  const userId = parsed.data.id;
+  const current = await prisma.user.findUnique({ where: { id: userId } });
+  if (!current) return res.status(404).json({ message: 'User not found' });
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { isActive: !current.isActive },
-    });
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: !current.isActive },
+  });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: updated.isActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
-        targetType: "User",
-        targetId: userId,
-      },
-    });
+  await prisma.auditLog.create({
+    data: {
+      actorId: req.user!.id,
+      action: updated.isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+      targetType: 'User',
+      targetId: userId,
+    },
+  });
 
-    res.json({ user: updated });
-  }
-);
+  res.json({ user: updated });
+});
 
 // Verify citizen
-router.patch(
-  "/users/:id/verify",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
-    const userId = parsed.data.id;
-    await prisma.citizenVerification.upsert({
-      where: { userId },
-      update: { status: "VERIFIED" },
-      create: {
-        userId,
-        nationalId: "manual",
-        phone: "manual",
-        status: "VERIFIED",
-      },
-    });
+router.patch('/users/:id/verify', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const parsed = idSchema.safeParse(req.params);
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+  const userId = parsed.data.id;
+  await prisma.citizenVerification.upsert({
+    where: { userId },
+    update: { status: 'VERIFIED' },
+    create: {
+      userId,
+      nationalId: 'manual',
+      phone: 'manual',
+      status: 'VERIFIED',
+    },
+  });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: "VERIFY_USER",
-        targetType: "User",
-        targetId: userId,
-      },
-    });
+  await prisma.auditLog.create({
+    data: {
+      actorId: req.user!.id,
+      action: 'VERIFY_USER',
+      targetType: 'User',
+      targetId: userId,
+    },
+  });
 
-    res.json({ success: true });
-  }
-);
+  res.json({ success: true });
+});
 
 // Audit logs (paginated)
-router.get(
-  "/audit",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    const page = Number(req.query.page ?? 1);
-    const pageSize = Number(req.query.pageSize ?? 50);
-    const skip = (page - 1) * pageSize;
-    const [logs, total] = await Promise.all([
-      prisma.auditLog.findMany({
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: pageSize,
-        include: {
-          actor: { select: { id: true, fullName: true, email: true } },
-        },
-      }),
-      prisma.auditLog.count(),
-    ]);
-    res.json({ logs, total, page, pageSize });
-  }
-);
+router.get('/audit', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 50);
+  const skip = (page - 1) * pageSize;
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: {
+        actor: { select: { id: true, fullName: true, email: true } },
+      },
+    }),
+    prisma.auditLog.count(),
+  ]);
+  res.json({ logs, total, page, pageSize });
+});
 
 // Analytics
-router.get(
-  "/analytics",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const total = await prisma.incident.count();
-    const active = await prisma.incident.count({
-      where: { status: { in: ["RECEIVED", "UNDER_REVIEW", "ASSIGNED", "RESPONDING"] } },
-    });
-    const resolved = await prisma.incident.count({
-      where: { status: "RESOLVED" },
-    });
+router.get('/analytics', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const total = await prisma.incident.count();
+  const active = await prisma.incident.count({
+    where: { status: { in: ['RECEIVED', 'UNDER_REVIEW', 'ASSIGNED', 'RESPONDING'] } },
+  });
+  const resolved = await prisma.incident.count({
+    where: { status: 'RESOLVED' },
+  });
 
-    const byAgency = await prisma.incident.groupBy({
-      by: ["assignedAgencyId"],
-      _count: { _all: true },
-    });
+  const byAgency = await prisma.incident.groupBy({
+    by: ['assignedAgencyId'],
+    _count: { _all: true },
+  });
 
-    const agencyNames = await prisma.agency.findMany({
-      select: { id: true, name: true },
-    });
-    const nameMap = new Map(agencyNames.map((a) => [a.id, a.name]));
+  const agencyNames = await prisma.agency.findMany({
+    select: { id: true, name: true },
+  });
+  const nameMap = new Map(agencyNames.map((a) => [a.id, a.name]));
 
-    res.json({
-      totals: { total, active, resolved },
-      byAgency: byAgency.map((row) => ({
-        agencyId: row.assignedAgencyId,
-        agencyName: row.assignedAgencyId ? nameMap.get(row.assignedAgencyId) : "Unassigned",
-        count: row._count._all,
-      })),
-    });
-  }
-);
+  res.json({
+    totals: { total, active, resolved },
+    byAgency: byAgency.map((row) => ({
+      agencyId: row.assignedAgencyId,
+      agencyName: row.assignedAgencyId ? nameMap.get(row.assignedAgencyId) : 'Unassigned',
+      count: row._count._all,
+    })),
+  });
+});
 
 // Admin metrics: incidents
-router.get(
-  "/metrics/incidents",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const total = await prisma.incident.count();
-    const active = await prisma.incident.count({
-      where: { status: { in: ["RECEIVED", "UNDER_REVIEW", "ASSIGNED", "RESPONDING"] } },
-    });
-    const resolved = await prisma.incident.count({ where: { status: "RESOLVED" } });
+router.get('/metrics/incidents', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const total = await prisma.incident.count();
+  const active = await prisma.incident.count({
+    where: { status: { in: ['RECEIVED', 'UNDER_REVIEW', 'ASSIGNED', 'RESPONDING'] } },
+  });
+  const resolved = await prisma.incident.count({ where: { status: 'RESOLVED' } });
 
-    const severity = await prisma.incident.aggregate({
-      _avg: { severityScore: true },
-    });
+  const severity = await prisma.incident.aggregate({
+    _avg: { severityScore: true },
+  });
 
-    const byDay: { day: Date; count: number }[] = await prisma.$queryRawUnsafe(`
+  const byDay: { day: Date; count: number }[] = await prisma.$queryRawUnsafe(`
       SELECT date_trunc('day', "createdAt") as day, count(*)::int
       FROM "Incident"
       GROUP BY 1
       ORDER BY 1 ASC;
     `);
 
-    res.json({
-      total,
-      active,
-      resolved,
-      avgSeverity: severity._avg.severityScore,
-      byDay,
-    });
-  }
-);
+  res.json({
+    total,
+    active,
+    resolved,
+    avgSeverity: severity._avg.severityScore,
+    byDay,
+  });
+});
 
 // Admin metrics: agencies
-router.get(
-  "/metrics/agencies",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const agencyLoads = await prisma.incident.groupBy({
-      by: ["assignedAgencyId", "status"],
-      _count: { _all: true },
-    });
+router.get('/metrics/agencies', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const agencyLoads = await prisma.incident.groupBy({
+    by: ['assignedAgencyId', 'status'],
+    _count: { _all: true },
+  });
 
-    const agencies: any[] = await prisma.$queryRaw`
+  const agencies: any[] = await prisma.$queryRaw`
       SELECT id, name, type, "isActive", "isApproved", city, description, ST_AsGeoJSON(jurisdiction) as boundary
       FROM "Agency"
     `;
 
-    const grouped = agencies.map((a) => {
-      const rows = agencyLoads.filter((r) => r.assignedAgencyId === a.id);
-      const total = rows.reduce((sum, r) => sum + r._count._all, 0);
-      const resolved = rows
-        .filter((r) => r.status === "RESOLVED")
-        .reduce((sum, r) => sum + r._count._all, 0);
-      return {
-        agencyId: a.id,
-        name: a.name,
-        type: a.type,
-        isActive: a.isActive,
-        isApproved: a.isApproved,
-        city: a.city,
-        description: a.description,
-        boundary: a.boundary ? JSON.parse(a.boundary) : null,
-        total,
-        resolved,
-      };
-    });
+  const grouped = agencies.map((a) => {
+    const rows = agencyLoads.filter((r) => r.assignedAgencyId === a.id);
+    const total = rows.reduce((sum, r) => sum + r._count._all, 0);
+    const resolved = rows
+      .filter((r) => r.status === 'RESOLVED')
+      .reduce((sum, r) => sum + r._count._all, 0);
+    return {
+      agencyId: a.id,
+      name: a.name,
+      type: a.type,
+      isActive: a.isActive,
+      isApproved: a.isApproved,
+      city: a.city,
+      description: a.description,
+      boundary: a.boundary ? JSON.parse(a.boundary) : null,
+      total,
+      resolved,
+    };
+  });
 
-    res.json({ agencies: grouped });
-  }
-);
+  res.json({ agencies: grouped });
+});
 
 // Toggle agency active status
 router.patch(
-  "/agencies/:id/status",
+  '/agencies/:id/status',
   requireAuth,
   requireRole([Role.ADMIN]),
   validateBody(z.object({ isActive: z.boolean() })),
   async (req, res) => {
     const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid agency id" });
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
     const agencyId = parsed.data.id;
     const { isActive } = req.body as { isActive: boolean };
 
@@ -357,25 +307,25 @@ router.patch(
     await prisma.auditLog.create({
       data: {
         actorId: req.user!.id,
-        action: isActive ? "ACTIVATE_AGENCY" : "DEACTIVATE_AGENCY",
-        targetType: "Agency",
+        action: isActive ? 'ACTIVATE_AGENCY' : 'DEACTIVATE_AGENCY',
+        targetType: 'Agency',
         targetId: agencyId,
       },
     });
 
     res.json({ agency: updated });
-  }
+  },
 );
 
 // Set user active status explicitly
 router.patch(
-  "/users/:id/status",
+  '/users/:id/status',
   requireAuth,
   requireRole([Role.ADMIN]),
   validateBody(z.object({ isActive: z.boolean() })),
   async (req, res) => {
     const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
     const userId = parsed.data.id;
     const { isActive } = req.body as { isActive: boolean };
     const updated = await prisma.user.update({
@@ -386,25 +336,25 @@ router.patch(
     await prisma.auditLog.create({
       data: {
         actorId: req.user!.id,
-        action: isActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
-        targetType: "User",
+        action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+        targetType: 'User',
         targetId: userId,
       },
     });
 
     res.json({ user: updated });
-  }
+  },
 );
 
 // Toggle shadow ban
 router.patch(
-  "/users/:id/shadow-ban",
+  '/users/:id/shadow-ban',
   requireAuth,
   requireRole([Role.ADMIN]),
   validateBody(z.object({ isShadowBanned: z.boolean() })),
   async (req, res) => {
     const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid user id" });
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
     const userId = parsed.data.id;
     const { isShadowBanned } = req.body;
 
@@ -416,73 +366,73 @@ router.patch(
     await prisma.auditLog.create({
       data: {
         actorId: req.user!.id,
-        action: "TOGGLE_SHADOW_BAN",
-        targetType: "User",
+        action: 'TOGGLE_SHADOW_BAN',
+        targetType: 'User',
         targetId: userId,
         note: JSON.stringify({ isShadowBanned }),
       },
     });
 
     res.json({ user });
-  }
+  },
 );
 
 // Export incidents CSV (basic)
-router.get(
-  "/export/incidents",
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (_req, res) => {
-    const incidents = await prisma.incident.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        severityScore: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        latitude: true,
-        longitude: true,
-      },
-    });
+router.get('/export/incidents', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const incidents = await prisma.incident.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      severityScore: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      latitude: true,
+      longitude: true,
+    },
+  });
 
-    const header = [
-      "id",
-      "title",
-      "category",
-      "severityScore",
-      "status",
-      "createdAt",
-      "updatedAt",
-      "latitude",
-      "longitude",
-    ];
-    const rows = incidents.map((i) =>
-      [
-        i.id,
-        `"${(i.title || "").replace(/"/g, '""')}"`,
-        i.category ?? "",
-        i.severityScore ?? "",
-        i.status,
-        i.createdAt.toISOString(),
-        i.updatedAt.toISOString(),
-        i.latitude ?? "",
-        i.longitude ?? "",
-      ].join(",")
-    );
+  const header = [
+    'id',
+    'title',
+    'category',
+    'severityScore',
+    'status',
+    'createdAt',
+    'updatedAt',
+    'latitude',
+    'longitude',
+  ];
+  const rows = incidents.map((i) =>
+    [
+      i.id,
+      `"${(i.title || '').replace(/"/g, '""')}"`,
+      i.category ?? '',
+      i.severityScore ?? '',
+      i.status,
+      i.createdAt.toISOString(),
+      i.updatedAt.toISOString(),
+      i.latitude ?? '',
+      i.longitude ?? '',
+    ].join(','),
+  );
 
-    const csv = [header.join(","), ...rows].join("\n");
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=\"incidents.csv\"");
-    res.send(csv);
-  }
-);
+  const csv = [header.join(','), ...rows].join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="incidents.csv"');
+  res.send(csv);
+});
 
 // System Config
-router.get("/config", requireAuth, requireRole([Role.ADMIN]), systemController.getSystemConfig);
-router.patch("/config", requireAuth, requireRole([Role.ADMIN]), systemController.updateSystemConfig);
-router.post("/broadcast", requireAuth, requireRole([Role.ADMIN]), systemController.sendBroadcast);
+router.get('/config', requireAuth, requireRole([Role.ADMIN]), systemController.getSystemConfig);
+router.patch(
+  '/config',
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  systemController.updateSystemConfig,
+);
+router.post('/broadcast', requireAuth, requireRole([Role.ADMIN]), systemController.sendBroadcast);
 
 export default router;

@@ -1,15 +1,15 @@
-import React from "react";
-import { useAuth } from "../context/AuthContext";
-import { severityBadgeClass, severityLabel } from "../utils/severity";
-import { Link } from "react-router-dom";
-import AppLayout from "../layouts/AppLayout";
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { severityBadgeClass, severityLabel } from '../utils/severity';
+import { Link } from 'react-router-dom';
+import AppLayout from '../layouts/AppLayout';
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
   const sampleOverview = [
-    { id: "FIRE", label: "Fire", count: 24, sev: 4 },
-    { id: "MEDICAL", label: "Medical", count: 18, sev: 3 },
-    { id: "TRAFFIC", label: "Traffic", count: 30, sev: 2 },
+    { id: 'FIRE', label: 'Fire', count: 24, sev: 4 },
+    { id: 'MEDICAL', label: 'Medical', count: 18, sev: 3 },
+    { id: 'TRAFFIC', label: 'Traffic', count: 30, sev: 2 },
   ];
 
   return (
@@ -58,9 +58,7 @@ const AdminDashboard: React.FC = () => {
                   <p className="text-sm text-slate-400">{item.label}</p>
                   <h3 className="text-2xl font-bold text-white">{item.count}</h3>
                 </div>
-                <span className={severityBadgeClass(item.sev)}>
-                  Sev {severityLabel(item.sev)}
-                </span>
+                <span className={severityBadgeClass(item.sev)}>Sev {severityLabel(item.sev)}</span>
               </div>
             </div>
           ))}

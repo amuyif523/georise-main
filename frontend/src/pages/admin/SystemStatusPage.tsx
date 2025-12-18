@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
-import api from "../../lib/api";
-import { 
-  Database, 
-  Server, 
-  Cpu, 
-  CheckCircle, 
+import React, { useEffect, useState } from 'react';
+import api from '../../lib/api';
+import {
+  Database,
+  Server,
+  Cpu,
+  CheckCircle,
   XCircle,
   RefreshCw,
-  type LucideIcon
-} from "lucide-react";
+  type LucideIcon,
+} from 'lucide-react';
 
 interface ServiceHealth {
-  status: "up" | "down" | "unknown";
+  status: 'up' | 'down' | 'unknown';
   latency: number;
 }
 
 interface SystemHealth {
-  status: "ok" | "degraded";
+  status: 'ok' | 'degraded';
   timestamp: string;
   services: {
     database: ServiceHealth;
@@ -26,8 +26,8 @@ interface SystemHealth {
 }
 
 interface CustomCSS extends React.CSSProperties {
-  "--value"?: number;
-  "--size"?: string;
+  '--value'?: number;
+  '--size'?: string;
 }
 
 const SystemStatusPage: React.FC = () => {
@@ -39,13 +39,13 @@ const SystemStatusPage: React.FC = () => {
   const fetchHealth = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/system/health");
+      const res = await api.get('/system/health');
       setHealth(res.data);
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch health", err);
-      setError("Failed to fetch system health. Backend might be down.");
+      console.error('Failed to fetch health', err);
+      setError('Failed to fetch system health. Backend might be down.');
       setHealth(null);
     } finally {
       setLoading(false);
@@ -59,36 +59,38 @@ const SystemStatusPage: React.FC = () => {
   }, []);
 
   const getStatusColor = (status: string) => {
-    if (status === "up" || status === "ok") return "text-success";
-    if (status === "down" || status === "degraded") return "text-error";
-    return "text-warning";
+    if (status === 'up' || status === 'ok') return 'text-success';
+    if (status === 'down' || status === 'degraded') return 'text-error';
+    return 'text-warning';
   };
 
-  const ServiceCard = ({ 
-    title, 
-    icon: Icon, 
-    data 
-  }: { 
-    title: string; 
-    icon: LucideIcon; 
-    data?: ServiceHealth 
+  const ServiceCard = ({
+    title,
+    icon: Icon,
+    data,
+  }: {
+    title: string;
+    icon: LucideIcon;
+    data?: ServiceHealth;
   }) => (
     <div className="card bg-base-100 shadow-xl border border-base-200">
       <div className="card-body">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg bg-base-200 ${getStatusColor(data?.status || "unknown")}`}>
+            <div
+              className={`p-3 rounded-lg bg-base-200 ${getStatusColor(data?.status || 'unknown')}`}
+            >
               <Icon className="w-6 h-6" />
             </div>
             <div>
               <h3 className="card-title text-base">{title}</h3>
               <p className="text-xs text-base-content/70">
-                Latency: {data?.latency ? `${data.latency}ms` : "N/A"}
+                Latency: {data?.latency ? `${data.latency}ms` : 'N/A'}
               </p>
             </div>
           </div>
           {data ? (
-            data.status === "up" ? (
+            data.status === 'up' ? (
               <CheckCircle className="w-6 h-6 text-success" />
             ) : (
               <XCircle className="w-6 h-6 text-error" />
@@ -99,9 +101,9 @@ const SystemStatusPage: React.FC = () => {
         </div>
         <div className="mt-4">
           <div className="w-full bg-base-200 rounded-full h-2.5">
-            <div 
-              className={`h-2.5 rounded-full ${data?.status === "up" ? "bg-success" : "bg-error"}`} 
-              style={{ width: "100%" }}
+            <div
+              className={`h-2.5 rounded-full ${data?.status === 'up' ? 'bg-success' : 'bg-error'}`}
+              style={{ width: '100%' }}
             ></div>
           </div>
         </div>
@@ -122,12 +124,8 @@ const SystemStatusPage: React.FC = () => {
               Last updated: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
-          <button 
-            className="btn btn-ghost btn-circle"
-            onClick={fetchHealth}
-            disabled={loading}
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+          <button className="btn btn-ghost btn-circle" onClick={fetchHealth} disabled={loading}>
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -140,37 +138,26 @@ const SystemStatusPage: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <ServiceCard 
-          title="PostgreSQL Database" 
-          icon={Database} 
-          data={health?.services.database} 
-        />
-        <ServiceCard 
-          title="Redis Cache" 
-          icon={Server} 
-          data={health?.services.redis} 
-        />
-        <ServiceCard 
-          title="AI Classification Service" 
-          icon={Cpu} 
-          data={health?.services.ai} 
-        />
+        <ServiceCard title="PostgreSQL Database" icon={Database} data={health?.services.database} />
+        <ServiceCard title="Redis Cache" icon={Server} data={health?.services.redis} />
+        <ServiceCard title="AI Classification Service" icon={Cpu} data={health?.services.ai} />
       </div>
 
       <div className="card bg-base-100 shadow-xl border border-base-200">
         <div className="card-body">
           <h3 className="card-title">Overall System Health</h3>
           <div className="flex items-center gap-4 mt-2">
-            <div className={`radial-progress ${getStatusColor(health?.status || "unknown")}`} style={{"--value": 100, "--size": "4rem"} as CustomCSS}>
-              {health?.status === "ok" ? "100%" : "ERR"}
+            <div
+              className={`radial-progress ${getStatusColor(health?.status || 'unknown')}`}
+              style={{ '--value': 100, '--size': '4rem' } as CustomCSS}
+            >
+              {health?.status === 'ok' ? '100%' : 'ERR'}
             </div>
             <div>
               <div className="text-lg font-semibold uppercase tracking-wide">
-                {health?.status || "Unknown"}
+                {health?.status || 'Unknown'}
               </div>
-              <div className="text-sm text-base-content/70">
-                All systems operational
-              </div>
+              <div className="text-sm text-base-content/70">All systems operational</div>
             </div>
           </div>
         </div>

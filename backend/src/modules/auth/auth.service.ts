@@ -1,20 +1,16 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { Role } from "@prisma/client";
-import prisma from "../../prisma";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { Role } from '@prisma/client';
+import prisma from '../../prisma';
 import {
   JWT_EXPIRES_IN,
   JWT_REFRESH_EXPIRES_IN,
   JWT_REFRESH_SECRET,
   JWT_SECRET,
-} from "../../config/env";
-import {
-  AuthTokenPayload,
-  LoginRequestBody,
-  RegisterRequestBody,
-} from "./auth.types";
+} from '../../config/env';
+import { AuthTokenPayload, LoginRequestBody, RegisterRequestBody } from './auth.types';
 
-import { smsService } from "../sms/sms.service";
+import { smsService } from '../sms/sms.service';
 
 const LOCK_THRESHOLD = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
@@ -23,19 +19,16 @@ export class AuthService {
   async register(data: RegisterRequestBody) {
     const existing = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: data.email },
-          { phone: data.phone }
-        ]
+        OR: [{ email: data.email }, { phone: data.phone }],
       },
     });
 
     if (existing) {
-      throw new Error("Email or Phone already in use");
+      throw new Error('Email or Phone already in use');
     }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
-    const role: Role = data.role || "CITIZEN";
+    const role: Role = data.role || 'CITIZEN';
 
     const user = await prisma.user.create({
       data: {
@@ -68,17 +61,20 @@ export class AuthService {
         await prisma.citizenVerification.create({
           data: {
             userId: user.id,
-            nationalId: "PENDING",
+            nationalId: 'PENDING',
             phone: data.phone,
             otpCode: otp,
             otpExpiresAt: expiresAt,
           },
         });
 
-        await smsService.sendSMS(data.phone, `Welcome to GEORISE! Your verification code is: ${otp}`);
+        await smsService.sendSMS(
+          data.phone,
+          `Welcome to GEORISE! Your verification code is: ${otp}`,
+        );
       } catch (error) {
         // Log error but don't fail registration
-        console.error("Failed to send initial OTP:", error);
+        console.error('Failed to send initial OTP:', error);
       }
     }
 
@@ -87,7 +83,7 @@ export class AuthService {
 
   async requestOtp(phone: string) {
     const user = await prisma.user.findUnique({ where: { phone } });
-    if (!user) throw new Error("User not found with this phone number");
+    if (!user) throw new Error('User not found with this phone number');
 
     const otp = smsService.generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
@@ -98,7 +94,7 @@ export class AuthService {
       update: { otpCode: otp, otpExpiresAt: expiresAt },
       create: {
         userId: user.id,
-        nationalId: "PENDING", // Placeholder
+        nationalId: 'PENDING', // Placeholder
         phone: phone,
         otpCode: otp,
         otpExpiresAt: expiresAt,
@@ -106,29 +102,29 @@ export class AuthService {
     });
 
     await smsService.sendSMS(phone, `Your GEORISE verification code is: ${otp}`);
-    return { message: "OTP sent" };
+    return { message: 'OTP sent' };
   }
 
   async verifyOtpLogin(phone: string, code: string) {
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { phone },
-      include: { citizenVerification: true, agencyStaff: true }
+      include: { citizenVerification: true, agencyStaff: true },
     });
-    
-    if (!user || !user.citizenVerification) throw new Error("Invalid request");
-    
+
+    if (!user || !user.citizenVerification) throw new Error('Invalid request');
+
     const { otpCode, otpExpiresAt } = user.citizenVerification;
     if (!otpCode || !otpExpiresAt || otpExpiresAt < new Date()) {
-      throw new Error("OTP expired or invalid");
+      throw new Error('OTP expired or invalid');
     }
     if (otpCode !== code) {
-      throw new Error("Invalid OTP code");
+      throw new Error('Invalid OTP code');
     }
 
     // Clear OTP
     await prisma.citizenVerification.update({
       where: { userId: user.id },
-      data: { otpCode: null, otpExpiresAt: null }
+      data: { otpCode: null, otpExpiresAt: null },
     });
 
     // Generate tokens
@@ -158,18 +154,18 @@ export class AuthService {
 
     if (!user) {
       await this.bumpFailureByEmail(data.email);
-      throw new Error("Invalid credentials");
+      throw new Error('Invalid credentials');
     }
 
     const now = Date.now();
     if (user.lockedUntil && user.lockedUntil.getTime() > now) {
-      throw new Error("Account temporarily locked due to failed attempts. Please try later.");
+      throw new Error('Account temporarily locked due to failed attempts. Please try later.');
     }
 
     const valid = await bcrypt.compare(data.password, user.passwordHash);
     if (!valid) {
       await this.bumpFailure(user.id, user.failedLoginAttempts ?? 0);
-      throw new Error("Invalid credentials");
+      throw new Error('Invalid credentials');
     }
 
     await prisma.user.update({
@@ -185,8 +181,8 @@ export class AuthService {
     await prisma.auditLog.create({
       data: {
         actorId: user.id,
-        action: "LOGIN_SUCCESS",
-        targetType: "User",
+        action: 'LOGIN_SUCCESS',
+        targetType: 'User',
         targetId: user.id,
       },
     });
@@ -215,19 +211,15 @@ export class AuthService {
 
   createAccessToken(userId: number, role: Role, tokenVersion: number, agencyId?: number | null) {
     const payload: AuthTokenPayload = { userId, role, tokenVersion, agencyId };
-    return jwt.sign(
-      payload,
-      JWT_SECRET as jwt.Secret,
-      { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
-    );
+    return jwt.sign(payload, JWT_SECRET as jwt.Secret, {
+      expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    });
   }
 
   createRefreshToken(userId: number, tokenVersion: number) {
-    return jwt.sign(
-      { userId, tokenVersion },
-      JWT_REFRESH_SECRET as jwt.Secret,
-      { expiresIn: JWT_REFRESH_EXPIRES_IN as jwt.SignOptions["expiresIn"] }
-    );
+    return jwt.sign({ userId, tokenVersion }, JWT_REFRESH_SECRET as jwt.Secret, {
+      expiresIn: JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    });
   }
 
   verifyRefresh(token: string) {
@@ -236,13 +228,13 @@ export class AuthService {
 
   async rotateRefresh(oldToken: string) {
     const decoded = this.verifyRefresh(oldToken);
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { agencyStaff: true }
+      include: { agencyStaff: true },
     });
-    if (!user || user.isActive === false) throw new Error("User not active");
+    if (!user || user.isActive === false) throw new Error('User not active');
     if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
-      throw new Error("Invalid refresh token");
+      throw new Error('Invalid refresh token');
     }
 
     const agencyId = user.agencyStaff?.agencyId || null;
@@ -265,7 +257,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     return user;
@@ -273,8 +265,7 @@ export class AuthService {
 
   private async bumpFailure(userId: number, current: number) {
     const nextCount = current + 1;
-    const lockUntil =
-      nextCount >= LOCK_THRESHOLD ? new Date(Date.now() + LOCK_DURATION_MS) : null;
+    const lockUntil = nextCount >= LOCK_THRESHOLD ? new Date(Date.now() + LOCK_DURATION_MS) : null;
     await prisma.user.update({
       where: { id: userId },
       data: {

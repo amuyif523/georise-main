@@ -1,5 +1,5 @@
-import prisma from "../../prisma";
-import { routingService } from "../gis/routing.service";
+import prisma from '../../prisma';
+import { routingService } from '../gis/routing.service';
 
 interface DispatchCandidate {
   agencyId: number;
@@ -21,16 +21,39 @@ const categoryPreferred = (category?: string | null, agencyType?: string | null)
   if (!category || !agencyType) return 0;
   const cat = category.toLowerCase();
   const type = agencyType.toLowerCase();
-  if (type === "fire" && (cat.includes("fire") || cat.includes("smoke"))) return 0.2;
-  if (type === "medical" && (cat.includes("medical") || cat.includes("injury") || cat.includes("ambulance"))) return 0.2;
-  if (type === "police" && (cat.includes("crime") || cat.includes("assault") || cat.includes("robbery"))) return 0.15;
-  if (type === "traffic" && (cat.includes("traffic") || cat.includes("accident") || cat.includes("crash"))) return 0.15;
-  
+  if (type === 'fire' && (cat.includes('fire') || cat.includes('smoke'))) return 0.2;
+  if (
+    type === 'medical' &&
+    (cat.includes('medical') || cat.includes('injury') || cat.includes('ambulance'))
+  )
+    return 0.2;
+  if (
+    type === 'police' &&
+    (cat.includes('crime') || cat.includes('assault') || cat.includes('robbery'))
+  )
+    return 0.15;
+  if (
+    type === 'traffic' &&
+    (cat.includes('traffic') || cat.includes('accident') || cat.includes('crash'))
+  )
+    return 0.15;
+
   // Infrastructure routing
-  if (cat === "infrastructure" || cat.includes("hazard") || cat.includes("pothole") || cat.includes("light")) {
-    if (type === "construction" || type === "electric" || type === "water" || type === "administration") return 0.3;
+  if (
+    cat === 'infrastructure' ||
+    cat.includes('hazard') ||
+    cat.includes('pothole') ||
+    cat.includes('light')
+  ) {
+    if (
+      type === 'construction' ||
+      type === 'electric' ||
+      type === 'water' ||
+      type === 'administration'
+    )
+      return 0.3;
   }
-  
+
   return 0;
 };
 
@@ -48,7 +71,7 @@ export class DispatchService {
       LIMIT 1;
     `;
     if (!incidentRows.length) {
-      throw new Error("Incident not found");
+      throw new Error('Incident not found');
     }
     const incident = incidentRows[0];
     const severityNorm = normalize(incident.severityscore ?? 3, 5);
@@ -65,7 +88,7 @@ export class DispatchService {
 
     // load available units with last known position
     let units: any[] = [];
-    
+
     if (incident.location) {
       units = await prisma.$queryRaw`
         SELECT u.id,
@@ -107,7 +130,7 @@ export class DispatchService {
         const flag: any[] = await prisma.$queryRaw`
           SELECT ST_Contains(${agency.jurisdiction}::geometry, ${incident.location}::geometry) AS inside
         `;
-        inJurisdiction = !!(flag[0]?.inside);
+        inJurisdiction = !!flag[0]?.inside;
       }
       const jurisdictionScore = inJurisdiction ? 1 : 0.5;
       const agencyUnits = units.filter((u) => u.agencyid === agency.id || u.agencyId === agency.id);
@@ -129,29 +152,36 @@ export class DispatchService {
 
       for (const unit of agencyUnits) {
         const distanceKm = unit.distance_km as number | null;
-        
+
         // Calculate drive time if location is available
         let durationMin = 0;
         if (incident.location && unit.lastLat && unit.lastLon) {
-             // We could await here, but doing it sequentially for many units is slow.
-             // For MVP, we'll do it for the top candidates later, or just use the heuristic inside routingService which is fast.
-             // Since our routingService is currently heuristic (sync math), we can call it.
-             // If it were async API, we'd want to Promise.all outside the loop.
-             const route = await routingService.calculateRoute(
-                 unit.lastLat, unit.lastLon, 
-                 incident.latitude, incident.longitude
-             );
-             durationMin = route.durationMin;
+          // We could await here, but doing it sequentially for many units is slow.
+          // For MVP, we'll do it for the top candidates later, or just use the heuristic inside routingService which is fast.
+          // Since our routingService is currently heuristic (sync math), we can call it.
+          // If it were async API, we'd want to Promise.all outside the loop.
+          const route = await routingService.calculateRoute(
+            unit.lastLat,
+            unit.lastLon,
+            incident.latitude,
+            incident.longitude,
+          );
+          durationMin = route.durationMin;
         }
 
         const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
         const catBonus = categoryPreferred(incident.category, agency.type);
-        
+
         // Adjust score based on duration (shorter is better)
         // If duration > 30 mins, penalty
         const durationPenalty = durationMin > 30 ? 0.2 : 0;
 
-        const totalScore = jurisdictionScore * 0.35 + severityNorm * 0.3 + proximityScore * 0.25 + catBonus - durationPenalty;
+        const totalScore =
+          jurisdictionScore * 0.35 +
+          severityNorm * 0.3 +
+          proximityScore * 0.25 +
+          catBonus -
+          durationPenalty;
         candidates.push({
           agencyId: agency.id,
           unitId: unit.id,

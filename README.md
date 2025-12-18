@@ -3,6 +3,7 @@
 AI-driven, geospatial incident reporting and multi-agency dispatch platform (Citizen, Agency, Admin portals) with offline resilience.
 
 ## Features
+
 - Citizen incident reporting wizard (Amharic/English) with AI classification + severity scoring
 - PostGIS-powered maps: clustering, heatmaps, nearby search
 - Agency dispatch workflow (assign/respond/resolve) + audit logs
@@ -11,6 +12,7 @@ AI-driven, geospatial incident reporting and multi-agency dispatch platform (Cit
 - Offline queue + PWA; online/offline banner
 
 ## Tech Stack
+
 - Frontend: React + TypeScript + Vite + Tailwind + DaisyUI + Leaflet
 - Backend: Node.js + Express + TypeScript + Prisma
 - DB: PostgreSQL + PostGIS
@@ -18,6 +20,7 @@ AI-driven, geospatial incident reporting and multi-agency dispatch platform (Cit
 - DevOps: Docker Compose (PostGIS)
 
 ## Quickstart (Local)
+
 ```bash
 git clone <repo>
 cd georise
@@ -50,11 +53,13 @@ npm run dev
 ```
 
 ## Demo Accounts
+
 - Admin: `admin@example.com` / `password123`
 - Agency (Police): `police1@example.com` / `password123`
 - Citizen: `citizen1@example.com` / `password123`
 
 ## Project Structure
+
 ```
 georise/
   frontend/        # React app (pages, components, context, lib)
@@ -66,6 +71,7 @@ georise/
 ```
 
 ## Key Docs
+
 - docs/architecture/architecture.md
 - docs/api/backend-api.md
 - docs/ai/ai-module.md
@@ -76,11 +82,13 @@ georise/
 - docs/testing/bugs.md (open issues log)
 
 ## Scripts
+
 - Backend: `npm run dev` | `npm run build` | `npm start` | `npm run seed`
 - Frontend: `npm run dev` | `npm run build` | `npm run preview`
 - AI service: `uvicorn main:app --reload --port 8001`
 
 ## Notes
+
 - Models/weights are git-ignored (`models/`).
 - Use `.env.example` templates per service; keep secrets out of git.
 - PostGIS required; if Prisma migrate fails on shadow DB, set `PRISMA_MIGRATION_SKIP_SHADOW_DATABASE=1` and ensure PostGIS extension is enabled.

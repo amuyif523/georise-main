@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
-import api from "../../lib/api";
-import AppLayout from "../../layouts/AppLayout";
+import React, { useEffect, useState } from 'react';
+import api from '../../lib/api';
+import AppLayout from '../../layouts/AppLayout';
 
 type User = {
   id: number;
@@ -13,11 +13,11 @@ type User = {
   citizenVerification?: { status: string } | null;
 };
 
-const badge = (text: string, tone: "blue" | "green" | "gray") => {
+const badge = (text: string, tone: 'blue' | 'green' | 'gray') => {
   const map: Record<string, string> = {
-    blue: "bg-blue-500/20 text-blue-200 border-blue-400/30",
-    green: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
-    gray: "bg-slate-700/40 text-slate-200 border-slate-500/30",
+    blue: 'bg-blue-500/20 text-blue-200 border-blue-400/30',
+    green: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30',
+    gray: 'bg-slate-700/40 text-slate-200 border-slate-500/30',
   };
   return <span className={`badge badge-sm border ${map[tone]}`}>{text}</span>;
 };
@@ -26,14 +26,14 @@ const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
 
   const fetchUsers = async () => {
     try {
-      const res = await api.get("/admin/users");
+      const res = await api.get('/admin/users');
       setUsers(res.data.users || []);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to load users");
+      setError(err?.response?.data?.message || 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -44,13 +44,13 @@ const UsersPage: React.FC = () => {
   }, []);
 
   const setStatus = async (id: number, next: boolean) => {
-    if (!window.confirm(`${next ? "Activate" : "Deactivate"} this user?`)) return;
+    if (!window.confirm(`${next ? 'Activate' : 'Deactivate'} this user?`)) return;
     await api.patch(`/admin/users/${id}/status`, { isActive: next });
     fetchUsers();
   };
 
   const verify = async (id: number) => {
-    if (!window.confirm("Mark this user as VERIFIED?")) return;
+    if (!window.confirm('Mark this user as VERIFIED?')) return;
     await api.patch(`/admin/users/${id}/verify`);
     fetchUsers();
   };
@@ -58,7 +58,7 @@ const UsersPage: React.FC = () => {
   const filtered = users.filter(
     (u) =>
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      u.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -92,19 +92,21 @@ const UsersPage: React.FC = () => {
                 <tr key={u.id}>
                   <td>{u.fullName}</td>
                   <td>{u.email}</td>
-                  <td>{badge(u.role, "blue")}</td>
-                  <td>{badge(u.isActive ? "Active" : "Inactive", u.isActive ? "green" : "gray")}</td>
+                  <td>{badge(u.role, 'blue')}</td>
+                  <td>
+                    {badge(u.isActive ? 'Active' : 'Inactive', u.isActive ? 'green' : 'gray')}
+                  </td>
                   <td>
                     {badge(
-                      u.citizenVerification?.status === "VERIFIED" ? "Verified" : "Unverified",
-                      u.citizenVerification?.status === "VERIFIED" ? "green" : "gray"
+                      u.citizenVerification?.status === 'VERIFIED' ? 'Verified' : 'Unverified',
+                      u.citizenVerification?.status === 'VERIFIED' ? 'green' : 'gray',
                     )}
                   </td>
                   <td className="space-x-2">
                     <button className="btn btn-xs" onClick={() => setStatus(u.id, !u.isActive)}>
-                      {u.isActive ? "Deactivate" : "Activate"}
+                      {u.isActive ? 'Deactivate' : 'Activate'}
                     </button>
-                    {u.citizenVerification?.status !== "VERIFIED" && (
+                    {u.citizenVerification?.status !== 'VERIFIED' && (
                       <button className="btn btn-xs btn-outline" onClick={() => verify(u.id)}>
                         Verify
                       </button>

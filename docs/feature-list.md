@@ -5,6 +5,7 @@ This document enumerates **all features**—major and minor—implemented in the
 ---
 
 ## 1. Incident Reporting & Citizen Experience
+
 - Multi-step Incident Report Wizard (title, description, location, photo, not-at-scene toggle)
 - Infrastructure Hazard Reporting (potholes, lights, leaks) with dedicated workflow
 - Real-time map for location selection (Leaflet)
@@ -21,6 +22,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Accessibility: mobile-friendly, keyboard navigation, color contrast
 
 ## 2. Agency & Admin Features
+
 - Agency Dashboard (incident queue, map, analytics)
 - Incident Detail View (status, chat, merge, handoff, backup request)
 - Incident timeline/activity log with internal comments
@@ -44,6 +46,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Audit logs for admin actions
 
 ## 3. Dispatch & GIS
+
 - Auto-dispatch logic (find nearest available responder)
 - PostGIS-powered spatial queries (ST_DWithin, ST_Distance)
 - Smart routing (OSRM/Google API, drive time calculation)
@@ -60,6 +63,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Heatmap and cluster visualization (Leaflet, Chart.js)
 
 ## 4. AI & Automation
+
 - Incident classification (AfroXLMR, FastAPI)
 - Severity scoring (AI or manual for hazards)
 - Confidence scoring
@@ -69,6 +73,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Text similarity for duplicate detection
 
 ## 5. Security & Trust
+
 - JWT authentication (all clients)
 - Role-based access control (citizen, agency, admin)
 - Rate limiting (Redis, per user/IP)
@@ -83,6 +88,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Audit logs for sensitive actions
 
 ## 6. Offline & Resilience
+
 - Offline incident queue (idb-keyval)
 - Sync queue on reconnect
 - PWA support (service worker, offline cache)
@@ -94,6 +100,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Broadcast alerts (admin to all users)
 
 ## 7. Analytics & Reporting
+
 - Response time distribution (histogram)
 - Heatmap by time-of-day
 - Resource utilization (busy/idle)
@@ -105,6 +112,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Export analytics data (CSV/JSON)
 
 ## 8. Developer & Infrastructure
+
 - Modular monorepo (frontend, backend, ai-service, infra)
 - Docker Compose for local/dev deployment
 - Prisma ORM with PostGIS support
@@ -115,7 +123,9 @@ This document enumerates **all features**—major and minor—implemented in the
 - Automated tests (unit/integration)
 
 ## 9. Partially Implemented or Not Yet Implemented
+
 ### Partial / Stubbed
+
 - Incident photo uploads (UI exists, no backend storage/processing)
 - SMS integration (OTP send simulated; no real provider configured)
 - Push notifications (browser notifications + sockets only; no FCM/Web Push)
@@ -124,6 +134,7 @@ This document enumerates **all features**—major and minor—implemented in the
 - Responder simulation (demo data only; no automated fake movement)
 
 ### Not Implemented / Unverified
+
 - Secure password reset flow (no endpoints/UI found)
 - Automated tests (no unit/integration suite beyond AI test script)
 - Analytics export (CSV/JSON) beyond incident CSV export

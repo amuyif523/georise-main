@@ -1,4 +1,4 @@
-import prisma from "../../prisma";
+import prisma from '../../prisma';
 
 export interface AnalyticsFilters {
   from?: string;
@@ -11,7 +11,7 @@ const buildTimeWhere = (filters: AnalyticsFilters) => {
   if (filters.from) clauses.push(`i."createdAt" >= '${filters.from}'`);
   if (filters.to) clauses.push(`i."createdAt" <= '${filters.to}'`);
   if (filters.agencyId) clauses.push(`i."assignedAgencyId" = ${filters.agencyId}`);
-  return clauses.length ? `AND ${clauses.join(" AND ")}` : "";
+  return clauses.length ? `AND ${clauses.join(' AND ')}` : '';
 };
 
 class AnalyticsService {

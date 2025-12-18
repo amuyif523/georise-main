@@ -1,4 +1,4 @@
-import prisma from "../../prisma";
+import prisma from '../../prisma';
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
@@ -7,7 +7,10 @@ export class ReputationService {
   private MAX = 100;
 
   async adjustTrust(userId: number, delta: number) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { trustScore: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { trustScore: true },
+    });
     if (!user) return null;
     const newScore = clamp((user.trustScore ?? 0) + delta, this.MIN, this.MAX);
     await prisma.user.update({
@@ -18,11 +21,14 @@ export class ReputationService {
   }
 
   async getTier(userId: number) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { trustScore: true, citizenVerification: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { trustScore: true, citizenVerification: true },
+    });
     if (!user) return 0;
-    
+
     const score = user.trustScore ?? 0;
-    const isVerified = user.citizenVerification?.status === "VERIFIED";
+    const isVerified = user.citizenVerification?.status === 'VERIFIED';
 
     if (score >= 50 && isVerified) return 3; // Trusted Reporter
     if (isVerified) return 2; // ID Verified

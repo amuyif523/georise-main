@@ -1,6 +1,6 @@
-import bcrypt from "bcrypt";
-import { AgencyType, IncidentStatus, Role } from "@prisma/client";
-import prisma from "../../src/prisma";
+import bcrypt from 'bcrypt';
+import { AgencyType, IncidentStatus, Role } from '@prisma/client';
+import prisma from '../../src/prisma';
 
 type CreateUserInput = {
   email?: string;
@@ -11,11 +11,11 @@ type CreateUserInput = {
 };
 
 export const createUser = async (input: CreateUserInput = {}) => {
-  const password = input.password || "password123";
+  const password = input.password || 'password123';
   const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.create({
     data: {
-      fullName: input.fullName || "Test User",
+      fullName: input.fullName || 'Test User',
       email: input.email || `user_${Date.now()}@example.com`,
       phone: input.phone ?? null,
       passwordHash,
@@ -34,7 +34,7 @@ export const createAgency = async (input: CreateAgencyInput = {}) =>
   prisma.agency.create({
     data: {
       name: input.name || `Agency ${Date.now()}`,
-      city: input.city || "Addis Ababa",
+      city: input.city || 'Addis Ababa',
       type: input.type || AgencyType.POLICE,
       isApproved: true,
       isActive: true,
@@ -46,7 +46,7 @@ export const linkAgencyStaff = async (userId: number, agencyId: number) =>
     data: {
       userId,
       agencyId,
-      position: "Dispatcher",
+      position: 'Dispatcher',
     },
   });
 
@@ -65,8 +65,8 @@ export const createIncident = async (input: CreateIncidentInput) => {
   const incident = await prisma.incident.create({
     data: {
       reporterId: input.reporterId,
-      title: input.title || "Test incident",
-      description: input.description || "Test description for incident",
+      title: input.title || 'Test incident',
+      description: input.description || 'Test description for incident',
       category: input.category,
       severityScore: input.severityScore,
       status: input.status || IncidentStatus.RECEIVED,

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import api from "../lib/api";
-import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -12,20 +12,20 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [mode, setMode] = useState<"EMAIL" | "OTP">("EMAIL");
-  const [email, setEmail] = useState("citizen@example.com");
-  const [password, setPassword] = useState("password123");
-  const [phone, setPhone] = useState("");
-  const [otpCode, setOtpCode] = useState("");
+  const [mode, setMode] = useState<'EMAIL' | 'OTP'>('EMAIL');
+  const [email, setEmail] = useState('citizen@example.com');
+  const [password, setPassword] = useState('password123');
+  const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("registered") === "true") {
-      setSuccess(t("auth.create_account") + " " + t("common.success"));
+    if (searchParams.get('registered') === 'true') {
+      setSuccess(t('auth.create_account') + ' ' + t('common.success'));
     }
   }, [searchParams, t]);
 
@@ -36,9 +36,9 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/redirect-after-login");
+      navigate('/redirect-after-login');
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("common.error"));
+      setError(err?.response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -46,17 +46,17 @@ const LoginPage: React.FC = () => {
 
   const handleSendOtp = async () => {
     if (!phone) {
-      setError("Phone number is required");
+      setError('Phone number is required');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await api.post("/auth/otp/request", { phone });
+      await api.post('/auth/otp/request', { phone });
       setOtpSent(true);
-      setSuccess("OTP sent to your phone.");
+      setSuccess('OTP sent to your phone.');
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to send OTP");
+      setError(err?.response?.data?.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -67,11 +67,11 @@ const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await api.post("/auth/otp/verify", { phone, code: otpCode });
+      const res = await api.post('/auth/otp/verify', { phone, code: otpCode });
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
-      navigate("/redirect-after-login");
+      navigate('/redirect-after-login');
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid OTP");
+      setError(err?.response?.data?.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -84,21 +84,33 @@ const LoginPage: React.FC = () => {
       </div>
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title mb-4 justify-center text-2xl font-bold text-primary">{t("auth.sign_in_to_account")}</h2>
-          
+          <h2 className="card-title mb-4 justify-center text-2xl font-bold text-primary">
+            {t('auth.sign_in_to_account')}
+          </h2>
+
           <div className="tabs tabs-boxed justify-center mb-4">
-            <a className={`tab ${mode === "EMAIL" ? "tab-active" : ""}`} onClick={() => setMode("EMAIL")}>{t("auth.email")}</a>
-            <a className={`tab ${mode === "OTP" ? "tab-active" : ""}`} onClick={() => setMode("OTP")}>{t("auth.phone")}</a>
+            <a
+              className={`tab ${mode === 'EMAIL' ? 'tab-active' : ''}`}
+              onClick={() => setMode('EMAIL')}
+            >
+              {t('auth.email')}
+            </a>
+            <a
+              className={`tab ${mode === 'OTP' ? 'tab-active' : ''}`}
+              onClick={() => setMode('OTP')}
+            >
+              {t('auth.phone')}
+            </a>
           </div>
 
           {success && <div className="alert alert-success mb-3 text-sm">{success}</div>}
           {error && <div className="alert alert-error mb-3 text-sm">{error}</div>}
-          
-          {mode === "EMAIL" ? (
+
+          {mode === 'EMAIL' ? (
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">{t("auth.email")}</span>
+                  <span className="label-text">{t('auth.email')}</span>
                 </label>
                 <input
                   type="email"
@@ -111,7 +123,7 @@ const LoginPage: React.FC = () => {
 
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">{t("auth.password")}</span>
+                  <span className="label-text">{t('auth.password')}</span>
                 </label>
                 <input
                   type="password"
@@ -124,10 +136,10 @@ const LoginPage: React.FC = () => {
 
               <div className="form-control mt-6">
                 <button
-                  className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
+                  className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                   type="submit"
                 >
-                  {loading ? t("common.loading") : t("auth.login")}
+                  {loading ? t('common.loading') : t('auth.login')}
                 </button>
               </div>
             </form>
@@ -136,7 +148,7 @@ const LoginPage: React.FC = () => {
               {!otpSent ? (
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">{t("auth.phone")}</span>
+                    <span className="label-text">{t('auth.phone')}</span>
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -146,8 +158,8 @@ const LoginPage: React.FC = () => {
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+251..."
                     />
-                    <button 
-                      className={`btn btn-secondary ${loading ? "loading" : ""}`}
+                    <button
+                      className={`btn btn-secondary ${loading ? 'loading' : ''}`}
                       onClick={handleSendOtp}
                     >
                       Send OTP
@@ -171,13 +183,13 @@ const LoginPage: React.FC = () => {
                   </div>
                   <div className="form-control mt-6">
                     <button
-                      className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
+                      className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                       type="submit"
                     >
                       Verify & Login
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-ghost btn-xs mt-2"
                       onClick={() => setOtpSent(false)}
                     >
@@ -192,7 +204,7 @@ const LoginPage: React.FC = () => {
           <div className="divider">OR</div>
           <div className="text-center">
             <p className="text-sm">
-              Don't have an account?{" "}
+              Don't have an account?{' '}
               <Link to="/register" className="link link-primary">
                 Sign up here
               </Link>

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const createIncidentSchema = z.object({
   title: z.string().min(5).max(150),

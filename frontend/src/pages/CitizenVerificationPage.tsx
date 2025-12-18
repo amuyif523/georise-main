@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import AppLayout from "../layouts/AppLayout";
-import api from "../lib/api";
+import React, { useEffect, useState } from 'react';
+import AppLayout from '../layouts/AppLayout';
+import api from '../lib/api';
 
 const CitizenVerificationPage: React.FC = () => {
-  const [nationalId, setNationalId] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"FORM" | "OTP" | "DONE">("FORM");
+  const [nationalId, setNationalId] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'FORM' | 'OTP' | 'DONE'>('FORM');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -17,12 +17,12 @@ const CitizenVerificationPage: React.FC = () => {
   const requestVerification = async () => {
     setLoading(true);
     try {
-      const res = await api.post("/verification/request", { nationalId, phone });
-      setMessage(`OTP generated (demo): ${res.data.otpCodeDemo ?? "Check SMS"}`);
-      setStep("OTP");
+      const res = await api.post('/verification/request', { nationalId, phone });
+      setMessage(`OTP generated (demo): ${res.data.otpCodeDemo ?? 'Check SMS'}`);
+      setStep('OTP');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setMessage(msg || "Failed to submit verification");
+      setMessage(msg || 'Failed to submit verification');
     } finally {
       setLoading(false);
     }
@@ -31,12 +31,12 @@ const CitizenVerificationPage: React.FC = () => {
   const confirmOtp = async () => {
     setLoading(true);
     try {
-      await api.post("/verification/confirm-otp", { otpCode: otp });
-      setMessage("OTP confirmed. Awaiting admin approval.");
-      setStep("DONE");
+      await api.post('/verification/confirm-otp', { otpCode: otp });
+      setMessage('OTP confirmed. Awaiting admin approval.');
+      setStep('DONE');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setMessage(msg || "Invalid OTP");
+      setMessage(msg || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -48,10 +48,11 @@ const CitizenVerificationPage: React.FC = () => {
         <div className="md:col-span-2 citizen-card">
           <h2 className="text-lg font-semibold text-slate-900 mb-2">Verification</h2>
           <p className="text-sm text-slate-500 mb-4">
-            Provide your national ID and phone number. This helps agencies trust and prioritize your reports.
+            Provide your national ID and phone number. This helps agencies trust and prioritize your
+            reports.
           </p>
           {message && <div className="alert alert-info text-sm mb-3">{message}</div>}
-          {step === "FORM" && (
+          {step === 'FORM' && (
             <div className="space-y-3">
               <label className="form-control">
                 <span className="label-text text-slate-700">National ID</span>
@@ -69,23 +70,35 @@ const CitizenVerificationPage: React.FC = () => {
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </label>
-              <button className={`btn btn-primary ${loading ? "loading" : ""}`} onClick={requestVerification}>
+              <button
+                className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                onClick={requestVerification}
+              >
                 Submit verification
               </button>
             </div>
           )}
-          {step === "OTP" && (
+          {step === 'OTP' && (
             <div className="space-y-3">
               <label className="form-control">
                 <span className="label-text text-slate-700">Enter OTP</span>
-                <input className="input input-bordered" value={otp} onChange={(e) => setOtp(e.target.value)} />
+                <input
+                  className="input input-bordered"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
               </label>
-              <button className={`btn btn-primary ${loading ? "loading" : ""}`} onClick={confirmOtp}>
+              <button
+                className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                onClick={confirmOtp}
+              >
                 Confirm OTP
               </button>
             </div>
           )}
-          {step === "DONE" && <p className="text-sm text-slate-700">Your verification is pending admin approval.</p>}
+          {step === 'DONE' && (
+            <p className="text-sm text-slate-700">Your verification is pending admin approval.</p>
+          )}
         </div>
         <div className="citizen-card">
           <h3 className="text-sm font-semibold mb-2 text-slate-900">Why verify?</h3>

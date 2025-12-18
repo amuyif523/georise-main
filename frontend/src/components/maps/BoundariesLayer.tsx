@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
-import { GeoJSON } from "react-leaflet";
-import api from "../../lib/api";
+import React, { useEffect, useState } from 'react';
+import { GeoJSON } from 'react-leaflet';
+import api from '../../lib/api';
 
 type BoundaryFeature = {
   gid?: number;
@@ -13,8 +13,11 @@ type BoundaryFeature = {
 };
 
 interface Props {
-  level: "subcity" | "woreda" | "agency";
-  onSelect?: (id: number, props: { zone_name?: string; woreda_name?: string; name?: string }) => void;
+  level: 'subcity' | 'woreda' | 'agency';
+  onSelect?: (
+    id: number,
+    props: { zone_name?: string; woreda_name?: string; name?: string },
+  ) => void;
 }
 
 const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
@@ -26,9 +29,9 @@ const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
         const res = await api.get(`/gis/boundaries?level=${level}`);
         const rows: BoundaryFeature[] = res.data || [];
         const geojson = {
-          type: "FeatureCollection",
+          type: 'FeatureCollection',
           features: rows.map((row) => ({
-            type: "Feature",
+            type: 'Feature',
             properties: {
               gid: row.gid ?? row.id,
               zone_name: row.zone_name,
@@ -52,17 +55,18 @@ const BoundariesLayer: React.FC<Props> = ({ level, onSelect }) => {
     <GeoJSON
       data={features as any}
       style={() => ({
-        color: level === "woreda" ? "#f97316" : level === "agency" ? "#a855f7" : "#22d3ee",
+        color: level === 'woreda' ? '#f97316' : level === 'agency' ? '#a855f7' : '#22d3ee',
         weight: 1,
         fillOpacity: 0.05,
       })}
       onEachFeature={(feature, layer) => {
         const props: any = feature.properties || {};
-        const title = `${props.name ?? ""} ${props.zone_name ?? ""} ${props.woreda_name ?? ""}`.trim();
+        const title =
+          `${props.name ?? ''} ${props.zone_name ?? ''} ${props.woreda_name ?? ''}`.trim();
         if (title) {
-          layer.bindTooltip(title, { direction: "center" });
+          layer.bindTooltip(title, { direction: 'center' });
         }
-        layer.on("click", () => {
+        layer.on('click', () => {
           onSelect?.(props.gid ?? props.id, props);
         });
       }}

@@ -1,7 +1,7 @@
-import { get, set } from "idb-keyval";
-import { getSocket } from "../lib/socket";
+import { get, set } from 'idb-keyval';
+import { getSocket } from '../lib/socket';
 
-const QUEUE_KEY = "responder_location_queue";
+const QUEUE_KEY = 'responder_location_queue';
 
 interface OfflineLocationUpdate {
   ts: string;
@@ -21,7 +21,7 @@ export async function flushLocationQueue() {
   const socket = getSocket();
   if (!socket || !socket.connected) return;
   for (const item of queue) {
-    socket.emit("responder:locationUpdate", { lat: item.lat, lng: item.lng, offlineTs: item.ts });
+    socket.emit('responder:locationUpdate', { lat: item.lat, lng: item.lng, offlineTs: item.ts });
   }
   await set(QUEUE_KEY, []);
 }

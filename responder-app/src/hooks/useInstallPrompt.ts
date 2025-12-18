@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export const useInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -13,11 +13,11 @@ export const useInstallPrompt = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
     };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', onInstalled);
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
 
@@ -25,10 +25,10 @@ export const useInstallPrompt = () => {
     if (!deferredPrompt) return false;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
+    if (outcome === 'accepted') {
       setDeferredPrompt(null);
     }
-    return outcome === "accepted";
+    return outcome === 'accepted';
   };
 
   return { canInstall: !!deferredPrompt && !isInstalled, promptInstall };

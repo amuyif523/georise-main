@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "../lib/api";
-import { getSocket } from "../lib/socket";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import api from '../lib/api';
+import { getSocket } from '../lib/socket';
 
 interface SystemContextType {
   crisisMode: boolean;
@@ -21,7 +21,7 @@ const SystemContext = createContext<SystemContextType | null>(null);
 // eslint-disable-next-line react-refresh/only-export-components
 export const useSystem = () => {
   const context = useContext(SystemContext);
-  if (!context) throw new Error("useSystem must be used within SystemProvider");
+  if (!context) throw new Error('useSystem must be used within SystemProvider');
   return context;
 };
 
@@ -33,10 +33,10 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Fetch initial config
     const fetchConfig = async () => {
       try {
-        const res = await api.get("/system/status");
+        const res = await api.get('/system/status');
         setCrisisMode(res.data.crisisMode);
       } catch (e) {
-        console.warn("Failed to fetch system status", e);
+        console.warn('Failed to fetch system status', e);
       }
     };
     fetchConfig();
@@ -44,32 +44,32 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Socket listeners
     const socket = getSocket();
     if (socket) {
-      socket.on("system:config", (data: { key: string; value: string }) => {
-        if (data.key === "CRISIS_MODE") {
-          setCrisisMode(data.value === "true");
+      socket.on('system:config', (data: { key: string; value: string }) => {
+        if (data.key === 'CRISIS_MODE') {
+          setCrisisMode(data.value === 'true');
         }
       });
 
-      socket.on("system:broadcast", (data: BroadcastMessage) => {
+      socket.on('system:broadcast', (data: BroadcastMessage) => {
         setLastBroadcast(data);
       });
     }
 
     return () => {
       if (socket) {
-        socket.off("system:config");
-        socket.off("system:broadcast");
+        socket.off('system:config');
+        socket.off('system:broadcast');
       }
     };
   }, []);
 
   const toggleCrisisMode = async (enabled: boolean) => {
-    await api.patch("/admin/config", { key: "CRISIS_MODE", value: enabled ? "true" : "false" });
+    await api.patch('/admin/config', { key: 'CRISIS_MODE', value: enabled ? 'true' : 'false' });
     setCrisisMode(enabled);
   };
 
   const sendBroadcast = async (message: string, targetGeoJSON?: string) => {
-    await api.post("/admin/broadcast", { message, targetGeoJSON });
+    await api.post('/admin/broadcast', { message, targetGeoJSON });
   };
 
   return (

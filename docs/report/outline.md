@@ -8,4 +8,4 @@
 6. Testing & Evaluation: test plan, results, AI metrics, performance notes, security/abuse checks
 7. Demo & Scenarios: flows shown in viva (citizen, agency, admin)
 8. Conclusion & Future Work: summary, limitations, next steps (SMS/USSD, image upload, production hardening)
-Appendices: screenshots, full ERD, use case tables, API refs, questionnaires
+   Appendices: screenshots, full ERD, use case tables, API refs, questionnaires

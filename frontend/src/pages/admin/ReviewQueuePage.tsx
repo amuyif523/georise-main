@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useEffect, useState } from "react";
-import AppLayout from "../../layouts/AppLayout";
-import api from "../../lib/api";
-import TrustBadge from "../../components/user/TrustBadge";
+import React, { useEffect, useState } from 'react';
+import AppLayout from '../../layouts/AppLayout';
+import api from '../../lib/api';
+import TrustBadge from '../../components/user/TrustBadge';
 
 type ReviewIncident = {
   id: number;
@@ -20,7 +20,7 @@ const ReviewQueuePage: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const res = await api.get("/incidents", { params: { reviewStatus: "PENDING_REVIEW" } });
+    const res = await api.get('/incidents', { params: { reviewStatus: 'PENDING_REVIEW' } });
     setIncidents(res.data.incidents || []);
     setLoading(false);
   };
@@ -29,7 +29,7 @@ const ReviewQueuePage: React.FC = () => {
     load();
   }, []);
 
-  const decide = async (id: number, decision: "APPROVE" | "REJECT") => {
+  const decide = async (id: number, decision: 'APPROVE' | 'REJECT') => {
     await api.post(`/incidents/${id}/review`, { decision });
     await load();
   };
@@ -50,18 +50,18 @@ const ReviewQueuePage: React.FC = () => {
               <div>
                 <div className="text-lg text-white font-semibold">{i.title}</div>
                 <div className="text-xs text-slate-400">
-                  {i.category || "Uncategorized"} – {new Date(i.createdAt).toLocaleString()}
+                  {i.category || 'Uncategorized'} – {new Date(i.createdAt).toLocaleString()}
                 </div>
                 <div className="text-xs text-slate-400 flex gap-2 items-center mt-1">
-                  Reporter: {i.reporter?.fullName || "Unknown"}
+                  Reporter: {i.reporter?.fullName || 'Unknown'}
                   {i.reporter && <TrustBadge trustScore={i.reporter.trustScore} />}
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="btn btn-xs" onClick={() => decide(i.id, "APPROVE")}>
+                <button className="btn btn-xs" onClick={() => decide(i.id, 'APPROVE')}>
                   Approve
                 </button>
-                <button className="btn btn-xs btn-outline" onClick={() => decide(i.id, "REJECT")}>
+                <button className="btn btn-xs btn-outline" onClick={() => decide(i.id, 'REJECT')}>
                   Reject
                 </button>
               </div>

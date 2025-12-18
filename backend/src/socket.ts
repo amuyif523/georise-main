@@ -1,32 +1,32 @@
-import { Server } from "socket.io";
-import type { Server as HttpServer } from "http";
-import prisma from "./prisma";
-import logger from "./logger";
-import { authService } from "./modules/auth/auth.service";
-import { ResponderStatus } from "@prisma/client";
+import { Server } from 'socket.io';
+import type { Server as HttpServer } from 'http';
+import prisma from './prisma';
+import logger from './logger';
+import { authService } from './modules/auth/auth.service';
+import { ResponderStatus } from '@prisma/client';
 
 let io: Server | null = null;
 
 export const initSocketServer = (server: HttpServer) => {
   const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
+    'http://localhost:5173',
+    'http://localhost:5174',
     process.env.CLIENT_ORIGIN,
   ].filter(Boolean) as string[];
 
   io = new Server(server, {
     cors: {
       origin: allowedOrigins,
-      methods: ["GET", "POST"],
+      methods: ['GET', 'POST'],
       credentials: true,
     },
   });
 
-  io.on("connection", async (socket) => {
-    logger.info({ socketId: socket.id }, "Socket connection");
+  io.on('connection', async (socket) => {
+    logger.info({ socketId: socket.id }, 'Socket connection');
     const token = socket.handshake.auth?.token as string | undefined;
     if (!token) {
-      logger.warn("Socket missing token; disconnecting");
+      logger.warn('Socket missing token; disconnecting');
       socket.disconnect();
       return;
     }
@@ -39,7 +39,7 @@ export const initSocketServer = (server: HttpServer) => {
 
       if (agencyId) {
         socket.join(`agency:${agencyId}`);
-        logger.info({ userId, agencyId }, "Joined agency room");
+        logger.info({ userId, agencyId }, 'Joined agency room');
       } else {
         // Fallback for older tokens or if agencyId wasn't in payload
         try {
@@ -49,20 +49,20 @@ export const initSocketServer = (server: HttpServer) => {
           });
           if (staff?.agencyId) {
             socket.join(`agency:${staff.agencyId}`);
-            logger.info({ userId, agencyId: staff.agencyId }, "Joined agency room (fallback)");
+            logger.info({ userId, agencyId: staff.agencyId }, 'Joined agency room (fallback)');
           }
         } catch (err) {
-          logger.error({ err }, "Failed joining agency room");
+          logger.error({ err }, 'Failed joining agency room');
         }
       }
 
       // Incident Chat Rooms
-      socket.on("join_incident", (incidentId: number) => {
+      socket.on('join_incident', (incidentId: number) => {
         socket.join(`incident:${incidentId}`);
-        logger.info({ userId, incidentId }, "Joined incident room");
+        logger.info({ userId, incidentId }, 'Joined incident room');
       });
 
-      socket.on("leave_incident", (incidentId: number) => {
+      socket.on('leave_incident', (incidentId: number) => {
         socket.leave(`incident:${incidentId}`);
       });
 
@@ -74,19 +74,19 @@ export const initSocketServer = (server: HttpServer) => {
         });
         if (resp) {
           socket.join(`responder:${resp.id}`);
-          logger.info({ userId, responderId: resp.id }, "Joined responder room");
+          logger.info({ userId, responderId: resp.id }, 'Joined responder room');
         }
       } catch (err) {
-        logger.error({ err }, "Failed joining responder room");
+        logger.error({ err }, 'Failed joining responder room');
       }
 
       // Location updates from responder
-      socket.on("responder:locationUpdate", async (payload) => {
+      socket.on('responder:locationUpdate', async (payload) => {
         try {
           const resp = await prisma.responder.findFirst({ where: { userId } });
           if (!resp) return;
           const { lat, lng, status } = payload;
-          
+
           const updateData: any = { latitude: lat, longitude: lng };
           if (status && Object.values(ResponderStatus).includes(status)) {
             updateData.status = status;
@@ -96,31 +96,31 @@ export const initSocketServer = (server: HttpServer) => {
             where: { id: resp.id },
             data: updateData,
           });
-          
+
           if (updated.agencyId) {
-             io?.to(`agency:${updated.agencyId}`).emit("responder:position", {
+            io?.to(`agency:${updated.agencyId}`).emit('responder:position', {
               responderId: updated.id,
               lat,
               lng,
-              status: updated.status
+              status: updated.status,
             });
           }
         } catch (err) {
-          logger.error({ err }, "responder:locationUpdate failed");
+          logger.error({ err }, 'responder:locationUpdate failed');
         }
       });
 
-      socket.on("disconnect", () => {
-        logger.info({ userId, socketId: socket.id }, "Socket disconnect");
+      socket.on('disconnect', () => {
+        logger.info({ userId, socketId: socket.id }, 'Socket disconnect');
       });
     } catch (err) {
-      logger.error({ err }, "Socket auth failed");
+      logger.error({ err }, 'Socket auth failed');
       socket.disconnect();
     }
   });
 };
 
 export const getIO = () => {
-  if (!io) throw new Error("Socket.IO not initialized");
+  if (!io) throw new Error('Socket.IO not initialized');
   return io;
 };

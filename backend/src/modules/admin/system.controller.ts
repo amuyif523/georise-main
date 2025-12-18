@@ -1,15 +1,18 @@
-import { Request, Response } from "express";
-import { SystemConfig } from "@prisma/client";
-import prisma from "../../prisma";
-import { getIO } from "../../socket";
-import { z } from "zod";
+import { Request, Response } from 'express';
+import { SystemConfig } from '@prisma/client';
+import prisma from '../../prisma';
+import { getIO } from '../../socket';
+import { z } from 'zod';
 
 export const getSystemConfig = async (req: Request, res: Response) => {
   const configs = await prisma.systemConfig.findMany();
-  const configMap = configs.reduce((acc: Record<string, string>, curr: SystemConfig) => {
-    acc[curr.key] = curr.value;
-    return acc;
-  }, {} as Record<string, string>);
+  const configMap = configs.reduce(
+    (acc: Record<string, string>, curr: SystemConfig) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
   res.json({ config: configMap });
 };
 
@@ -19,7 +22,7 @@ export const updateSystemConfig = async (req: Request, res: Response) => {
     value: z.string(),
   });
   const parsed = schema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: "Invalid body" });
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid body' });
 
   const { key, value } = parsed.data;
 
@@ -30,9 +33,9 @@ export const updateSystemConfig = async (req: Request, res: Response) => {
   });
 
   // Emit event if crisis mode changes
-  if (key === "CRISIS_MODE") {
+  if (key === 'CRISIS_MODE') {
     const io = getIO();
-    io.emit("system:config", { key, value });
+    io.emit('system:config', { key, value });
   }
 
   res.json({ config });
@@ -44,7 +47,7 @@ export const sendBroadcast = async (req: Request, res: Response) => {
     targetGeoJSON: z.string().optional(), // GeoJSON Polygon string
   });
   const parsed = schema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: "Invalid body" });
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid body' });
 
   const { message, targetGeoJSON } = parsed.data;
 
@@ -65,7 +68,7 @@ export const sendBroadcast = async (req: Request, res: Response) => {
 
   // Emit to all connected clients
   const io = getIO();
-  io.emit("system:broadcast", {
+  io.emit('system:broadcast', {
     message,
     targetGeoJSON: targetGeoJSON ? JSON.parse(targetGeoJSON) : null,
     sentAt: new Date(),

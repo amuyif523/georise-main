@@ -1,13 +1,13 @@
-import { io, Socket } from "socket.io-client";
+import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
 export const connectSocket = (token: string) => {
-  const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
-  const url = base.replace(/\/api$/, "");
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+  const url = base.replace(/\/api$/, '');
   socket = io(url, {
     auth: { token },
-    transports: ["websocket"],
+    transports: ['websocket'],
   });
   return socket;
 };

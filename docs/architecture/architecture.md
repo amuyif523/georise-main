@@ -7,6 +7,7 @@
 - Infra: Docker Compose (PostGIS); frontend/backend/ai-service run locally.
 
 Key flows:
+
 - Auth: JWT access + refresh, RBAC middleware.
 - Incidents: Citizen submits → backend stores + geocodes to geography → calls AI → stores AI output.
 - GIS: location column, nearby queries, heatmap, clustering.

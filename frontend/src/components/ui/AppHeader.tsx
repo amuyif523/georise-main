@@ -1,30 +1,30 @@
-import React, { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import NotificationBell from "../ui/NotificationBell";
-import LanguageSwitcher from "../LanguageSwitcher";
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../ui/NotificationBell';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
-  const online = typeof navigator !== "undefined" ? navigator.onLine : true;
+  const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
   const [offline, setOffline] = useState(!online);
 
   useEffect(() => {
     const on = () => setOffline(false);
     const off = () => setOffline(true);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
     return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
     };
   }, []);
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#0D1117]/80 backdrop-blur">
       <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${offline ? "bg-yellow-400" : "bg-emerald-400"}`} />
+        <div className={`w-2 h-2 rounded-full ${offline ? 'bg-yellow-400' : 'bg-emerald-400'}`} />
         <span className="text-xs text-slate-400">
-          {offline ? "Offline (fallback to polling)" : "Online"}
+          {offline ? 'Offline (fallback to polling)' : 'Online'}
         </span>
       </div>
       <div className="flex items-center gap-3">

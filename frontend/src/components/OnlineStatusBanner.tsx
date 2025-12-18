@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 const OnlineStatusBanner: React.FC = () => {
   const [online, setOnline] = React.useState<boolean>(navigator.onLine);
@@ -6,11 +6,11 @@ const OnlineStatusBanner: React.FC = () => {
   React.useEffect(() => {
     const on = () => setOnline(true);
     const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
     return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
     };
   }, []);
 

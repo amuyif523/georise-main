@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useEffect, useState } from "react";
-import AppLayout from "../../layouts/AppLayout";
-import api from "../../lib/api";
-import TrustBadge from "../../components/user/TrustBadge";
+import React, { useEffect, useState } from 'react';
+import AppLayout from '../../layouts/AppLayout';
+import api from '../../lib/api';
+import TrustBadge from '../../components/user/TrustBadge';
 
 type Pending = {
   id: number;
@@ -19,7 +19,7 @@ const VerificationPage: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const res = await api.get("/verification/pending");
+    const res = await api.get('/verification/pending');
     setPending(res.data || []);
     setLoading(false);
   };
@@ -28,7 +28,7 @@ const VerificationPage: React.FC = () => {
     load();
   }, []);
 
-  const decide = async (userId: number, decision: "APPROVE" | "REJECT") => {
+  const decide = async (userId: number, decision: 'APPROVE' | 'REJECT') => {
     await api.post(`/verification/${userId}/decision`, { decision });
     await load();
   };
@@ -56,10 +56,13 @@ const VerificationPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="btn btn-xs" onClick={() => decide(p.user.id, "APPROVE")}>
+                <button className="btn btn-xs" onClick={() => decide(p.user.id, 'APPROVE')}>
                   Approve
                 </button>
-                <button className="btn btn-xs btn-outline" onClick={() => decide(p.user.id, "REJECT")}>
+                <button
+                  className="btn btn-xs btn-outline"
+                  onClick={() => decide(p.user.id, 'REJECT')}
+                >
                   Reject
                 </button>
               </div>

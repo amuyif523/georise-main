@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { getSocket } from "../lib/socket";
-import { addLocationToQueue, flushLocationQueue } from "../offline/responderLocationQueue";
-import { useNetworkStatus } from "./useNetworkStatus";
+import { useEffect, useRef, useState } from 'react';
+import { getSocket } from '../lib/socket';
+import { addLocationToQueue, flushLocationQueue } from '../offline/responderLocationQueue';
+import { useNetworkStatus } from './useNetworkStatus';
 
 export function useLocationTracker() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -10,13 +10,13 @@ export function useLocationTracker() {
 
   useEffect(() => {
     if (online) {
-      flushLocationQueue().catch((err) => console.error("Failed to flush location queue", err));
+      flushLocationQueue().catch((err) => console.error('Failed to flush location queue', err));
     }
   }, [online]);
 
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      console.warn("Geolocation not supported");
+    if (!('geolocation' in navigator)) {
+      console.warn('Geolocation not supported');
       return;
     }
 
@@ -25,14 +25,14 @@ export function useLocationTracker() {
       setCoords({ lat: latitude, lng: longitude });
       const socket = getSocket();
       if (online && socket?.connected) {
-        socket.emit("responder:locationUpdate", { lat: latitude, lng: longitude });
+        socket.emit('responder:locationUpdate', { lat: latitude, lng: longitude });
       } else {
         addLocationToQueue(latitude, longitude);
       }
     };
 
     const error = (err: GeolocationPositionError) => {
-      console.error("Geo error:", err);
+      console.error('Geo error:', err);
     };
 
     watchId.current = navigator.geolocation.watchPosition(success, error, {

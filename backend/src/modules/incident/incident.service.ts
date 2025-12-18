@@ -1,15 +1,19 @@
-import axios from "axios";
-import { IncidentStatus } from "@prisma/client";
-import prisma from "../../prisma";
-import { CreateIncidentRequest } from "./incident.types";
-import { emitIncidentCreated, emitIncidentUpdated, toIncidentPayload } from "../../events/incidentEvents";
-import { gisService } from "../gis/gis.service";
-import { reputationService } from "../reputation/reputation.service";
-import { logActivity } from "./activity.service";
-import { smsService } from "../sms/sms.service";
-import logger from "../../logger";
+import axios from 'axios';
+import { IncidentStatus } from '@prisma/client';
+import prisma from '../../prisma';
+import { CreateIncidentRequest } from './incident.types';
+import {
+  emitIncidentCreated,
+  emitIncidentUpdated,
+  toIncidentPayload,
+} from '../../events/incidentEvents';
+import { gisService } from '../gis/gis.service';
+import { reputationService } from '../reputation/reputation.service';
+import { logActivity } from './activity.service';
+import { smsService } from '../sms/sms.service';
+import logger from '../../logger';
 
-const AI_ENDPOINT = process.env.AI_ENDPOINT || "http://localhost:8001/classify";
+const AI_ENDPOINT = process.env.AI_ENDPOINT || 'http://localhost:8001/classify';
 
 export class IncidentService {
   async createIncident(data: CreateIncidentRequest, reporterId: number) {
@@ -21,17 +25,22 @@ export class IncidentService {
       },
     });
     if (recentCount > 5) {
-      throw new Error("Too many incident reports in a short time. Please wait a few minutes.");
+      throw new Error('Too many incident reports in a short time. Please wait a few minutes.');
     }
 
     const user = await prisma.user.findUnique({
       where: { id: reporterId },
-      select: { trustScore: true, lastReportAt: true, isShadowBanned: true, citizenVerification: { select: { status: true } } },
+      select: {
+        trustScore: true,
+        lastReportAt: true,
+        isShadowBanned: true,
+        citizenVerification: { select: { status: true } },
+      },
     });
     if (user?.lastReportAt) {
       const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
       if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
-        throw new Error("You are sending reports too frequently. Please wait a few minutes.");
+        throw new Error('You are sending reports too frequently. Please wait a few minutes.');
       }
     }
 
@@ -43,15 +52,15 @@ export class IncidentService {
       if (areas.woreda) woredaId = areas.woreda.id;
     }
 
-    let reviewStatus: any = "NOT_REQUIRED";
-    
+    let reviewStatus: any = 'NOT_REQUIRED';
+
     if (user?.isShadowBanned) {
-      reviewStatus = "REJECTED";
+      reviewStatus = 'REJECTED';
     } else {
       const tier = await reputationService.getTier(reporterId);
       // Tier 0 (Unverified) always requires review
       if (tier === 0) {
-        reviewStatus = "PENDING_REVIEW";
+        reviewStatus = 'PENDING_REVIEW';
       }
     }
 
@@ -80,14 +89,14 @@ export class IncidentService {
     }
 
     let aiOutput: any = null;
-    
+
     // If category is manually provided (e.g. INFRASTRUCTURE), skip AI or use it only for summary
-    if (data.category === "INFRASTRUCTURE") {
+    if (data.category === 'INFRASTRUCTURE') {
       aiOutput = {
-        predicted_category: "INFRASTRUCTURE",
+        predicted_category: 'INFRASTRUCTURE',
         severity_score: 1, // Low severity for hazards
         confidence: 1.0,
-        model_version: "manual",
+        model_version: 'manual',
         summary: null,
       };
     } else {
@@ -98,12 +107,12 @@ export class IncidentService {
         });
         aiOutput = res.data;
       } catch (err) {
-        logger.error({ err }, "AI classification failed, using fallback");
+        logger.error({ err }, 'AI classification failed, using fallback');
         aiOutput = {
-          predicted_category: "UNSPECIFIED",
+          predicted_category: 'UNSPECIFIED',
           severity_score: 2,
           confidence: 0,
-          model_version: "stub-v0",
+          model_version: 'stub-v0',
           summary: null,
         };
       }
@@ -127,15 +136,15 @@ export class IncidentService {
       include: { aiOutput: true },
     });
 
-    await logActivity(incident.id, "SYSTEM", "Incident created", reporterId);
-    if (reviewStatus === "PENDING_REVIEW") {
-      await logActivity(incident.id, "STATUS_CHANGE", "Incident marked for review", reporterId);
+    await logActivity(incident.id, 'SYSTEM', 'Incident created', reporterId);
+    if (reviewStatus === 'PENDING_REVIEW') {
+      await logActivity(incident.id, 'STATUS_CHANGE', 'Incident marked for review', reporterId);
     }
 
     await reputationService.onIncidentCreated(reporterId);
-    if (reviewStatus !== "PENDING_REVIEW") {
+    if (reviewStatus !== 'PENDING_REVIEW') {
       emitIncidentCreated(toIncidentPayload(updated));
-      
+
       // Critical Alert Fallback (SMS)
       // If severity > 4 (High/Critical), notify admins/responders via SMS if needed
       // For now, we simulate notifying the reporter that help is on the way if it's high severity
@@ -144,7 +153,10 @@ export class IncidentService {
         if (reporter?.phone) {
           // In a real scenario, we'd check if they have push notifications enabled first
           // Here we just simulate the fallback logic
-          await smsService.sendSMS(reporter.phone, `GEORISE Alert: Your report #${updated.id} is marked as HIGH severity. Responders are being notified.`);
+          await smsService.sendSMS(
+            reporter.phone,
+            `GEORISE Alert: Your report #${updated.id} is marked as HIGH severity. Responders are being notified.`,
+          );
         }
       }
     }
@@ -154,7 +166,7 @@ export class IncidentService {
   async getMyIncidents(reporterId: number) {
     const incidents = await prisma.incident.findMany({
       where: { reporterId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: { aiOutput: true },
     });
     return incidents;
@@ -194,9 +206,9 @@ export class IncidentService {
     `);
 
     if (title || description) {
-      const targetText = ((title || "") + " " + (description || "")).toLowerCase();
+      const targetText = ((title || '') + ' ' + (description || '')).toLowerCase();
       duplicates.forEach((d) => {
-        const otherText = ((d.title || "") + " " + (d.description || "")).toLowerCase();
+        const otherText = ((d.title || '') + ' ' + (d.description || '')).toLowerCase();
         d.similarity = this.calculateSimilarity(targetText, otherText);
       });
       // Sort by similarity descending, then distance ascending
@@ -223,47 +235,58 @@ export class IncidentService {
 
   async mergeIncidents(primaryId: number, duplicateId: number, agencyUserId: number) {
     const duplicate = await prisma.incident.findUnique({ where: { id: duplicateId } });
-    if (!duplicate) throw new Error("Duplicate incident not found");
+    if (!duplicate) throw new Error('Duplicate incident not found');
 
     // Mark duplicate as resolved (merged)
     await prisma.incident.update({
       where: { id: duplicateId },
       data: {
-        status: "RESOLVED", // Or a specific MERGED status if enum allows, using RESOLVED for now
-        reviewStatus: "APPROVED",
+        status: 'RESOLVED', // Or a specific MERGED status if enum allows, using RESOLVED for now
+        reviewStatus: 'APPROVED',
       },
     });
 
     // Log activity on both
-    await logActivity(primaryId, "SYSTEM", `Merged with incident #${duplicateId}`, agencyUserId);
-    await logActivity(duplicateId, "STATUS_CHANGE", `Merged into incident #${primaryId}`, agencyUserId);
+    await logActivity(primaryId, 'SYSTEM', `Merged with incident #${duplicateId}`, agencyUserId);
+    await logActivity(
+      duplicateId,
+      'STATUS_CHANGE',
+      `Merged into incident #${primaryId}`,
+      agencyUserId,
+    );
 
     // Emit update
-    emitIncidentUpdated(toIncidentPayload(await prisma.incident.findUnique({ where: { id: duplicateId } }) as any));
-    
+    emitIncidentUpdated(
+      toIncidentPayload((await prisma.incident.findUnique({ where: { id: duplicateId } })) as any),
+    );
+
     return true;
   }
 
   async shareIncident(incidentId: number, agencyId: number, reason: string) {
     const existing = await prisma.sharedIncident.findUnique({
       where: {
-        incidentId_agencyId: { incidentId, agencyId }
-      }
+        incidentId_agencyId: { incidentId, agencyId },
+      },
     });
-    
+
     if (existing) return existing;
 
     const shared = await prisma.sharedIncident.create({
       data: {
         incidentId,
         agencyId,
-        reason
+        reason,
       },
-      include: { agency: true }
+      include: { agency: true },
     });
 
-    await logActivity(incidentId, "SYSTEM", `Incident shared with ${shared.agency.name}: ${reason}`);
-    
+    await logActivity(
+      incidentId,
+      'SYSTEM',
+      `Incident shared with ${shared.agency.name}: ${reason}`,
+    );
+
     // Emit update
     const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
     if (incident) emitIncidentUpdated(toIncidentPayload(incident));
@@ -274,8 +297,17 @@ export class IncidentService {
   async getIncidentChat(incidentId: number) {
     return prisma.incidentChat.findMany({
       where: { incidentId },
-      include: { sender: { select: { id: true, fullName: true, role: true, agencyStaff: { include: { agency: true } } } } },
-      orderBy: { createdAt: 'asc' }
+      include: {
+        sender: {
+          select: {
+            id: true,
+            fullName: true,
+            role: true,
+            agencyStaff: { include: { agency: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
     });
   }
 
@@ -284,11 +316,20 @@ export class IncidentService {
       data: {
         incidentId,
         senderId,
-        message
+        message,
       },
-      include: { sender: { select: { id: true, fullName: true, role: true, agencyStaff: { include: { agency: true } } } } }
+      include: {
+        sender: {
+          select: {
+            id: true,
+            fullName: true,
+            role: true,
+            agencyStaff: { include: { agency: true } },
+          },
+        },
+      },
     });
-    
+
     return chat;
   }
 }

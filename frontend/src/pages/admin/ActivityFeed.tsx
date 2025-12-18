@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
-import AppLayout from "../../layouts/AppLayout";
-import { getSocket } from "../../lib/socket";
+import React, { useEffect, useState } from 'react';
+import AppLayout from '../../layouts/AppLayout';
+import { getSocket } from '../../lib/socket';
 
 type ActivityItem = {
   id: string;
@@ -31,20 +31,27 @@ const ActivityFeed: React.FC = () => {
         ...prev.slice(0, 50),
       ]);
     };
-    const createdHandler = (inc: any) => pushEvent("CREATED", inc);
-    const updatedHandler = (inc: any) => pushEvent("UPDATED", inc);
-    socket.on("incident:created", createdHandler);
-    socket.on("incident:updated", updatedHandler);
-    socket.on("disconnect", () => {
+    const createdHandler = (inc: any) => pushEvent('CREATED', inc);
+    const updatedHandler = (inc: any) => pushEvent('UPDATED', inc);
+    socket.on('incident:created', createdHandler);
+    socket.on('incident:updated', updatedHandler);
+    socket.on('disconnect', () => {
       setEvents((prev) => [
-        { id: `disc-${Date.now()}`, type: "DISCONNECTED", incidentId: 0, category: null, status: "N/A", createdAt: new Date().toISOString() },
+        {
+          id: `disc-${Date.now()}`,
+          type: 'DISCONNECTED',
+          incidentId: 0,
+          category: null,
+          status: 'N/A',
+          createdAt: new Date().toISOString(),
+        },
         ...prev,
       ]);
     });
     return () => {
-      socket?.off("incident:created", createdHandler);
-      socket?.off("incident:updated", updatedHandler);
-      socket?.off("disconnect");
+      socket?.off('incident:created', createdHandler);
+      socket?.off('incident:updated', updatedHandler);
+      socket?.off('disconnect');
     };
   }, []);
 
@@ -63,9 +70,11 @@ const ActivityFeed: React.FC = () => {
             >
               <div>
                 <span className="text-cyan-300 mr-2">{e.type}</span>
-                Incident #{e.incidentId} – {e.category || "N/A"} – {e.status}
+                Incident #{e.incidentId} – {e.category || 'N/A'} – {e.status}
               </div>
-              <div className="text-xs text-slate-500">{new Date(e.createdAt).toLocaleTimeString()}</div>
+              <div className="text-xs text-slate-500">
+                {new Date(e.createdAt).toLocaleTimeString()}
+              </div>
             </div>
           ))}
           {!events.length && <div className="text-sm text-slate-400">Waiting for activity…</div>}

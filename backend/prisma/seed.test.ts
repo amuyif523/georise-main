@@ -1,15 +1,15 @@
-import { PrismaClient, Role, AgencyType } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { PrismaClient, Role, AgencyType } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("password123", 10);
+  const passwordHash = await bcrypt.hash('password123', 10);
 
   const agency = await prisma.agency.create({
     data: {
-      name: "Test Agency",
-      city: "Addis Ababa",
+      name: 'Test Agency',
+      city: 'Addis Ababa',
       type: AgencyType.POLICE,
       isApproved: true,
       isActive: true,
@@ -18,8 +18,8 @@ async function main() {
 
   const admin = await prisma.user.create({
     data: {
-      fullName: "Test Admin",
-      email: "admin.test@example.com",
+      fullName: 'Test Admin',
+      email: 'admin.test@example.com',
       passwordHash,
       role: Role.ADMIN,
     },
@@ -27,8 +27,8 @@ async function main() {
 
   const citizen = await prisma.user.create({
     data: {
-      fullName: "Test Citizen",
-      email: "citizen.test@example.com",
+      fullName: 'Test Citizen',
+      email: 'citizen.test@example.com',
       passwordHash,
       role: Role.CITIZEN,
     },
@@ -38,11 +38,15 @@ async function main() {
     data: {
       userId: admin.id,
       agencyId: agency.id,
-      position: "Dispatcher",
+      position: 'Dispatcher',
     },
   });
 
-  console.log("Test seed complete:", { admin: admin.email, citizen: citizen.email, agency: agency.name });
+  console.log('Test seed complete:', {
+    admin: admin.email,
+    citizen: citizen.email,
+    agency: agency.name,
+  });
 }
 
 main()

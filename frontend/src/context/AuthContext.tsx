@@ -1,9 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import api from "../lib/api";
-import { connectSocket, disconnectSocket } from "../lib/socket";
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import api from '../lib/api';
+import { connectSocket, disconnectSocket } from '../lib/socket';
 
-type Role = "CITIZEN" | "AGENCY_STAFF" | "ADMIN";
+type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'ADMIN';
 
 interface User {
   id: number;
@@ -27,9 +27,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastActive, setLastActive] = useState<number>(() => Date.now());
@@ -37,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchMe = useCallback(async () => {
     try {
-      const res = await api.get("/auth/me");
+      const res = await api.get('/auth/me');
       setUser(res.data.user);
     } catch {
       setUser(null);
@@ -47,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("georise_token");
+    const token = localStorage.getItem('georise_token');
     if (token) {
       (async () => {
         await fetchMe();
@@ -58,11 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     const updateActive = () => setLastActive(Date.now());
-    window.addEventListener("mousemove", updateActive);
-    window.addEventListener("keydown", updateActive);
+    window.addEventListener('mousemove', updateActive);
+    window.addEventListener('keydown', updateActive);
     return () => {
-      window.removeEventListener("mousemove", updateActive);
-      window.removeEventListener("keydown", updateActive);
+      window.removeEventListener('mousemove', updateActive);
+      window.removeEventListener('keydown', updateActive);
     };
   }, [SESSION_MAX_IDLE_MS, fetchMe]);
 
@@ -76,22 +74,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, lastActive, SESSION_MAX_IDLE_MS]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post("/auth/login", { email, password });
+    const res = await api.post('/auth/login', { email, password });
     const { token, user: userData } = res.data;
-    localStorage.setItem("georise_token", token);
+    localStorage.setItem('georise_token', token);
     setUser(userData);
     connectSocket(token);
   };
 
   const logout = () => {
-    localStorage.removeItem("georise_token");
+    localStorage.removeItem('georise_token');
     setUser(null);
     disconnectSocket();
   };
 
   const setAuth = (userData: User, token: string, refreshToken?: string) => {
-    localStorage.setItem("georise_token", token);
-    if (refreshToken) localStorage.setItem("georise_refresh_token", refreshToken);
+    localStorage.setItem('georise_token', token);
+    if (refreshToken) localStorage.setItem('georise_refresh_token', refreshToken);
     setUser(userData);
     connectSocket(token);
   };
@@ -106,8 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return ctx;
 };
-

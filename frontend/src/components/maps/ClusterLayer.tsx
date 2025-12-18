@@ -1,4 +1,4 @@
-import { CircleMarker, Tooltip } from "react-leaflet";
+import { CircleMarker, Tooltip } from 'react-leaflet';
 
 export interface ClusterPoint {
   id: number;
@@ -14,7 +14,7 @@ interface Props {
   enabled?: boolean;
 }
 
-const colors = ["#38bdf8", "#f97316", "#22c55e", "#a855f7", "#ef4444", "#14b8a6"];
+const colors = ['#38bdf8', '#f97316', '#22c55e', '#a855f7', '#ef4444', '#14b8a6'];
 
 const ClusterLayer: React.FC<Props> = ({ points, enabled = true }) => {
   if (!enabled) return null;
@@ -23,7 +23,7 @@ const ClusterLayer: React.FC<Props> = ({ points, enabled = true }) => {
     <>
       {points.map((p) => {
         const color = colors[p.cluster_id % colors.length];
-        const radius = 8 + Math.min(6, (p.severity ?? 0));
+        const radius = 8 + Math.min(6, p.severity ?? 0);
         return (
           <CircleMarker
             key={`${p.id}-${p.cluster_id}`}

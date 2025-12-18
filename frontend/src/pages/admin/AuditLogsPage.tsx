@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import api from "../../lib/api";
+import React, { useEffect, useState } from 'react';
+import api from '../../lib/api';
 
 type AuditLog = {
   id: number;
@@ -23,13 +23,15 @@ const AuditLogsPage: React.FC = () => {
   const fetchLogs = async (nextPage = 1) => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/audit", { params: { page: nextPage, pageSize: PAGE_SIZE } });
+      const res = await api.get('/admin/audit', {
+        params: { page: nextPage, pageSize: PAGE_SIZE },
+      });
       setLogs(res.data.logs || []);
       setTotal(res.data.total || 0);
       setPage(nextPage);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Failed to load logs");
+      setError(msg || 'Failed to load logs');
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ const AuditLogsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold">
-                      {log.action} → {log.targetType} #{log.targetId ?? "N/A"}
+                      {log.action} → {log.targetType} #{log.targetId ?? 'N/A'}
                     </p>
                     <p className="text-xs text-slate-400">
                       {log.actor.fullName} ({log.actor.email})

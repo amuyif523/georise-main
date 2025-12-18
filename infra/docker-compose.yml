@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: georisem123
       POSTGRES_DB: georisem_db
     ports:
-      - "54320:5432"
+      - '54320:5432'
     volumes:
       - georise_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U georisem -d georisem_db"]
+      test: ['CMD-SHELL', 'pg_isready -U georisem -d georisem_db']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,11 +22,11 @@ services:
     container_name: georisem-redis
     restart: always
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - georise_redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
       interval: 5s
       timeout: 5s
       retries: 5

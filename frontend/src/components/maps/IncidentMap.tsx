@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from "react-leaflet";
-import type * as GeoJSONType from "geojson";
-import api from "../../lib/api";
+import React, { useEffect, useState } from 'react';
+import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from 'react-leaflet';
+import type * as GeoJSONType from 'geojson';
+import api from '../../lib/api';
 
 type IncidentPoint = {
   id: number;
@@ -26,19 +26,23 @@ const IncidentMap: React.FC = () => {
   const [boundaries, setBoundaries] = useState<Boundary[]>([]);
 
   useEffect(() => {
-    api.get("/gis/incidents").then((res) => setIncidents(res.data || []));
-    api.get("/gis/boundaries").then((res) => setBoundaries(res.data || []));
+    api.get('/gis/incidents').then((res) => setIncidents(res.data || []));
+    api.get('/gis/boundaries').then((res) => setBoundaries(res.data || []));
   }, []);
 
   return (
-    <MapContainer center={[9.03, 38.75]} zoom={12} className="w-full h-[calc(100vh-220px)] rounded-xl overflow-hidden">
+    <MapContainer
+      center={[9.03, 38.75]}
+      zoom={12}
+      className="w-full h-[calc(100vh-220px)] rounded-xl overflow-hidden"
+    >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {boundaries.map((b) => (
         <GeoJSON
           key={b.id}
-          data={typeof b.geometry === "string" ? JSON.parse(b.geometry) : b.geometry}
-          style={{ color: "#38bdf8", weight: 1.5, fillOpacity: 0.05 }}
+          data={typeof b.geometry === 'string' ? JSON.parse(b.geometry) : b.geometry}
+          style={{ color: '#38bdf8', weight: 1.5, fillOpacity: 0.05 }}
         />
       ))}
 
@@ -47,9 +51,9 @@ const IncidentMap: React.FC = () => {
           <Popup>
             <strong>{i.title}</strong>
             <br />
-            {i.category || "Uncategorized"}
+            {i.category || 'Uncategorized'}
             <br />
-            Severity: {i.severityScore ?? i.severityscore ?? "?"}
+            Severity: {i.severityScore ?? i.severityscore ?? '?'}
           </Popup>
         </Marker>
       ))}

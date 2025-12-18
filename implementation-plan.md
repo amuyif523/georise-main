@@ -1,6 +1,7 @@
 # GEORISE Implementation Plan (Sprints 4-8)
 
 ## Sprint 4: Operational Intelligence (Completed)
+
 - [x] **Duplicate Detection Engine**
   - [x] Backend: `findPotentialDuplicates` (PostGIS 200m + Jaccard Similarity).
   - [x] Frontend: Citizen warning in `ReportIncidentWizard`.
@@ -12,6 +13,7 @@
   - [x] Frontend: Agency UI in `IncidentDetailPane` to merge duplicates.
 
 ## Sprint 5: Resource Management & Dispatch (Next)
+
 - [ ] **Unit Management**
   - [ ] Backend: CRUD for `Unit` (Type, Capacity, Status).
   - [ ] Frontend: `UnitsPage` for Agency Admins.
@@ -23,6 +25,7 @@
   - [ ] Frontend: Dispatch recommendation UI improvements.
 
 ## Sprint 6: Analytics & Reporting
+
 - [ ] **Heatmaps**
   - [ ] Backend: Aggregated incident data endpoint.
   - [ ] Frontend: `Leaflet.heat` integration.
@@ -33,6 +36,7 @@
   - [ ] Backend: CSV/PDF export for reports.
 
 ## Sprint 7: Communication & Notifications
+
 - [ ] **In-App Chat**
   - [ ] Backend: Socket.io rooms for Incident-specific chat.
   - [ ] Frontend: Chat UI in `IncidentDetailPane`.
@@ -41,6 +45,7 @@
   - [ ] Frontend: Service Worker notification handling.
 
 ## Sprint 8: System Hardening & Final Polish
+
 - [ ] **Role-Based Access Control (RBAC)**
   - [ ] Audit all endpoints for permission checks.
 - [ ] **Rate Limiting**

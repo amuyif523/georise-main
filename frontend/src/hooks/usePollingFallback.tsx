@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 export const usePollingFallback = (shouldPoll: boolean, fn: () => void, intervalMs = 30000) => {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);

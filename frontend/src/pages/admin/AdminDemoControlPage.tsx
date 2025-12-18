@@ -1,34 +1,35 @@
-import React, { useState } from "react";
-import AppLayout from "../../layouts/AppLayout";
-import api from "../../lib/api";
+import React, { useState } from 'react';
+import AppLayout from '../../layouts/AppLayout';
+import api from '../../lib/api';
 
 const AdminDemoControlPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
 
-  const append = (msg: string) => setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
+  const append = (msg: string) =>
+    setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
 
   const resetDemo = async () => {
-    if (!confirm("This will delete all demo incidents, units, and assignments. Continue?")) return;
+    if (!confirm('This will delete all demo incidents, units, and assignments. Continue?')) return;
     setBusy(true);
     try {
-      await api.post("/demo/reset");
-      append("Demo data cleared.");
+      await api.post('/demo/reset');
+      append('Demo data cleared.');
     } catch {
-      append("Failed to reset demo data.");
+      append('Failed to reset demo data.');
     } finally {
       setBusy(false);
     }
   };
 
   const startDemo = async () => {
-    if (!confirm("Seed demo scenario ADDIS_SCENARIO_1 now?")) return;
+    if (!confirm('Seed demo scenario ADDIS_SCENARIO_1 now?')) return;
     setBusy(true);
     try {
-      await api.post("/demo/start");
-      append("Demo scenario seeded (Addis Scenario 1).");
+      await api.post('/demo/start');
+      append('Demo scenario seeded (Addis Scenario 1).');
     } catch {
-      append("Failed to seed scenario.");
+      append('Failed to seed scenario.');
     } finally {
       setBusy(false);
     }
@@ -43,10 +44,18 @@ const AdminDemoControlPage: React.FC = () => {
             Use before your viva to reset and seed a fresh, realistic dataset.
           </p>
           <div className="space-y-3">
-            <button className={`btn btn-outline btn-error w-full ${busy ? "loading" : ""}`} onClick={resetDemo} disabled={busy}>
+            <button
+              className={`btn btn-outline btn-error w-full ${busy ? 'loading' : ''}`}
+              onClick={resetDemo}
+              disabled={busy}
+            >
               Reset Demo Data
             </button>
-            <button className={`btn btn-primary w-full ${busy ? "loading" : ""}`} onClick={startDemo} disabled={busy}>
+            <button
+              className={`btn btn-primary w-full ${busy ? 'loading' : ''}`}
+              onClick={startDemo}
+              disabled={busy}
+            >
               Seed Addis Scenario 1
             </button>
           </div>

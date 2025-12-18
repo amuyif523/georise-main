@@ -1,7 +1,7 @@
-import { get, set } from "idb-keyval";
-import api from "../lib/api";
+import { get, set } from 'idb-keyval';
+import api from '../lib/api';
 
-const QUEUE_KEY = "offline_incident_queue";
+const QUEUE_KEY = 'offline_incident_queue';
 
 export interface IncidentPayload {
   title?: string;
@@ -46,11 +46,11 @@ export async function syncIncidentQueue() {
 
   for (const item of queue) {
     try {
-      const res = await api.post("/incidents", item.payload);
+      const res = await api.post('/incidents', item.payload);
       results.push({ tempId: item.tempId, success: true, serverId: res.data.id });
       await clearIncidentFromQueue(item.tempId);
     } catch (err) {
-      console.error("Failed to sync incident:", item.tempId, err);
+      console.error('Failed to sync incident:', item.tempId, err);
       results.push({ tempId: item.tempId, success: false });
     }
   }

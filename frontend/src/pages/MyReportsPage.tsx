@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { MapPin, Shield, Sparkles } from "lucide-react";
-import api from "../lib/api";
-import { severityBadgeClass, severityLabel } from "../utils/severity";
-import { getSocket } from "../lib/socket";
-import AppLayout from "../layouts/AppLayout";
+import React, { useEffect, useState } from 'react';
+import { MapPin, Shield, Sparkles } from 'lucide-react';
+import api from '../lib/api';
+import { severityBadgeClass, severityLabel } from '../utils/severity';
+import { getSocket } from '../lib/socket';
+import AppLayout from '../layouts/AppLayout';
 
 type ActivityLog = {
   id: string;
-  type: "STATUS_CHANGE" | "COMMENT" | "DISPATCH" | "ASSIGNMENT" | "SYSTEM";
+  type: 'STATUS_CHANGE' | 'COMMENT' | 'DISPATCH' | 'ASSIGNMENT' | 'SYSTEM';
   message: string;
   createdAt: string;
 };
@@ -33,19 +33,19 @@ type Incident = {
 
 const statusColor = (status: string) => {
   switch (status) {
-    case "RECEIVED":
-      return "badge badge-info";
-    case "UNDER_REVIEW":
-      return "badge badge-warning";
-    case "ASSIGNED":
-    case "RESPONDING":
-      return "badge badge-primary";
-    case "RESOLVED":
-      return "badge badge-success";
-    case "CANCELLED":
-      return "badge badge-neutral";
+    case 'RECEIVED':
+      return 'badge badge-info';
+    case 'UNDER_REVIEW':
+      return 'badge badge-warning';
+    case 'ASSIGNED':
+    case 'RESPONDING':
+      return 'badge badge-primary';
+    case 'RESOLVED':
+      return 'badge badge-success';
+    case 'CANCELLED':
+      return 'badge badge-neutral';
     default:
-      return "badge badge-ghost";
+      return 'badge badge-ghost';
   }
 };
 
@@ -61,11 +61,12 @@ const MyReportsPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get("/incidents/my");
+        const res = await api.get('/incidents/my');
         setIncidents(res.data.incidents || []);
       } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-        setError(msg || "Failed to load incidents");
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+        setError(msg || 'Failed to load incidents');
       } finally {
         setLoading(false);
       }
@@ -78,14 +79,19 @@ const MyReportsPage: React.FC = () => {
         setIncidents((prev) =>
           prev.map((r) =>
             r.id === inc.id
-              ? { ...r, status: inc.status, severityScore: inc.severityScore, category: inc.category }
-              : r
-          )
+              ? {
+                  ...r,
+                  status: inc.status,
+                  severityScore: inc.severityScore,
+                  category: inc.category,
+                }
+              : r,
+          ),
         );
       };
-      socket.on("incident:updated", handler);
+      socket.on('incident:updated', handler);
       return () => {
-        socket.off("incident:updated", handler);
+        socket.off('incident:updated', handler);
       };
     }
   }, []);
@@ -96,12 +102,12 @@ const MyReportsPage: React.FC = () => {
       const res = await api.get(`/incidents/${incidentId}/timeline`);
       const logs: ActivityLog[] = res.data.logs || [];
       setIncidents((prev) =>
-        prev.map((i) => (i.id === incidentId ? { ...i, timeline: logs.reverse() } : i))
+        prev.map((i) => (i.id === incidentId ? { ...i, timeline: logs.reverse() } : i)),
       );
       setOpenId(incidentId);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || "Failed to load timeline");
+      setError(msg || 'Failed to load timeline');
     } finally {
       setLoadingTimeline(null);
     }
@@ -139,7 +145,9 @@ const MyReportsPage: React.FC = () => {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">{incident.title}</h3>
-                  <p className="text-slate-500 text-sm">{new Date(incident.createdAt).toLocaleString()}</p>
+                  <p className="text-slate-500 text-sm">
+                    {new Date(incident.createdAt).toLocaleString()}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <span className={statusColor(incident.status)}>{incident.status}</span>
@@ -153,16 +161,19 @@ const MyReportsPage: React.FC = () => {
                 <MapPin size={16} className="text-blue-500" />
                 {incident.latitude && incident.longitude
                   ? `${incident.latitude.toFixed(3)}, ${incident.longitude.toFixed(3)}`
-                  : "No location set"}
+                  : 'No location set'}
               </div>
               <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
                 <Shield size={16} className="text-amber-500" />
                 <span>
-                  Category: {incident.category ?? "Pending"} • AI severity: {severityLabel(incident.severityScore)}
+                  Category: {incident.category ?? 'Pending'} • AI severity:{' '}
+                  {severityLabel(incident.severityScore)}
                 </span>
               </div>
               {incident.aiOutput?.summary && (
-                <div className="mt-2 text-xs text-slate-500">AI summary: {incident.aiOutput.summary}</div>
+                <div className="mt-2 text-xs text-slate-500">
+                  AI summary: {incident.aiOutput.summary}
+                </div>
               )}
               <div className="mt-2 text-xs text-slate-500">
                 ID: {incident.id} • Created: {formatDate(incident.createdAt)}
@@ -170,10 +181,10 @@ const MyReportsPage: React.FC = () => {
 
               <div className="mt-3">
                 <button
-                  className={`btn btn-xs btn-outline ${loadingTimeline === incident.id ? "loading" : ""}`}
+                  className={`btn btn-xs btn-outline ${loadingTimeline === incident.id ? 'loading' : ''}`}
                   onClick={() => loadTimeline(incident.id)}
                 >
-                  {openId === incident.id ? "Refresh timeline" : "View updates"}
+                  {openId === incident.id ? 'Refresh timeline' : 'View updates'}
                 </button>
               </div>
 
@@ -187,7 +198,9 @@ const MyReportsPage: React.FC = () => {
                         className="text-sm p-2 rounded-md bg-white border border-slate-200"
                       >
                         <p className="text-slate-900">{log.message}</p>
-                        <p className="text-[11px] text-slate-500">{new Date(log.createdAt).toLocaleString()}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </p>
                       </div>
                     ))
                   ) : (

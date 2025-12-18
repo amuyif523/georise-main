@@ -1,5 +1,5 @@
-import React from "react";
-import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import React from 'react';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 const NetworkBanner: React.FC = () => {
   const online = useNetworkStatus();

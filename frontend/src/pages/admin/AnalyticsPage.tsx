@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Chart as ChartJS,
   LineElement,
@@ -9,12 +9,21 @@ import {
   Legend,
   PointElement,
   ArcElement,
-} from "chart.js";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
-import AppLayout from "../../layouts/AppLayout";
-import api from "../../lib/api";
+} from 'chart.js';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import AppLayout from '../../layouts/AppLayout';
+import api from '../../lib/api';
 
-ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend, PointElement, ArcElement);
+ChartJS.register(
+  LineElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+  PointElement,
+  ArcElement,
+);
 
 type OverviewResponse = {
   totalIncidents: number;
@@ -27,15 +36,23 @@ type OverviewResponse = {
 
 type ResponseTimeData = { bucket: string; count: number }[];
 type HeatmapData = { day_of_week: number; hour_of_day: number; count: number }[];
-type UtilizationData = { agency_name: string; incident_count: number; avg_handling_time_mins: number }[];
+type UtilizationData = {
+  agency_name: string;
+  incident_count: number;
+  avg_handling_time_mins: number;
+}[];
 
 const ranges = [
-  { label: "7d", days: 7 },
-  { label: "30d", days: 30 },
-  { label: "90d", days: 90 },
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 },
 ];
 
-const KPICard: React.FC<{ label: string; value: string | number; subtitle?: string }> = ({ label, value, subtitle }) => (
+const KPICard: React.FC<{ label: string; value: string | number; subtitle?: string }> = ({
+  label,
+  value,
+  subtitle,
+}) => (
   <div className="cyber-card">
     <p className="text-xs text-slate-400 uppercase">{label}</p>
     <p className="text-2xl font-bold text-cyan-200">{value}</p>
@@ -49,7 +66,7 @@ const AnalyticsPage: React.FC = () => {
   const [responseTimeData, setResponseTimeData] = useState<ResponseTimeData | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData | null>(null);
   const [utilizationData, setUtilizationData] = useState<UtilizationData | null>(null);
-  
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -62,19 +79,20 @@ const AnalyticsPage: React.FC = () => {
       setError(null);
       try {
         const [overviewRes, responseRes, heatmapRes, utilRes] = await Promise.all([
-          api.get("/analytics/overview/admin", { params: { from, to } }),
-          api.get("/analytics/distribution/response-time", { params: { from, to } }),
-          api.get("/analytics/heatmap/time-of-day", { params: { from, to } }),
-          api.get("/analytics/utilization/resource", { params: { from, to } })
+          api.get('/analytics/overview/admin', { params: { from, to } }),
+          api.get('/analytics/distribution/response-time', { params: { from, to } }),
+          api.get('/analytics/heatmap/time-of-day', { params: { from, to } }),
+          api.get('/analytics/utilization/resource', { params: { from, to } }),
         ]);
-        
+
         setData(overviewRes.data);
         setResponseTimeData(responseRes.data);
         setHeatmapData(heatmapRes.data);
         setUtilizationData(utilRes.data);
       } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-        setError(msg || "Failed to load analytics");
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+        setError(msg || 'Failed to load analytics');
       } finally {
         setLoading(false);
       }
@@ -88,10 +106,10 @@ const AnalyticsPage: React.FC = () => {
       labels: data.byDay.map((d) => new Date(d.day).toLocaleDateString()),
       datasets: [
         {
-          label: "Incidents per day",
+          label: 'Incidents per day',
           data: data.byDay.map((d) => d.count),
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59,130,246,0.2)",
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.2)',
           tension: 0.35,
         },
       ],
@@ -104,9 +122,9 @@ const AnalyticsPage: React.FC = () => {
       labels: data.byStatus.map((s) => s.status),
       datasets: [
         {
-          label: "Incidents",
+          label: 'Incidents',
           data: data.byStatus.map((s) => s.count),
-          backgroundColor: "rgba(244,114,182,0.6)",
+          backgroundColor: 'rgba(244,114,182,0.6)',
         },
       ],
     };
@@ -119,7 +137,7 @@ const AnalyticsPage: React.FC = () => {
       datasets: [
         {
           data: data.byCategory.map((c) => c.count),
-          backgroundColor: ["#3B82F6", "#F97316", "#22C55E", "#E11D48", "#A855F7", "#0EA5E9"],
+          backgroundColor: ['#3B82F6', '#F97316', '#22C55E', '#E11D48', '#A855F7', '#0EA5E9'],
         },
       ],
     };
@@ -128,22 +146,24 @@ const AnalyticsPage: React.FC = () => {
   const responseTimeChart = useMemo(() => {
     if (!responseTimeData?.length) return null;
     return {
-      labels: responseTimeData.map(d => d.bucket),
-      datasets: [{
-        label: "Incidents",
-        data: responseTimeData.map(d => d.count),
-        backgroundColor: "#10b981"
-      }]
+      labels: responseTimeData.map((d) => d.bucket),
+      datasets: [
+        {
+          label: 'Incidents',
+          data: responseTimeData.map((d) => d.count),
+          backgroundColor: '#10b981',
+        },
+      ],
     };
   }, [responseTimeData]);
 
   const heatmapChart = useMemo(() => {
     if (!heatmapData?.length) return null;
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const datasets = days.map((day, dayIndex) => {
       // Create 24 hour buckets for this day
       const data = Array(24).fill(0);
-      heatmapData.forEach(d => {
+      heatmapData.forEach((d) => {
         if (d.day_of_week === dayIndex) {
           data[d.hour_of_day] = d.count;
         }
@@ -152,33 +172,33 @@ const AnalyticsPage: React.FC = () => {
         label: day,
         data,
         borderColor: `hsl(${dayIndex * 50}, 70%, 50%)`,
-        tension: 0.4
+        tension: 0.4,
       };
     });
 
     return {
       labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-      datasets
+      datasets,
     };
   }, [heatmapData]);
 
   const utilizationChart = useMemo(() => {
     if (!utilizationData?.length) return null;
     return {
-      labels: utilizationData.map(d => d.agency_name),
+      labels: utilizationData.map((d) => d.agency_name),
       datasets: [
         {
-          label: "Incidents Handled",
-          data: utilizationData.map(d => d.incident_count),
-          backgroundColor: "#8b5cf6"
+          label: 'Incidents Handled',
+          data: utilizationData.map((d) => d.incident_count),
+          backgroundColor: '#8b5cf6',
         },
         {
-          label: "Avg Handling Time (min)",
-          data: utilizationData.map(d => d.avg_handling_time_mins),
-          backgroundColor: "#f59e0b",
-          yAxisID: 'y1'
-        }
-      ]
+          label: 'Avg Handling Time (min)',
+          data: utilizationData.map((d) => d.avg_handling_time_mins),
+          backgroundColor: '#f59e0b',
+          yAxisID: 'y1',
+        },
+      ],
     };
   }, [utilizationData]);
 
@@ -194,7 +214,7 @@ const AnalyticsPage: React.FC = () => {
                 key={r.days}
                 onClick={() => setRange(r.days)}
                 className={`px-3 py-1 rounded text-sm ${
-                  range === r.days ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200"
+                  range === r.days ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-200'
                 }`}
               >
                 {r.label}
@@ -204,21 +224,31 @@ const AnalyticsPage: React.FC = () => {
         </div>
 
         {error && <div className="alert alert-error text-sm">{error}</div>}
-        {loading && <div className="text-slate-400 text-sm animate-pulse">Loading analytics data...</div>}
+        {loading && (
+          <div className="text-slate-400 text-sm animate-pulse">Loading analytics data...</div>
+        )}
 
         {data && (
           <>
             {/* KPI Cards */}
             <div className="grid md:grid-cols-3 gap-4">
-              <KPICard label="Total Incidents" value={data.totalIncidents} subtitle="Selected range" />
+              <KPICard
+                label="Total Incidents"
+                value={data.totalIncidents}
+                subtitle="Selected range"
+              />
               <KPICard
                 label="Avg Response Time"
-                value={data.avgResponseMinutes ? `${data.avgResponseMinutes.toFixed(1)} min` : "N/A"}
+                value={
+                  data.avgResponseMinutes ? `${data.avgResponseMinutes.toFixed(1)} min` : 'N/A'
+                }
                 subtitle="Created → Arrived"
               />
               <KPICard
                 label="Avg Resolution Time"
-                value={data.avgResolutionMinutes ? `${data.avgResolutionMinutes.toFixed(1)} min` : "N/A"}
+                value={
+                  data.avgResolutionMinutes ? `${data.avgResolutionMinutes.toFixed(1)} min` : 'N/A'
+                }
                 subtitle="Created → Completed"
               />
             </div>
@@ -228,13 +258,21 @@ const AnalyticsPage: React.FC = () => {
               <div className="cyber-card">
                 <p className="text-sm text-slate-300 mb-4 font-bold">Incident Volume Trend</p>
                 <div className="h-64">
-                  {trendData ? <Line data={trendData} options={{ maintainAspectRatio: false }} /> : <p className="text-slate-400 text-sm">No data</p>}
+                  {trendData ? (
+                    <Line data={trendData} options={{ maintainAspectRatio: false }} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
               <div className="cyber-card">
                 <p className="text-sm text-slate-300 mb-4 font-bold">Status Distribution</p>
                 <div className="h-64">
-                  {statusBar ? <Bar data={statusBar} options={{ maintainAspectRatio: false }} /> : <p className="text-slate-400 text-sm">No data</p>}
+                  {statusBar ? (
+                    <Bar data={statusBar} options={{ maintainAspectRatio: false }} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -244,13 +282,23 @@ const AnalyticsPage: React.FC = () => {
               <div className="cyber-card">
                 <p className="text-sm text-slate-300 mb-4 font-bold">Response Time Distribution</p>
                 <div className="h-64">
-                  {responseTimeChart ? <Bar data={responseTimeChart} options={{ maintainAspectRatio: false }} /> : <p className="text-slate-400 text-sm">No data</p>}
+                  {responseTimeChart ? (
+                    <Bar data={responseTimeChart} options={{ maintainAspectRatio: false }} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
               <div className="cyber-card">
-                <p className="text-sm text-slate-300 mb-4 font-bold">Time of Day Heatmap (Incidents)</p>
+                <p className="text-sm text-slate-300 mb-4 font-bold">
+                  Time of Day Heatmap (Incidents)
+                </p>
                 <div className="h-64">
-                  {heatmapChart ? <Line data={heatmapChart} options={{ maintainAspectRatio: false }} /> : <p className="text-slate-400 text-sm">No data</p>}
+                  {heatmapChart ? (
+                    <Line data={heatmapChart} options={{ maintainAspectRatio: false }} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -261,23 +309,34 @@ const AnalyticsPage: React.FC = () => {
                 <p className="text-sm text-slate-300 mb-4 font-bold">Agency Resource Utilization</p>
                 <div className="h-64">
                   {utilizationChart ? (
-                    <Bar 
-                      data={utilizationChart} 
-                      options={{ 
+                    <Bar
+                      data={utilizationChart}
+                      options={{
                         maintainAspectRatio: false,
                         scales: {
                           y: { type: 'linear', display: true, position: 'left' },
-                          y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
-                        }
-                      }} 
+                          y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                          },
+                        },
+                      }}
                     />
-                  ) : <p className="text-slate-400 text-sm">No data</p>}
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
               <div className="cyber-card">
                 <p className="text-sm text-slate-300 mb-4 font-bold">Category Breakdown</p>
                 <div className="h-64 flex justify-center">
-                  {categoryPie ? <Doughnut data={categoryPie} options={{ maintainAspectRatio: false }} /> : <p className="text-slate-400 text-sm">No data</p>}
+                  {categoryPie ? (
+                    <Doughnut data={categoryPie} options={{ maintainAspectRatio: false }} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
                 </div>
               </div>
             </div>

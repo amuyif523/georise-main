@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -7,8 +7,8 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +47,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
             <input
               type="email"
               value={email}
@@ -61,9 +59,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
             <input
               type="password"
               value={password}
@@ -85,7 +81,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
                 Authenticating...
               </span>
             ) : (
-              "Sign In"
+              'Sign In'
             )}
           </button>
         </form>

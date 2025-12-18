@@ -1,4 +1,4 @@
-import { getIO } from "../socket";
+import { getIO } from '../socket';
 
 export interface IncidentPayload {
   id: number;
@@ -26,24 +26,26 @@ export const toIncidentPayload = (incident: any): IncidentPayload => ({
   longitude: incident.longitude,
   reporterId: incident.reporterId,
   assignedAgencyId: incident.assignedAgencyId ?? null,
-  createdAt: incident.createdAt instanceof Date ? incident.createdAt.toISOString() : incident.createdAt,
-  updatedAt: incident.updatedAt instanceof Date ? incident.updatedAt.toISOString() : incident.updatedAt,
+  createdAt:
+    incident.createdAt instanceof Date ? incident.createdAt.toISOString() : incident.createdAt,
+  updatedAt:
+    incident.updatedAt instanceof Date ? incident.updatedAt.toISOString() : incident.updatedAt,
 });
 
 export const emitIncidentCreated = (incident: IncidentPayload) => {
   const io = getIO();
-  io.to(`user:${incident.reporterId}`).emit("incident:created", incident);
+  io.to(`user:${incident.reporterId}`).emit('incident:created', incident);
   if (incident.assignedAgencyId) {
-    io.to(`agency:${incident.assignedAgencyId}`).emit("incident:created", incident);
+    io.to(`agency:${incident.assignedAgencyId}`).emit('incident:created', incident);
   }
-  io.to("role:ADMIN").emit("incident:created", incident);
+  io.to('role:ADMIN').emit('incident:created', incident);
 };
 
 export const emitIncidentUpdated = (incident: IncidentPayload) => {
   const io = getIO();
-  io.to(`user:${incident.reporterId}`).emit("incident:updated", incident);
+  io.to(`user:${incident.reporterId}`).emit('incident:updated', incident);
   if (incident.assignedAgencyId) {
-    io.to(`agency:${incident.assignedAgencyId}`).emit("incident:updated", incident);
+    io.to(`agency:${incident.assignedAgencyId}`).emit('incident:updated', incident);
   }
-  io.to("role:ADMIN").emit("incident:updated", incident);
+  io.to('role:ADMIN').emit('incident:updated', incident);
 };

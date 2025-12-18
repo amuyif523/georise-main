@@ -1,13 +1,13 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import { Map, MessageSquare, ShieldCheck, AlertTriangle, Construction } from "lucide-react";
-import api from "../lib/api";
-import { useNetworkStatus } from "../hooks/useNetworkStatus";
-import { addToIncidentQueue } from "../offline/incidentQueue";
-import { useSystem } from "../context/SystemContext";
-import { useTranslation } from "react-i18next";
+import React, { useMemo, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import { Map, MessageSquare, ShieldCheck, AlertTriangle, Construction } from 'lucide-react';
+import api from '../lib/api';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { addToIncidentQueue } from '../offline/incidentQueue';
+import { useSystem } from '../context/SystemContext';
+import { useTranslation } from 'react-i18next';
 
 type Step = 1 | 2 | 3;
 
@@ -23,9 +23,9 @@ type WizardForm = {
 const defaultCenter: [number, number] = [9.03, 38.74];
 
 const wizardIcon = new L.Icon.Default({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
 const StepPill: React.FC<{ active: boolean; label: string; icon: React.ReactNode }> = ({
@@ -35,7 +35,7 @@ const StepPill: React.FC<{ active: boolean; label: string; icon: React.ReactNode
 }) => (
   <div
     className={`flex items-center gap-2 px-4 py-2 rounded-full border ${
-      active ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-slate-700 text-slate-400"
+      active ? 'border-cyan-400 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 text-slate-400'
     }`}
   >
     <span className="w-5 h-5 text-cyan-300">{icon}</span>
@@ -62,64 +62,70 @@ const Step1Describe: React.FC<{
 }> = ({ form, setForm, onNext, error }) => {
   const { crisisMode } = useSystem();
   const { t } = useTranslation();
-  
+
   return (
-  <div className="space-y-4">
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="text-sm text-cyan-200">Step 1</p>
-        <h2 className="text-2xl font-bold text-white">{t("incident.report_new")}</h2>
-        <p className="text-slate-400 text-sm mt-1">
-          Add a clear title and description so dispatch can understand quickly.
-        </p>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-cyan-200">Step 1</p>
+          <h2 className="text-2xl font-bold text-white">{t('incident.report_new')}</h2>
+          <p className="text-slate-400 text-sm mt-1">
+            Add a clear title and description so dispatch can understand quickly.
+          </p>
+        </div>
+      </div>
+      {crisisMode && (
+        <div className="alert alert-error text-sm font-bold animate-pulse">
+          <AlertTriangle size={20} />
+          <span>
+            CRISIS MODE ACTIVE: Please only report life-threatening emergencies. Minor issues will
+            be deprioritized.
+          </span>
+        </div>
+      )}
+      {error && <div className="alert alert-error text-sm">{error}</div>}
+      <div className="space-y-3">
+        <div>
+          <label className="label">
+            <span className="label-text text-slate-200">{t('incident.type')} / Title</span>
+          </label>
+          <input
+            className="input input-bordered w-full bg-slate-900 border-slate-700 text-white"
+            value={form.title}
+            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="e.g. እሳት በወሎ ላይ"
+          />
+        </div>
+        <div>
+          <label className="label">
+            <span className="label-text text-slate-200">{t('incident.description')}</span>
+          </label>
+          <textarea
+            className="textarea textarea-bordered w-full min-h-[120px] bg-slate-900 border-slate-700 text-white"
+            value={form.description}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
+            }
+            placeholder="Add key details, language can be Amharic/English."
+          />
+        </div>
+      </div>
+      <div className="flex justify-between items-center pt-4">
+        <Link
+          to="/citizen/report-hazard"
+          className="text-sm text-slate-400 hover:text-warning flex items-center gap-2 transition-colors"
+        >
+          <Construction size={16} />
+          Report Infrastructure Hazard
+        </Link>
+        <button className="btn btn-primary" onClick={onNext}>
+          Continue to location
+        </button>
       </div>
     </div>
-    {crisisMode && (
-      <div className="alert alert-error text-sm font-bold animate-pulse">
-        <AlertTriangle size={20} />
-        <span>CRISIS MODE ACTIVE: Please only report life-threatening emergencies. Minor issues will be deprioritized.</span>
-      </div>
-    )}
-    {error && <div className="alert alert-error text-sm">{error}</div>}
-    <div className="space-y-3">
-      <div>
-        <label className="label">
-          <span className="label-text text-slate-200">{t("incident.type")} / Title</span>
-        </label>
-        <input
-          className="input input-bordered w-full bg-slate-900 border-slate-700 text-white"
-          value={form.title}
-          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          placeholder="e.g. እሳት በወሎ ላይ"
-        />
-      </div>
-      <div>
-        <label className="label">
-          <span className="label-text text-slate-200">{t("incident.description")}</span>
-        </label>
-        <textarea
-          className="textarea textarea-bordered w-full min-h-[120px] bg-slate-900 border-slate-700 text-white"
-          value={form.description}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              description: e.target.value,
-            }))
-          }
-          placeholder="Add key details, language can be Amharic/English."
-        />
-      </div>
-    </div>
-    <div className="flex justify-between items-center pt-4">
-      <Link to="/citizen/report-hazard" className="text-sm text-slate-400 hover:text-warning flex items-center gap-2 transition-colors">
-        <Construction size={16} />
-        Report Infrastructure Hazard
-      </Link>
-      <button className="btn btn-primary" onClick={onNext}>
-        Continue to location
-      </button>
-    </div>
-  </div>
   );
 };
 
@@ -141,7 +147,7 @@ const Step2Location: React.FC<{
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-cyan-200">Step 2</p>
-          <h2 className="text-2xl font-bold text-white">{t("incident.location")}</h2>
+          <h2 className="text-2xl font-bold text-white">{t('incident.location')}</h2>
           <p className="text-slate-400 text-sm mt-1">
             Click on the map to pin the approximate spot.
           </p>
@@ -149,17 +155,10 @@ const Step2Location: React.FC<{
       </div>
       {error && <div className="alert alert-error text-sm">{error}</div>}
       <div className="rounded-xl border border-slate-800 overflow-hidden shadow-lg shadow-cyan-500/10">
-        <MapContainer
-          center={center}
-          zoom={13}
-          className="w-full h-80"
-          scrollWheelZoom
-        >
+        <MapContainer center={center} zoom={13} className="w-full h-80" scrollWheelZoom>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <LocationSelector
-            onSelect={(lat, lng) =>
-              setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))
-            }
+            onSelect={(lat, lng) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
           />
           {form.latitude && form.longitude && (
             <Marker position={[form.latitude, form.longitude]} icon={wizardIcon} />
@@ -169,18 +168,20 @@ const Step2Location: React.FC<{
       <p className="text-sm text-slate-300">
         {form.latitude && form.longitude
           ? `Selected location: ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
-          : "Click anywhere on the map to set the incident location."}
+          : 'Click anywhere on the map to set the incident location.'}
       </p>
-      
+
       <div className="form-control">
         <label className="label cursor-pointer justify-start gap-3">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             className="checkbox checkbox-primary"
             checked={form.notAtScene || false}
-            onChange={(e) => setForm(prev => ({ ...prev, notAtScene: e.target.checked }))}
+            onChange={(e) => setForm((prev) => ({ ...prev, notAtScene: e.target.checked }))}
           />
-          <span className="label-text text-slate-200">I am not at the scene (reduces location confidence)</span>
+          <span className="label-text text-slate-200">
+            I am not at the scene (reduces location confidence)
+          </span>
         </label>
       </div>
 
@@ -231,25 +232,27 @@ const Step3Review: React.FC<{
     <div className="grid gap-4 md:grid-cols-2">
       <div className="p-4 rounded-lg border border-slate-800 bg-slate-900/60">
         <h3 className="text-lg font-semibold text-white mb-2">Summary</h3>
-        <p className="text-sm text-cyan-200">{form.title || "No title"}</p>
-        <p className="text-sm text-slate-300 mt-2">{form.description || "No description"}</p>
+        <p className="text-sm text-cyan-200">{form.title || 'No title'}</p>
+        <p className="text-sm text-slate-300 mt-2">{form.description || 'No description'}</p>
       </div>
       <div className="p-4 rounded-lg border border-slate-800 bg-slate-900/60">
         <h3 className="text-lg font-semibold text-white mb-2">Location</h3>
         <p className="text-sm text-slate-300">
           {form.latitude && form.longitude
             ? `${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
-            : "No location set"}
+            : 'No location set'}
         </p>
-        {form.image && <p className="text-xs text-slate-500 mt-2">Image attached: {form.image.name}</p>}
+        {form.image && (
+          <p className="text-xs text-slate-500 mt-2">Image attached: {form.image.name}</p>
+        )}
       </div>
     </div>
     <div className="flex justify-between">
       <button className="btn btn-ghost" onClick={onBack}>
         Back
       </button>
-      <button className={`btn btn-primary ${submitting ? "loading" : ""}`} onClick={onSubmit}>
-        {submitting ? "Submitting..." : "Submit incident"}
+      <button className={`btn btn-primary ${submitting ? 'loading' : ''}`} onClick={onSubmit}>
+        {submitting ? 'Submitting...' : 'Submit incident'}
       </button>
     </div>
   </div>
@@ -257,7 +260,7 @@ const Step3Review: React.FC<{
 
 const ReportIncidentWizard: React.FC = () => {
   const [step, setStep] = useState<Step>(1);
-  const [form, setForm] = useState<WizardForm>({ title: "", description: "" });
+  const [form, setForm] = useState<WizardForm>({ title: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -266,7 +269,7 @@ const ReportIncidentWizard: React.FC = () => {
 
   const handleNextFromStep1 = () => {
     if (!form.title || !form.description) {
-      setError("Please provide a title and description.");
+      setError('Please provide a title and description.');
       return;
     }
     setError(null);
@@ -275,7 +278,7 @@ const ReportIncidentWizard: React.FC = () => {
 
   const handleNextFromStep2 = async () => {
     if (form.latitude == null || form.longitude == null) {
-      setError("Please select a location on the map.");
+      setError('Please select a location on the map.');
       return;
     }
     setError(null);
@@ -283,7 +286,7 @@ const ReportIncidentWizard: React.FC = () => {
     // Check for duplicates
     if (online) {
       try {
-        const res = await api.get("/incidents/duplicates", {
+        const res = await api.get('/incidents/duplicates', {
           params: {
             lat: form.latitude,
             lng: form.longitude,
@@ -297,7 +300,7 @@ const ReportIncidentWizard: React.FC = () => {
           if (!window.confirm(confirmMsg)) return;
         }
       } catch (err) {
-        console.warn("Failed to check duplicates", err);
+        console.warn('Failed to check duplicates', err);
       }
     }
 
@@ -310,29 +313,31 @@ const ReportIncidentWizard: React.FC = () => {
       setError(null);
       const payload = {
         ...form,
-        isReporterAtScene: !form.notAtScene
+        isReporterAtScene: !form.notAtScene,
       };
       if (online) {
-        await api.post("/incidents", payload);
-        navigate("/citizen/my-reports");
+        await api.post('/incidents', payload);
+        navigate('/citizen/my-reports');
       } else {
         await addToIncidentQueue(payload);
-        setInfo("You are offline. Your report has been queued and will auto-send when back online.");
+        setInfo(
+          'You are offline. Your report has been queued and will auto-send when back online.',
+        );
       }
     } catch {
       await addToIncidentQueue(form);
-      setInfo("Network issue. Your report has been queued and will sync when online.");
+      setInfo('Network issue. Your report has been queued and will sync when online.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isMobile = typeof window !== "undefined" ? window.innerWidth < 768 : false;
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   return (
     <div
       className={`min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12 ${
-        isMobile ? "fixed inset-0 overflow-y-auto z-30 bg-[#0A0F1A]/95" : ""
+        isMobile ? 'fixed inset-0 overflow-y-auto z-30 bg-[#0A0F1A]/95' : ''
       }`}
     >
       {!navigator.onLine && (
@@ -352,7 +357,12 @@ const ReportIncidentWizard: React.FC = () => {
         <div className="mt-8 p-6 bg-[#0D1117] border border-slate-800 rounded-xl shadow-2xl shadow-cyan-500/10">
           {info && <div className="alert alert-info text-sm mb-3">{info}</div>}
           {step === 1 && (
-            <Step1Describe form={form} setForm={setForm} onNext={handleNextFromStep1} error={error} />
+            <Step1Describe
+              form={form}
+              setForm={setForm}
+              onNext={handleNextFromStep1}
+              error={error}
+            />
           )}
           {step === 2 && (
             <Step2Location
