@@ -275,8 +275,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Simulate responder movement for demos.
 - **Tasks:**
-  - [ ] **Backend:** Add a demo job to move responders along a route.
-  - [ ] **Frontend:** Add a toggle to start/stop simulation.
+  - [x] **Backend:** Add a demo job to move responders along a route.
+  - [x] **Frontend:** Add a toggle to start/stop simulation.
 
 ---
 

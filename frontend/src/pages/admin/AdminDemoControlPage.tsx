@@ -5,9 +5,23 @@ import api from '../../lib/api';
 const AdminDemoControlPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<string[]>([]);
+  const [simRunning, setSimRunning] = useState(false);
 
   const append = (msg: string) =>
     setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
+
+  const refreshSimStatus = async () => {
+    try {
+      const res = await api.get('/demo/simulation/status');
+      setSimRunning(res.data.running);
+    } catch {
+      // ignore
+    }
+  };
+
+  React.useEffect(() => {
+    refreshSimStatus();
+  }, []);
 
   const resetDemo = async () => {
     if (!confirm('This will delete all demo incidents, units, and assignments. Continue?')) return;
@@ -35,6 +49,25 @@ const AdminDemoControlPage: React.FC = () => {
     }
   };
 
+  const toggleSimulation = async () => {
+    setBusy(true);
+    try {
+      if (simRunning) {
+        await api.post('/demo/simulation/stop');
+        setSimRunning(false);
+        append('Responder simulation stopped.');
+      } else {
+        await api.post('/demo/simulation/start');
+        setSimRunning(true);
+        append('Responder simulation started.');
+      }
+    } catch {
+      append('Failed to toggle simulation.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="grid md:grid-cols-2 gap-6">
@@ -57,6 +90,13 @@ const AdminDemoControlPage: React.FC = () => {
               disabled={busy}
             >
               Seed Addis Scenario 1
+            </button>
+            <button
+              className={`btn w-full ${simRunning ? 'btn-warning' : 'btn-success'} ${busy ? 'loading' : ''}`}
+              onClick={toggleSimulation}
+              disabled={busy}
+            >
+              {simRunning ? 'Stop Responder Simulation' : 'Start Responder Simulation'}
             </button>
           </div>
           <div className="mt-6 text-xs text-slate-400">
