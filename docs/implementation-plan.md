@@ -267,9 +267,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Add unit and integration coverage for core flows.
 - **Tasks:**
-  - [ ] **Backend:** Add unit/integration tests for auth, incidents, dispatch.
-  - [ ] **Frontend:** Add UI tests for critical pages (reporting, admin).
-  - [ ] **CI:** Wire tests into a repeatable script.
+  - [x] **Backend:** Add unit/integration tests for auth, incidents, dispatch.
+  - [x] **Frontend:** Add UI tests for critical pages (reporting, admin).
+  - [x] **CI:** Wire tests into a repeatable script.
 
 ### 9.4 Responder Simulation (Feature 3.7)
 
