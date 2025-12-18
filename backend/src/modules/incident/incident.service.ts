@@ -15,9 +15,18 @@ import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || 'http://localhost:8001/classify';
+const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
 
 export class IncidentService {
   async createIncident(data: CreateIncidentRequest, reporterId: number) {
+    const crisisConfig = await prisma.systemConfig.findUnique({ where: { key: 'CRISIS_MODE' } });
+    const crisisMode = crisisConfig?.value === 'true';
+    const category = data.category?.toUpperCase();
+
+    if (crisisMode && category && LOW_PRIORITY_CATEGORIES.includes(category)) {
+      throw new Error('Crisis Mode active: low-priority reports are temporarily disabled.');
+    }
+
     // Anti-spam: limit burst submissions
     const recentCount = await prisma.incident.count({
       where: {

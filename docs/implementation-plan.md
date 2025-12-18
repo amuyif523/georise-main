@@ -231,8 +231,8 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Block low-priority categories when crisis mode is active.
 - **Tasks:**
-  - [ ] **Backend:** Validate categories on incident creation when crisis mode is enabled.
-  - [ ] **Frontend:** Disable/gray out low-priority categories in reporting UI.
+  - [x] **Backend:** Validate categories on incident creation when crisis mode is enabled.
+  - [x] **Frontend:** Disable/gray out low-priority categories in reporting UI.
 
 ### 8.2 Real Routing Integration (Feature 3.1)
 

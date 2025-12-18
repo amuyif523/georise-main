@@ -115,11 +115,16 @@ const Step1Describe: React.FC<{
       </div>
       <div className="flex justify-between items-center pt-4">
         <Link
-          to="/citizen/report-hazard"
-          className="text-sm text-slate-400 hover:text-warning flex items-center gap-2 transition-colors"
+          to={crisisMode ? '#' : '/citizen/report-hazard'}
+          className={`text-sm flex items-center gap-2 transition-colors ${
+            crisisMode ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-warning'
+          }`}
+          onClick={(e) => {
+            if (crisisMode) e.preventDefault();
+          }}
         >
           <Construction size={16} />
-          Report Infrastructure Hazard
+          {crisisMode ? 'Hazard reporting disabled (Crisis Mode)' : 'Report Infrastructure Hazard'}
         </Link>
         <button className="btn btn-primary" onClick={onNext}>
           Continue to location

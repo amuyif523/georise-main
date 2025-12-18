@@ -6,6 +6,7 @@ import { Construction, ArrowLeft } from 'lucide-react';
 import api from '../lib/api';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { addToIncidentQueue } from '../offline/incidentQueue';
+import { useSystem } from '../context/SystemContext';
 
 type HazardForm = {
   description: string;
@@ -39,6 +40,7 @@ const LocationSelector: React.FC<{
 const ReportHazardPage: React.FC = () => {
   const navigate = useNavigate();
   const online = useNetworkStatus();
+  const { crisisMode } = useSystem();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<HazardForm>({
@@ -53,6 +55,10 @@ const ReportHazardPage: React.FC = () => {
   }, [form.latitude, form.longitude]);
 
   const handleSubmit = async () => {
+    if (crisisMode) {
+      setError('Crisis Mode active: infrastructure hazards are temporarily disabled.');
+      return;
+    }
     if (!form.latitude || !form.longitude) {
       setError('Please select a location on the map.');
       return;
@@ -107,6 +113,11 @@ const ReportHazardPage: React.FC = () => {
           </ul>
         </div>
 
+        {crisisMode && (
+          <div className="alert alert-error mb-4">
+            Crisis Mode is active. Non-emergency hazard reports are temporarily disabled.
+          </div>
+        )}
         {error && <div className="alert alert-error mb-4">{error}</div>}
 
         {step === 1 && (
@@ -134,10 +145,10 @@ const ReportHazardPage: React.FC = () => {
             <div className="flex justify-end">
               <button
                 className="btn btn-warning"
-                disabled={!form.description.trim()}
+                disabled={!form.description.trim() || crisisMode}
                 onClick={() => setStep(2)}
               >
-                Next: Location
+                {crisisMode ? 'Disabled in Crisis Mode' : 'Next: Location'}
               </button>
             </div>
           </div>
@@ -179,10 +190,10 @@ const ReportHazardPage: React.FC = () => {
               </button>
               <button
                 className={`btn btn-warning ${loading ? 'loading' : ''}`}
-                disabled={!form.latitude || loading}
+                disabled={!form.latitude || loading || crisisMode}
                 onClick={handleSubmit}
               >
-                Submit Report
+                {crisisMode ? 'Disabled in Crisis Mode' : 'Submit Report'}
               </button>
             </div>
           </div>
