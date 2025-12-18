@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
+import path from 'path';
 import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 import authRoutes from './modules/auth/auth.routes';
 import incidentRoutes from './modules/incident/incident.routes';
@@ -41,6 +42,7 @@ app.use(
 );
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Global rate limiter
 app.use(apiLimiter);

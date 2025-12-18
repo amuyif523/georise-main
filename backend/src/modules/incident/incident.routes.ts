@@ -11,6 +11,8 @@ import {
   shareIncident,
   getIncidentChat,
   postChatMessage,
+  uploadIncidentPhoto,
+  getIncidentPhotos,
 } from './incident.controller';
 import { validateBody } from '../../middleware/validate';
 import { createIncidentSchema } from './incident.validation';
@@ -21,6 +23,7 @@ import { logActivity } from './activity.service';
 import { getIO } from '../../socket';
 import rateLimit from 'express-rate-limit';
 import { pushService } from '../push/push.service';
+import { incidentUpload } from '../../middleware/upload';
 
 const router = Router();
 
@@ -62,6 +65,8 @@ router.get('/my', requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get('/my/:id', requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
 router.get('/duplicates', requireAuth, checkDuplicates);
 router.post('/merge', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), mergeIncidents);
+router.post('/:id/photos', requireAuth, incidentUpload.single('photo'), uploadIncidentPhoto);
+router.get('/:id/photos', requireAuth, getIncidentPhotos);
 
 // Inter-Agency Coordination
 router.get(

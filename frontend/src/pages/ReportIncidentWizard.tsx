@@ -316,7 +316,22 @@ const ReportIncidentWizard: React.FC = () => {
         isReporterAtScene: !form.notAtScene,
       };
       if (online) {
-        await api.post('/incidents', payload);
+        const res = await api.post('/incidents', payload);
+        const incidentId = res.data?.incident?.id;
+
+        if (incidentId && form.image) {
+          const fd = new FormData();
+          fd.append('photo', form.image);
+          try {
+            await api.post(`/incidents/${incidentId}/photos`, fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+          } catch (uploadErr) {
+            console.warn('Photo upload failed', uploadErr);
+            setInfo('Incident submitted, but photo upload failed. You can retry from My Reports.');
+          }
+        }
+
         navigate('/citizen/my-reports');
       } else {
         await addToIncidentQueue(payload);

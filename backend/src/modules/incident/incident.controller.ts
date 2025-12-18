@@ -3,6 +3,8 @@ import { incidentService } from './incident.service';
 import sanitizeHtml from 'sanitize-html';
 import logger from '../../logger';
 import { getIO } from '../../socket';
+import prisma from '../../prisma';
+import { Role } from '@prisma/client';
 
 export const createIncident = async (req: Request, res: Response) => {
   try {
@@ -134,5 +136,51 @@ export const postChatMessage = async (req: Request, res: Response) => {
   } catch (err: any) {
     logger.error({ err }, 'Post chat error');
     return res.status(400).json({ message: 'Failed to post message' });
+  }
+};
+
+const canAccessIncident = async (incidentId: number, user: any) => {
+  const incident = await prisma.incident.findUnique({
+    where: { id: incidentId },
+    select: { reporterId: true },
+  });
+  if (!incident) {
+    throw new Error('Incident not found');
+  }
+  if (user.role === Role.CITIZEN && incident.reporterId !== user.id) {
+    const err: any = new Error('Forbidden');
+    err.status = 403;
+    throw err;
+  }
+  return incident;
+};
+
+export const uploadIncidentPhoto = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    const incidentId = Number(req.params.id);
+    await canAccessIncident(incidentId, req.user);
+
+    if (!req.file) return res.status(400).json({ message: 'photo file is required' });
+
+    const photo = await incidentService.addIncidentPhoto(incidentId, req.user.id, req.file);
+    res.status(201).json({ photo });
+  } catch (err: any) {
+    logger.error({ err }, 'Upload incident photo failed');
+    res.status(err?.status || 400).json({ message: err?.message || 'Failed to upload photo' });
+  }
+};
+
+export const getIncidentPhotos = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    const incidentId = Number(req.params.id);
+    await canAccessIncident(incidentId, req.user);
+
+    const photos = await incidentService.getIncidentPhotos(incidentId);
+    res.json({ photos });
+  } catch (err: any) {
+    logger.error({ err }, 'Fetch incident photos failed');
+    res.status(err?.status || 400).json({ message: err?.message || 'Failed to fetch photos' });
   }
 };

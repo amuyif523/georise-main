@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Express } from 'express';
 import { IncidentStatus } from '@prisma/client';
 import prisma from '../../prisma';
 import { CreateIncidentRequest } from './incident.types';
@@ -175,7 +176,7 @@ export class IncidentService {
   async getIncidentById(id: number, reporterId: number) {
     const incident = await prisma.incident.findFirst({
       where: { id, reporterId },
-      include: { aiOutput: true, statusHistory: true },
+      include: { aiOutput: true, statusHistory: true, photos: true },
     });
     return incident;
   }
@@ -331,6 +332,27 @@ export class IncidentService {
     });
 
     return chat;
+  }
+
+  async addIncidentPhoto(incidentId: number, uploadedById: number, file: Express.Multer.File) {
+    return prisma.incidentPhoto.create({
+      data: {
+        incidentId,
+        uploadedById,
+        url: `/uploads/incident-photos/${file.filename}`,
+        storagePath: file.path,
+        mimeType: file.mimetype,
+        size: file.size,
+        originalName: file.originalname,
+      },
+    });
+  }
+
+  async getIncidentPhotos(incidentId: number) {
+    return prisma.incidentPhoto.findMany({
+      where: { incidentId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }
 

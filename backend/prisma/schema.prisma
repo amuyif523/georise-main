@@ -243,6 +243,7 @@ model Incident {
   language       String?              @default("ENGLISH") // AMHARIC, ENGLISH, etc.
   sharedWith     SharedIncident[]
   chatMessages   IncidentChat[]
+  photos         IncidentPhoto[]
 
   @@index([location], name: "incident_location_idx", type: Gist)
 }
@@ -306,6 +307,21 @@ model ActivityLog {
 
   incident Incident @relation(fields: [incidentId], references: [id])
   user     User?    @relation(fields: [userId], references: [id])
+}
+
+model IncidentPhoto {
+  id           String   @id @default(cuid())
+  incidentId   Int
+  uploadedById Int?
+  url          String
+  storagePath  String
+  mimeType     String
+  size         Int
+  originalName String
+  createdAt    DateTime @default(now())
+
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  uploadedBy User?    @relation(fields: [uploadedById], references: [id])
 }
 
 model SubCity {

@@ -217,9 +217,9 @@ This document outlines the remaining sprints required to bring the GEORISE platf
 
 - **Goal:** Allow citizens to upload and agencies to view images.
 - **Tasks:**
-  - [ ] **Backend:** Add upload endpoint, storage (local/S3), and file validation.
-  - [ ] **Backend:** Persist image metadata linked to incidents.
-  - [ ] **Frontend:** Upload images from report wizard and show in incident detail.
+  - [x] **Backend:** Add upload endpoint, storage (local/S3), and file validation.
+  - [x] **Backend:** Persist image metadata linked to incidents.
+  - [x] **Frontend:** Upload images from report wizard and show in incident detail.
 
 ---
 

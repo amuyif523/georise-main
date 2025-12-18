@@ -21,3 +21,4 @@ export const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
 export const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 export const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 export const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@georise.local';
+export const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';

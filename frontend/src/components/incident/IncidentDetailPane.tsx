@@ -44,6 +44,13 @@ type DuplicateIncident = Incident & {
   distance?: number;
 };
 
+type IncidentPhoto = {
+  id: string;
+  url: string;
+  originalName: string;
+  createdAt: string;
+};
+
 type Agency = {
   id: number;
   name: string;
@@ -118,6 +125,8 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [recsLoading, setRecsLoading] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateIncident[]>([]);
   const [mergingId, setMergingId] = useState<number | null>(null);
+  const [photos, setPhotos] = useState<IncidentPhoto[]>([]);
+  const apiBase = useMemo(() => (api.defaults.baseURL || '').replace(/\/api$/, ''), []);
 
   // Chat & Share State
   const [activeTab, setActiveTab] = useState<'timeline' | 'chat'>('timeline');
@@ -210,6 +219,19 @@ const IncidentDetailPane: React.FC<Props> = ({
       }
     };
     fetchTimeline();
+  }, [incident]);
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      if (!incident) return;
+      try {
+        const res = await api.get(`/incidents/${incident.id}/photos`);
+        setPhotos(res.data.photos || []);
+      } catch {
+        setPhotos([]);
+      }
+    };
+    fetchPhotos();
   }, [incident]);
 
   useEffect(() => {
@@ -496,6 +518,39 @@ const IncidentDetailPane: React.FC<Props> = ({
                   </div>
                   <div className="mt-2 text-[10px] text-slate-400">
                     Consider merging or rejecting if identical.
+                  </div>
+                </div>
+              )}
+
+              {photos.length > 0 && (
+                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                      Photos
+                    </h3>
+                    <span className="text-xs text-slate-500">{photos.length} file(s)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={`${apiBase}${photo.url}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block group"
+                      >
+                        <div className="aspect-video rounded-md overflow-hidden border border-slate-800 bg-slate-900">
+                          <img
+                            src={`${apiBase}${photo.url}`}
+                            alt={photo.originalName}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 truncate">
+                          {photo.originalName}
+                        </p>
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}
