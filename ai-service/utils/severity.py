@@ -1,5 +1,5 @@
 def infer_severity(base_label: str, text: str) -> int:
-    """Simple heuristic to map label + keywords to a 0–5 severity."""
+    """Simple heuristic to map label + keywords to a 0-5 severity."""
     t = (text or "").lower()
 
     base_map = {
@@ -16,22 +16,24 @@ def infer_severity(base_label: str, text: str) -> int:
         "dead",
         "death",
         "killed",
-        "ሞተ",
         "ሞት",
-        "ተጎዳ",
-        "ቁስለት",
+        "ተገደለ",
+        "ሞተ",
         "explosion",
         "bomb",
-        "ድብደባ",
+        "ፍንዳታ",
+        "ብዙ ሰዎች ተጎዱ",
     ]
     medium_keywords = [
         "injured",
         "injury",
-        "ሕክምና",
-        "ደም",
+        "ጉዳት",
+        "ተጎዳ",
+        "እሳት ቃጠሎ",
         "burn",
         "serious",
-        "ከባድ",
+        "ወድቆ",
+        "ደም",
     ]
 
     if any(w in t for w in high_keywords):

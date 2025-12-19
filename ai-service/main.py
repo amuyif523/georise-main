@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -30,8 +29,8 @@ class ClassifyResponse(BaseModel):
 
 def load_model():
     """
-    Load a local fine-tuned model if present; otherwise fall back to base model.
-    This keeps the endpoint working even before you drop trained weights.
+    Load a local fine-tuned model if present; otherwise fall back to the base model
+    so the service keeps running even without weights.
     """
     if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
         model_path = MODEL_DIR
@@ -39,23 +38,99 @@ def load_model():
     else:
         model_path = DEFAULT_MODEL_NAME
         print(f"Loading default base model {model_path}")
-        
+
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
     model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
     model.eval()
     return tokenizer, model, str(model_path)
 
 
-tokenizer, model, model_version = load_model()
-
 def heuristic_category(text: str) -> str:
     t = text.lower()
-    if any(w in t for w in ["fire", "smoke", "flame", "burn", "እሳት"]): return "FIRE"
-    if any(w in t for w in ["medical", "injury", "blood", "hurt", "pain", "sick", "hospital", "ambulance", "ሕክምና", "ደም"]): return "MEDICAL"
-    if any(w in t for w in ["crime", "theft", "robbery", "assault", "kill", "gun", "shoot", "police", "ወንጀል", "ፖሊስ"]): return "POLICE"
-    if any(w in t for w in ["traffic", "accident", "crash", "car", "vehicle", "road", "collision", "ትራፊክ", "መኪና"]): return "TRAFFIC"
-    if any(w in t for w in ["flood", "storm", "quake", "disaster", "water", "electric", "power", "light", "መብራት", "ውሃ"]): return "INFRASTRUCTURE"
+    # English + Amharic keywords to guide fallback when the model is unsure
+    if any(w in t for w in ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ"]):
+        return "FIRE"
+    if any(
+        w in t
+        for w in [
+            "medical",
+            "injury",
+            "blood",
+            "hurt",
+            "pain",
+            "sick",
+            "hospital",
+            "ambulance",
+            "ሕክምና",
+            "ደም",
+            "ጉዳት",
+            "ወድቆ",
+            "ህመም",
+        ]
+    ):
+        return "MEDICAL"
+    if any(
+        w in t
+        for w in [
+            "crime",
+            "theft",
+            "robbery",
+            "assault",
+            "kill",
+            "gun",
+            "shoot",
+            "police",
+            "ወንጀል",
+            "ስርቆት",
+            "ጥቃት",
+            "ግድያ",
+            "ተደፍሯል",
+            "ፖሊስ",
+        ]
+    ):
+        return "POLICE"
+    if any(
+        w in t
+        for w in [
+            "traffic",
+            "accident",
+            "crash",
+            "car",
+            "vehicle",
+            "road",
+            "collision",
+            "ትራፊክ",
+            "መኪና",
+            "አደጋ",
+            "ግጭት",
+            "መንገድ ተዘግቷል",
+        ]
+    ):
+        return "TRAFFIC"
+    if any(
+        w in t
+        for w in [
+            "flood",
+            "storm",
+            "quake",
+            "disaster",
+            "water",
+            "electric",
+            "power",
+            "light",
+            "ኃይል",
+            "መብራት",
+            "ውሃ",
+            "መስመር ተቋርጧል",
+            "ዝናብ",
+        ]
+    ):
+        return "INFRASTRUCTURE"
     return "OTHER"
+
+
+tokenizer, model, model_version = load_model()
+
 
 @app.get("/health")
 def health():
@@ -89,16 +164,16 @@ def classify(req: ClassifyRequest):
             probs = torch.softmax(logits, dim=-1).cpu().numpy()[0]
 
         pred_id = int(probs.argmax())
-        
+
         # If using base model (not fine-tuned), id2label might be generic LABEL_0, etc.
         # Or if confidence is very low, fallback to heuristic.
         if "afro-xlmr-base" in str(model_version) and not MODEL_DIR.exists():
-             pred_label = heuristic_category(text)
-             confidence = 0.5
+            pred_label = heuristic_category(text)
+            confidence = 0.5
         else:
             pred_label = model.config.id2label.get(pred_id, "OTHER")
             confidence = float(probs[pred_id])
-            
+
             # Fallback if label is generic
             if pred_label.startswith("LABEL_"):
                 pred_label = heuristic_category(text)
@@ -121,5 +196,5 @@ def classify(req: ClassifyRequest):
             severity_score=2,
             confidence=0.0,
             model_version="error-fallback",
-            summary="Error processing request"
+            summary="Error processing request",
         )
