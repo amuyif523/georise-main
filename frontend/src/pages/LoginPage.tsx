@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const [mode, setMode] = useState<'EMAIL' | 'OTP'>('EMAIL');
-  const [email, setEmail] = useState('citizen@example.com');
+  const [email, setEmail] = useState('citizen1@example.com');
   const [password, setPassword] = useState('password123');
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
