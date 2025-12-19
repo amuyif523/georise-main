@@ -57,17 +57,16 @@ export const getMyIncidentById = async (req: Request, res: Response) => {
 
 export const checkDuplicates = async (req: Request, res: Response) => {
   try {
-    const { lat, lng, title, description } = req.query;
-    if (!lat || !lng) {
+    const lat = req.query.lat ? Number(req.query.lat) : null;
+    const lng = req.query.lng ? Number(req.query.lng) : null;
+    const title = typeof req.query.title === 'string' ? req.query.title : '';
+    const description = typeof req.query.description === 'string' ? req.query.description : '';
+
+    if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) {
       return res.status(400).json({ message: 'lat and lng are required' });
     }
 
-    const duplicates = await incidentService.findPotentialDuplicates(
-      Number(lat),
-      Number(lng),
-      title as string,
-      description as string,
-    );
+    const duplicates = await incidentService.findPotentialDuplicates(lat, lng, title, description);
     return res.json({ duplicates });
   } catch (err: any) {
     logger.error({ err }, 'Check duplicates error');
