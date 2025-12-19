@@ -1,0 +1,37 @@
+id,text,category,severity,lang
+651,"በቤት ውስጥ የገለበጠ እሳት ተነሳ፣ ልጅ በሰፈር ላይ ታስቦ ነው።",FIRE,4,am
+652,"ጭስ ከሶስት ቤቶች በላይ እየወጣ ነው፣ እሳት እጅግ በስፋት ተዘርግቶ ይታያል።",FIRE,5,am
+653,"Fire at warehouse near 4 kilo, heavy smoke ወጥቶ በአየር እየታየ ነው።",FIRE,4,mix
+654,"አዳዲስ ቤቶች መካከል የተነሳ እሳት በመንገድ መዘጋት እየተዘረጋ ነው።",FIRE,3,am
+655,"ጭስ በአፓርታማ ላይ እየተሰበሰበ ነው፣ አንድ ሰው በውስጥ እንዳለ ተጠራ።",FIRE,4,am
+656,"Small kitchen fire controlled quickly, no visible smoke እንግዲህ አደጋ አይታይም።",FIRE,2,mix
+657,"ሰው በስተጀርባ ወድቆ ራስ ተጎድቷል፣ ደም በፊቱ በማፍሰስ ላይ ነው።",MEDICAL,4,am
+658,"የህፃን ትኩሳት ከፍ ወጥቶ ነው፣ አምቡላንስ ፈጥኖ ይደርስ።",MEDICAL,3,am
+659,"Elderly man collapsed in church, shallow breathing, needs oxygen አስቸኳይ ነው።",MEDICAL,4,mix
+660,"የህጻን እጅ በቡና ቃጠለች፣ ነፍስ በነፍስ እየለቀቀች ነው።",MEDICAL,3,am
+661,"ሰው በኪራይ መኪና ውስጥ ተደፍሮ ስለሚጠራ የፖሊስ ረዳት እንዲሁም ህክምና ይፈልጋል።",MEDICAL,3,am
+662,"Patient with severe chest pain near Stadium, ambulance requested urgently።",MEDICAL,4,mix
+663,"ወንጀለኞች በገበያ ላይ ስርቆት እያደረጉ ናቸው፣ ሰዎች እየተበተኑ ናቸው።",CRIME,3,am
+664,"Armed robbery reported at Megenagna bank, suspects with pistols ፈጣን ፖሊስ ይፈልጋሉ።",CRIME,4,mix
+665,"አንድ ሰው በሌባ በሰማይ አደባባይ ተመታ፣ ደም በግራ እጁ ላይ ነው።",CRIME,3,am
+666,"Hit and run theft: phone snatched ወጥቶ ተሸሽጎ ሄደ፣ ተጎጂው ፖሊስ ይጠራል።",CRIME,2,mix
+667,"ግድያ ተደርጓል በምዕራብ ሰፈር፣ ሰው በብዙ ጉዳት ተጎድቷል።",CRIME,5,am
+668,"ስርቆት በቤት ውስጥ ሌሊት፣ በመስኮት ተበድሯል እና ኮምፒውተር ተጠፍቷል።",CRIME,2,am
+669,"ከሁለት ታክሲዎች ጋር አደጋ ተፈጥሯል፣ አንድ ሰው በእግር ተጎድቷል።",TRAFFIC,3,am
+670,"Major accident on ring road, truck overturned መንገድ ሙሉ ተዘግቷል።",TRAFFIC,4,mix
+671,"አዲስ መንገድ ላይ አደጋ አለ፣ ሁለት እግረኛ ተጎድተዋል እና ትራፊክ ተቋርጧል።",TRAFFIC,4,am
+672,"ታክሲ ከጎዳና ወርዶ በስፋት እየወጣ ነው፣ መንገድ ዝግ ነው።",TRAFFIC,3,am
+673,"Car crash near Mexico square, airbags deployed ሰዎች ትንሽ ጉዳት አለ።",TRAFFIC,2,mix
+674,"በሰልፍ ግንባር ወቅት ብዙ መኪናዎች ተጋጭተዋል፣ ማንም አልተጎዳም ግን ትራፊክ ተዘግቷል።",TRAFFIC,2,am
+675,"የኃይል መስመር ተቋርጧል፣ ቀበሌው በጨለማ ነው እና ውሃ ፓምፕ ቆመ።",INFRASTRUCTURE,3,am
+676,"Power outage in Bole Atlas, elevators stopped እና እርዳታ ተጠራ።",INFRASTRUCTURE,2,mix
+677,"ጎዳና በዝናብ ተሰብሮ ነው፣ ተሽከርካሪዎች ማሻሻያ በመዞር እየቆሙ ናቸው።",INFRASTRUCTURE,3,am
+678,"ውሃ በቦሌ ገበያ በስፋት እየተሞላ ነው፣ ትራፊክ ተዘግቶ ነው።",INFRASTRUCTURE,3,am
+679,"Fiber line cut near airport, internet down for offices በጣም አስቸኳይ ነው።",INFRASTRUCTURE,2,mix
+680,"እስከ ስድስት ሰዓት ያህል የሚቆይ የውሃ መቋረጥ ተነገር፣ ነገ ጠዋት ይመለሳል ተባለ።",INFRASTRUCTURE,1,am
+681,"ግንባር ስራ ምክንያት የአደጋ ምንም ዓይነት አልነበረም፣ ሰዎች ተሳታፊ ብቻ ናቸው።",OTHER,1,am
+682,"False alarm: smoke from cooking only, no fire የፊኛ ጭስ ብቻ ነበር።",OTHER,1,mix
+683,"ልጆች በስፖርት መድረክ ላይ ተጣበቁ፣ ምንም አደጋ የለም ብለዋል።",OTHER,1,am
+684,"በአዲስ ገበያ በስፋት የሚካሄደ በዓል ነው፣ ትራፊክ ሊጨነቅ ይችላል ነገር ግን አደጋ የለም።",OTHER,1,am
+685,"የቤት ውስጥ ውሃ ተፈሳሽ ነው እና ጎረቤት እርዳታ ጠይቋል፣ የኢንፍራ አይደለም።",OTHER,1,am
+686,"የትምህርት ቤት ማህበረሰብ ስብሰባ በግልጽ ዝግጅት ቀጥሏል፣ ምንም የአደጋ ጉዳይ የለም።",OTHER,0,am

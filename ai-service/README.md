@@ -18,7 +18,8 @@ Model weights:
 Training:
 
 - Dataset: `data/incidents_labeled.csv`
-- Script: `python training/train_incident_classifier.py --data data/incidents_labeled.csv --output models/afroxlmr_incident_classifier --epochs 3 --batch 4`
+- Extra Amharic/mixed augmentation: `data/incidents_am_aug.csv` (append with `--extra_data`)
+- Script: `python training/train_incident_classifier.py --data data/incidents_labeled.csv --extra_data data/incidents_am_aug.csv --output models/afroxlmr_incident_classifier --epochs 3 --batch 4`
 
 Latest training (batch=4, epochs=3) on ~650 rows:
 
@@ -28,3 +29,4 @@ Latest training (batch=4, epochs=3) on ~650 rows:
 Backups:
 
 - Keep a copy of `data/incidents_labeled.csv` and the trained `models/afroxlmr_incident_classifier/` outside git (local drive or artifact storage).
+- Use `training/validate_dataset.py` to audit new data, and `test_amharic_golden.py` to check regressions (AI service running on :8001).

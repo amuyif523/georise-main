@@ -1,0 +1,19 @@
+id,text,category,lang
+701,"እሳት በቤት ውስጥ ተነሳ፣ ጭስ በላይ እየወጣ ነው።",FIRE,am
+702,"ጭስ በቤት ግቢ እየታየ ነው፣ ታካሚ ውስጥ አለ ተባለ።",FIRE,am
+703,"Small fire in kitchen, smoke only በፍጥነት ተጠፍቷል።",FIRE,mix
+704,"ሰው በመንገድ ላይ ወድቆ ራስ ተጎድቷል እና ደም እየፈሰሰ ነው።",MEDICAL,am
+705,"Elderly woman fainted at bus stop እባክዎ አምቡላንስ ይጠሩ።",MEDICAL,mix
+706,"ልጅ በሙቀት ላይ ነው፣ ድንገት እርዳታ ይፈልጋል።",MEDICAL,am
+707,"ወንጀለኞች በገበያ ላይ ቦርሳ ሰርተዋል፣ ፖሊስ ይፈልጋሉ።",CRIME,am
+708,"Armed robbery at small shop, suspect has a gun ፖሊስ በፍጥነት ይደርሱ።",CRIME,mix
+709,"ጥቃት በሌሊት በመንገድ ላይ፣ ሰው ተደፍሯል።",CRIME,am
+710,"ሁለት መኪናዎች ተጋጭተዋል በቦሌ፣ መንገድ ተዘግቷል።",TRAFFIC,am
+711,"Traffic accident near stadium, car flipped ትራፊክ እጅግ ተዘግቷል።",TRAFFIC,mix
+712,"ታክሲ እግረኛን ተጎዳ፣ አስቸኳይ ህክምና ይፈልጋል።",TRAFFIC,am
+713,"ኃይል ተቋርጧል በመንደሩ፣ መብራት ተዘግቷል።",INFRASTRUCTURE,am
+714,"Heavy rain flooded the street መንገድ ተዘግቷል።",INFRASTRUCTURE,mix
+715,"የኢንተርኔት መስመር ተቋርጧል፣ ቢሮዎች ስራ ቆመ።",INFRASTRUCTURE,am
+716,"በቤት ውስጥ የሚሰራ የክትትል ስብሰባ ነው፣ አደጋ የለም።",OTHER,am
+717,"Community event at park, loud music only no incident ለፖሊስ ምንም አይጠበቅም።",OTHER,mix
+718,"የእሳት ማስጠንቀቂያ በስህተት ተነሳ፣ ምንም እሳት የለም።",OTHER,am

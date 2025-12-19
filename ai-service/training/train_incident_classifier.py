@@ -3,7 +3,7 @@ Minimal training script for the AfroXLMR incident classifier.
 
 Usage (inside a virtualenv):
   pip install -r ../requirements.txt
-  python train_incident_classifier.py --data ../data/incidents_labeled.csv --output ../models/afroxlmr_incident_classifier
+  python train_incident_classifier.py --data ../data/incidents_labeled.csv --extra_data ../data/incidents_am_aug.csv --output ../models/afroxlmr_incident_classifier
 
 This is sized for a small GPU/Colab. Adjust batch sizes/epochs as needed.
 """
@@ -21,8 +21,12 @@ from transformers import (
 )
 
 
-def load_dataset(path: str, label_names):
-    df = pd.read_csv(path)
+def load_dataset(path: str, label_names, extra_paths=None):
+    df_list = [pd.read_csv(path)]
+    if extra_paths:
+        for p in extra_paths:
+            df_list.append(pd.read_csv(p))
+    df = pd.concat(df_list, ignore_index=True)
     label2id = {l: i for i, l in enumerate(label_names)}
     id2label = {i: l for l, i in label2id.items()}
     df["label"] = df["category"].map(label2id)
@@ -45,6 +49,11 @@ def load_dataset(path: str, label_names):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="../data/incidents_labeled.csv", help="CSV with text,category,severity")
+    parser.add_argument(
+        "--extra_data",
+        nargs="*",
+        help="Optional additional CSV files to append for training (same schema as --data)",
+    )
     parser.add_argument("--model_name", default="Davlan/afro-xlmr-base")
     parser.add_argument("--output", default="../models/afroxlmr_incident_classifier")
     parser.add_argument("--epochs", type=int, default=3)
@@ -52,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     label_names = ["FIRE", "MEDICAL", "CRIME", "TRAFFIC", "INFRASTRUCTURE", "OTHER"]
-    ds, label2id, id2label = load_dataset(args.data, label_names)
+    ds, label2id, id2label = load_dataset(args.data, label_names, extra_paths=args.extra_data)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 
