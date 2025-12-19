@@ -3,7 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 import path from 'path';
-import { apiLimiter, authLimiter } from './middleware/rateLimiter';
+import { apiLimiter } from './middleware/rateLimiter';
 import authRoutes from './modules/auth/auth.routes';
 import incidentRoutes from './modules/incident/incident.routes';
 import adminRoutes from './modules/admin/admin.routes';
@@ -53,7 +53,7 @@ app.get('/health', (_req, res) => {
 });
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);

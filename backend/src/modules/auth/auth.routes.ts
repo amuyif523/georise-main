@@ -17,17 +17,17 @@ import {
   passwordResetConfirmSchema,
 } from './auth.validation';
 import refreshRouter from './refresh.routes';
-import { authLimiter } from '../../middleware/rateLimiter';
+import { loginLimiter, sessionLimiter } from '../../middleware/rateLimiter';
 
 const router = Router();
 
 router.post('/register', validateBody(registerSchema), register);
-router.post('/login', validateBody(loginSchema), login);
-router.post('/otp/request', authLimiter, requestOtp);
-router.post('/otp/verify', authLimiter, verifyOtp);
+router.post('/login', loginLimiter, validateBody(loginSchema), login);
+router.post('/otp/request', loginLimiter, requestOtp);
+router.post('/otp/verify', loginLimiter, verifyOtp);
 router.post(
   '/password-reset/request',
-  authLimiter,
+  loginLimiter,
   validateBody(passwordResetRequestSchema),
   requestPasswordReset,
 );
@@ -36,7 +36,7 @@ router.post(
   validateBody(passwordResetConfirmSchema),
   confirmPasswordReset,
 );
-router.get('/me', requireAuth, me);
+router.get('/me', sessionLimiter, requireAuth, me);
 router.use('/', refreshRouter);
 
 export default router;
