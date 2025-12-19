@@ -23,6 +23,24 @@
     "map": "Live Map",
     "report": "Report Incident"
   },
+  "analytics": {
+    "title": "Analytics",
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "agency_scope": "Agency Scope"
+    },
+    "export_overview": "Export overview",
+    "export_response_time": "Export response time",
+    "export_utilization": "Export utilization",
+    "kpi_avg_response": "Avg Response Time",
+    "kpi_avg_resolution": "Avg Resolution Time",
+    "kpi_total": "Total Incidents",
+    "response_time_distribution": "Response Time Distribution",
+    "heatmap_time_of_day": "Time of Day Heatmap (Incidents)",
+    "utilization_title": "Resource Utilization"
+  },
   "incident": {
     "report_new": "Report New Incident",
     "type": "Incident Type",

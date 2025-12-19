@@ -13,6 +13,7 @@ import {
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import AppLayout from '../../layouts/AppLayout';
 import api from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
   LineElement,
@@ -69,6 +70,7 @@ const AnalyticsPage: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const rangeParams = () => {
     const now = new Date();
@@ -131,7 +133,7 @@ const AnalyticsPage: React.FC = () => {
       labels: data.byDay.map((d) => new Date(d.day).toLocaleDateString()),
       datasets: [
         {
-          label: 'Incidents per day',
+          label: t('analytics.kpi_total'),
           data: data.byDay.map((d) => d.count),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59,130,246,0.2)',
@@ -147,7 +149,7 @@ const AnalyticsPage: React.FC = () => {
       labels: data.byStatus.map((s) => s.status),
       datasets: [
         {
-          label: 'Incidents',
+          label: t('analytics.kpi_total'),
           data: data.byStatus.map((s) => s.count),
           backgroundColor: 'rgba(244,114,182,0.6)',
         },
@@ -174,13 +176,13 @@ const AnalyticsPage: React.FC = () => {
       labels: responseTimeData.map((d) => d.bucket),
       datasets: [
         {
-          label: 'Incidents',
+          label: t('analytics.kpi_total'),
           data: responseTimeData.map((d) => d.count),
           backgroundColor: '#10b981',
         },
       ],
     };
-  }, [responseTimeData]);
+  }, [responseTimeData, t]);
 
   const heatmapChart = useMemo(() => {
     if (!heatmapData?.length) return null;
@@ -231,9 +233,9 @@ const AnalyticsPage: React.FC = () => {
     <AppLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Advanced Analytics</h1>
+          <h1 className="text-2xl font-bold text-white">{t('analytics.title')}</h1>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 uppercase">Range</span>
+            <span className="text-xs text-slate-400 uppercase">{t('analytics.filters.apply')}</span>
             {ranges.map((r) => (
               <button
                 key={r.days}
@@ -251,7 +253,7 @@ const AnalyticsPage: React.FC = () => {
                 downloadCsv('/analytics/overview/admin', 'analytics-overview-admin.csv')
               }
             >
-              Export overview
+              {t('analytics.export_overview')}
             </button>
             <button
               className="btn btn-xs btn-outline btn-secondary"
@@ -262,7 +264,7 @@ const AnalyticsPage: React.FC = () => {
                 )
               }
             >
-              Export response time
+              {t('analytics.export_response_time')}
             </button>
             <button
               className="btn btn-xs btn-outline btn-accent"
@@ -270,7 +272,7 @@ const AnalyticsPage: React.FC = () => {
                 downloadCsv('/analytics/utilization/resource', 'resource-utilization.csv')
               }
             >
-              Export utilization
+              {t('analytics.export_utilization')}
             </button>
           </div>
         </div>

@@ -41,6 +41,24 @@
     "provide_title_description": "እባክዎ ርዕስና መግለጫ ያስገቡ።",
     "select_location": "እባክዎ ቦታውን በካርታ ላይ ይምረጡ።"
   },
+  "analytics": {
+    "title": "ትንተና",
+    "filters": {
+      "from": "ከ",
+      "to": "እስከ",
+      "apply": "መርጠው ያድሱ",
+      "agency_scope": "የኤጀንሲ ክልል"
+    },
+    "export_overview": "ጠቅላላ ውጤት ወጭ",
+    "export_response_time": "የምላሽ ጊዜ ወጭ",
+    "export_utilization": "የአገልግሎት ጥቅም ወጭ",
+    "kpi_avg_response": "አማካይ ጊዜ (መልስ)",
+    "kpi_avg_resolution": "አማካይ ጊዜ (መፍትሄ)",
+    "kpi_total": "ጠቅላላ ጉዳዮች",
+    "response_time_distribution": "የምላሽ ጊዜ ስብስብ",
+    "heatmap_time_of_day": "ቀን/ሰዓት ሙቀት ካርታ (ጉዳዮች)",
+    "utilization_title": "የሀብት ጥቅም አውጪ"
+  },
   "common": {
     "loading": "በመጫን ላይ...",
     "error": "ችግኝ ተፈጥሯል",
