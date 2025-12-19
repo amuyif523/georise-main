@@ -36,7 +36,7 @@ router.post(
   validateBody(passwordResetConfirmSchema),
   confirmPasswordReset,
 );
-router.get('/me', sessionLimiter, requireAuth, me);
+router.get('/me', requireAuth, sessionLimiter, me);
 router.use('/', refreshRouter);
 
 export default router;

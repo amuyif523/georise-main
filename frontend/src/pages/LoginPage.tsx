@@ -49,7 +49,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     if (loading || isRateLimited) return;
     setError(null);
-    setSuccess(rateLimitMessage);
+    setSuccess(null);
     setLoading(true);
     try {
       await login(email, password);
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
       return;
     }
     setLoading(true);
-    setError(rateLimitMessage);
+    setError(null);
     try {
       await api.post('/auth/otp/request', { phone });
       setOtpSent(true);
@@ -107,7 +107,7 @@ const LoginPage: React.FC = () => {
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || isRateLimited) return;
-    setError(rateLimitMessage);
+    setError(null);
     setLoading(true);
     try {
       const res = await api.post('/auth/otp/verify', { phone, code: otpCode });
