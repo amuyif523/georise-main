@@ -31,7 +31,15 @@
     "submit": "Submit Report",
     "cancel": "Cancel",
     "severity": "Severity",
-    "status": "Status"
+    "status": "Status",
+    "guidance": "Add a clear title and description so dispatch can understand quickly.",
+    "crisis_banner": "CRISIS MODE ACTIVE: Please only report life-threatening emergencies. Minor issues will be deprioritized.",
+    "placeholder_title": "e.g. Car accident near Bole",
+    "placeholder_description": "Add key details (Amharic or English)."
+  },
+  "validation": {
+    "provide_title_description": "Please provide a title and description.",
+    "select_location": "Please select a location on the map."
   },
   "common": {
     "loading": "Loading...",

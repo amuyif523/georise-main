@@ -69,18 +69,13 @@ const Step1Describe: React.FC<{
         <div>
           <p className="text-sm text-cyan-200">Step 1</p>
           <h2 className="text-2xl font-bold text-white">{t('incident.report_new')}</h2>
-          <p className="text-slate-400 text-sm mt-1">
-            Add a clear title and description so dispatch can understand quickly.
-          </p>
+          <p className="text-slate-400 text-sm mt-1">{t('incident.guidance')}</p>
         </div>
       </div>
       {crisisMode && (
         <div className="alert alert-error text-sm font-bold animate-pulse">
           <AlertTriangle size={20} />
-          <span>
-            CRISIS MODE ACTIVE: Please only report life-threatening emergencies. Minor issues will
-            be deprioritized.
-          </span>
+          <span>{t('incident.crisis_banner')}</span>
         </div>
       )}
       {error && <div className="alert alert-error text-sm">{error}</div>}
@@ -93,7 +88,7 @@ const Step1Describe: React.FC<{
             className="input input-bordered w-full bg-slate-900 border-slate-700 text-white"
             value={form.title}
             onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-            placeholder="e.g. እሳት በወሎ ላይ"
+            placeholder={t('incident.placeholder_title')}
           />
         </div>
         <div>
@@ -109,7 +104,7 @@ const Step1Describe: React.FC<{
                 description: e.target.value,
               }))
             }
-            placeholder="Add key details, language can be Amharic/English."
+            placeholder={t('incident.placeholder_description')}
           />
         </div>
       </div>
@@ -274,7 +269,7 @@ const ReportIncidentWizard: React.FC = () => {
 
   const handleNextFromStep1 = () => {
     if (!form.title || !form.description) {
-      setError('Please provide a title and description.');
+      setError(t('validation.provide_title_description'));
       return;
     }
     setError(null);
@@ -283,7 +278,7 @@ const ReportIncidentWizard: React.FC = () => {
 
   const handleNextFromStep2 = async () => {
     if (form.latitude == null || form.longitude == null) {
-      setError('Please select a location on the map.');
+      setError(t('validation.select_location'));
       return;
     }
     setError(null);

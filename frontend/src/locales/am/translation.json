@@ -1,13 +1,13 @@
 {
   "app": {
     "title": "GEORISE",
-    "subtitle": "የተቀናጀ የአደጋ ጊዜ ምላሽ ስርዓት",
-    "description": "ዜጎችን ከአደጋ ጊዜ ምላሽ ሰጪዎች ጋር በቅጽበት ማገናኘት።"
+    "subtitle": "የአስቸኳይ ጊዜ መረጃ እና ምላሽ መድረክ",
+    "description": "ዜጎችን ከምላሽ ቡድኖች ጋር በቀጥታ ያገናኛል።"
   },
   "auth": {
-    "login": "ግባ",
-    "register": "ተመዝገብ",
-    "logout": "ውጣ",
+    "login": "መግባት",
+    "register": "ምዝገባ",
+    "logout": "መውጣት",
     "email": "ኢሜይል",
     "password": "የይለፍ ቃል",
     "phone": "ስልክ ቁጥር",
@@ -18,25 +18,33 @@
     "no_account": "መለያ የለዎትም?"
   },
   "nav": {
-    "home": "መነሻ",
+    "home": "ዋና ገጽ",
     "dashboard": "ዳሽቦርድ",
-    "map": "ቀጥታ ካርታ",
-    "report": "አደጋ ሪፖርት አድርግ"
+    "map": "ካርታ",
+    "report": "ጉዳይ ሪፖርት"
   },
   "incident": {
-    "report_new": "አዲስ አደጋ ሪፖርት አድርግ",
-    "type": "የአደጋ ዓይነት",
+    "report_new": "አዲስ ጉዳይ ያስገቡ",
+    "type": "የጉዳይ ዓይነት",
     "description": "መግለጫ",
     "location": "ቦታ",
-    "submit": "ሪፖርት ላክ",
-    "cancel": "ሰርዝ",
-    "severity": "ክብደት",
-    "status": "ሁኔታ"
+    "submit": "ሪፖርት ያስገቡ",
+    "cancel": "መሰረዝ",
+    "severity": "ከባድነት",
+    "status": "ሁኔታ",
+    "guidance": "ግልጽ ርዕስና መግለጫ ያስገቡ፤ ማስተላለፊያ በፍጥነት እንዲገባ ይረዳል።",
+    "crisis_banner": "የአደጋ ሁኔታ በሥራ ላይ ነው፤ ሕይወት የሚያደርስ ጉዳይ ብቻ ያቀርቡ። ትንሽ ጉዳዮች በኋላ ይመርመራሉ።",
+    "placeholder_title": "ምሳሌ፡ የመኪና አደጋ በቦሌ",
+    "placeholder_description": "ቁልፍ ዝርዝሮች ይጨምሩ (አማርኛ ወይም እንግሊዝኛ)."
+  },
+  "validation": {
+    "provide_title_description": "እባክዎ ርዕስና መግለጫ ያስገቡ።",
+    "select_location": "እባክዎ ቦታውን በካርታ ላይ ይምረጡ።"
   },
   "common": {
     "loading": "በመጫን ላይ...",
-    "error": "ስህተት ተከስቷል",
-    "success": "ተሳክቷል",
+    "error": "ችግኝ ተፈጥሯል",
+    "success": "ስኬት",
     "language": "ቋንቋ",
     "amharic": "አማርኛ",
     "english": "እንግሊዝኛ"
