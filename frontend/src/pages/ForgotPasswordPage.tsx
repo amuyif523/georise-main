@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPasswordPage = () => {
+  const { t } = useTranslation();
   const [identifier, setIdentifier] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -15,14 +17,14 @@ const ForgotPasswordPage = () => {
     setLoading(true);
     try {
       const res = await api.post('/auth/password-reset/request', { identifier });
-      setStatus(res.data.message || 'If an account exists, reset instructions have been sent.');
+      setStatus(res.data.message || t('auth.reset_request_success'));
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'response' in err
           ? // @ts-expect-error - best-effort message extraction
             err.response?.data?.message
           : null;
-      setError(message || 'Failed to send reset instructions.');
+      setError(message || t('auth.reset_request_failed'));
     } finally {
       setLoading(false);
     }
@@ -33,17 +35,15 @@ const ForgotPasswordPage = () => {
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body space-y-4">
           <h2 className="card-title text-2xl justify-center font-bold text-primary">
-            Forgot your password?
+            {t('auth.forgot_title')}
           </h2>
-          <p className="text-sm text-base-content/70 text-center">
-            Enter the email or phone number linked to your account. We&apos;ll send a reset code.
-          </p>
+          <p className="text-sm text-base-content/70 text-center">{t('auth.forgot_subtitle')}</p>
           {status && <div className="alert alert-success text-sm">{status}</div>}
           {error && <div className="alert alert-error text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="form-control">
               <label className="label" htmlFor="identifier">
-                <span className="label-text">Email or Phone</span>
+                <span className="label-text">{t('auth.email_or_phone')}</span>
               </label>
               <input
                 id="identifier"
@@ -56,18 +56,18 @@ const ForgotPasswordPage = () => {
               />
             </div>
             <button type="submit" className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}>
-              {loading ? 'Sending...' : 'Send reset code'}
+              {loading ? t('auth.sending') : t('auth.send_reset_code')}
             </button>
           </form>
 
           <div className="text-center text-sm space-y-1">
             <Link to="/login" className="link link-primary">
-              Back to login
+              {t('auth.back_to_login')}
             </Link>
             <div>
-              Have a code already?{' '}
+              {t('auth.have_code')}{' '}
               <Link to="/reset-password" className="link link-secondary">
-                Reset now
+                {t('auth.reset_now')}
               </Link>
             </div>
           </div>

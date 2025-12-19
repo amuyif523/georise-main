@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
 
 const ResetPasswordPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [token, setToken] = useState(searchParams.get('token') || '');
   const [password, setPassword] = useState('');
@@ -17,14 +19,14 @@ const ResetPasswordPage = () => {
     setLoading(true);
     try {
       const res = await api.post('/auth/password-reset/confirm', { token, password });
-      setStatus(res.data.message || 'Password updated. You can log in now.');
+      setStatus(res.data.message || t('auth.reset_success'));
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'response' in err
           ? // @ts-expect-error - best-effort message extraction
             err.response?.data?.message
           : null;
-      setError(message || 'Reset failed. Check your code and try again.');
+      setError(message || t('auth.reset_failed'));
     } finally {
       setLoading(false);
     }
@@ -35,17 +37,15 @@ const ResetPasswordPage = () => {
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body space-y-4">
           <h2 className="card-title text-2xl justify-center font-bold text-primary">
-            Reset your password
+            {t('auth.reset_title')}
           </h2>
-          <p className="text-sm text-base-content/70 text-center">
-            Enter the reset code you received and choose a new password.
-          </p>
+          <p className="text-sm text-base-content/70 text-center">{t('auth.reset_subtitle')}</p>
           {status && <div className="alert alert-success text-sm">{status}</div>}
           {error && <div className="alert alert-error text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="form-control">
               <label className="label" htmlFor="reset-code">
-                <span className="label-text">Reset code</span>
+                <span className="label-text">{t('auth.reset_code')}</span>
               </label>
               <input
                 id="reset-code"
@@ -59,7 +59,7 @@ const ResetPasswordPage = () => {
             </div>
             <div className="form-control">
               <label className="label" htmlFor="new-password">
-                <span className="label-text">New password</span>
+                <span className="label-text">{t('auth.new_password')}</span>
               </label>
               <input
                 id="new-password"
@@ -73,18 +73,18 @@ const ResetPasswordPage = () => {
               />
             </div>
             <button type="submit" className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}>
-              {loading ? 'Saving...' : 'Update password'}
+              {loading ? t('auth.saving') : t('auth.update_password')}
             </button>
           </form>
 
           <div className="text-center text-sm space-y-1">
             <Link to="/login" className="link link-primary">
-              Back to login
+              {t('auth.back_to_login')}
             </Link>
             <div>
-              Need a new code?{' '}
+              {t('auth.need_new_code')}{' '}
               <Link to="/forgot-password" className="link link-secondary">
-                Request again
+                {t('auth.request_again')}
               </Link>
             </div>
           </div>
