@@ -31,6 +31,7 @@ const LoginPage: React.FC = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -45,6 +46,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSendOtp = async () => {
+    if (loading) return;
     if (!phone) {
       setError('Phone number is required');
       return;
@@ -64,6 +66,7 @@ const LoginPage: React.FC = () => {
 
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -143,6 +146,7 @@ const LoginPage: React.FC = () => {
                 <button
                   className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                   type="submit"
+                  disabled={loading}
                 >
                   {loading ? t('common.loading') : t('auth.login')}
                 </button>
@@ -166,6 +170,7 @@ const LoginPage: React.FC = () => {
                     <button
                       className={`btn btn-secondary ${loading ? 'loading' : ''}`}
                       onClick={handleSendOtp}
+                      disabled={loading}
                     >
                       Send OTP
                     </button>
@@ -190,6 +195,7 @@ const LoginPage: React.FC = () => {
                     <button
                       className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                       type="submit"
+                      disabled={loading}
                     >
                       Verify & Login
                     </button>

@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import api from '../lib/api';
-import { connectSocket, disconnectSocket } from '../lib/socket';
+import { connectSocket, disconnectSocket, resetSocketGuard } from '../lib/socket';
 
 type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'ADMIN';
 
@@ -27,32 +27,66 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const getInitialToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('georise_token');
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initialToken = getInitialToken();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => !!initialToken);
   const [lastActive, setLastActive] = useState<number>(() => Date.now());
   const SESSION_MAX_IDLE_MS = 30 * 60 * 1000; // 30 minutes
+  const meInFlight = useRef<Promise<User | null> | null>(null);
+  const meCacheRef = useRef<{ user: User | null; ts: number } | null>(null);
+  const ME_CACHE_TTL_MS = 60_000; // avoid spamming /me on refreshes
 
   const fetchMe = useCallback(async () => {
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
+    const now = Date.now();
+    if (meCacheRef.current && now - meCacheRef.current.ts < ME_CACHE_TTL_MS) {
+      setUser(meCacheRef.current.user);
+      return meCacheRef.current.user;
     }
+
+    if (!meInFlight.current) {
+      meInFlight.current = api
+        .get('/auth/me')
+        .then((res) => {
+          meCacheRef.current = { user: res.data.user, ts: Date.now() };
+          setUser(res.data.user);
+          return res.data.user;
+        })
+        .catch(() => {
+          meCacheRef.current = { user: null, ts: Date.now() };
+          setUser(null);
+          return null;
+        })
+        .finally(() => {
+          meInFlight.current = null;
+        });
+    }
+
+    return meInFlight.current;
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const token = localStorage.getItem('georise_token');
-    if (token) {
-      (async () => {
+    const run = async () => {
+      if (token) {
         await fetchMe();
-        connectSocket(token);
-      })();
-    } else {
-      setLoading(false);
+        if (!cancelled) {
+          connectSocket(token);
+        }
+      } else {
+        setUser(null);
+      }
+      if (!cancelled) setLoading(false);
+    };
+
+    if (token) {
+      run();
     }
 
     const updateActive = () => setLastActive(Date.now());
@@ -61,17 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       window.removeEventListener('mousemove', updateActive);
       window.removeEventListener('keydown', updateActive);
+      cancelled = true;
     };
   }, [SESSION_MAX_IDLE_MS, fetchMe]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (user && Date.now() - lastActive > SESSION_MAX_IDLE_MS) {
-        logout();
-      }
-    }, 60000);
-    return () => clearInterval(timer);
-  }, [user, lastActive, SESSION_MAX_IDLE_MS]);
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
@@ -85,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('georise_token');
     setUser(null);
     disconnectSocket();
+    resetSocketGuard();
   };
 
   const setAuth = (userData: User, token: string, refreshToken?: string) => {
@@ -93,6 +120,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
     connectSocket(token);
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (user && Date.now() - lastActive > SESSION_MAX_IDLE_MS) {
+        logout();
+      }
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [user, lastActive, SESSION_MAX_IDLE_MS]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, setAuth }}>
