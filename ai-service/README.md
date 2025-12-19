@@ -19,7 +19,9 @@ Training:
 
 - Dataset: `data/incidents_labeled.csv`
 - Extra Amharic/mixed augmentation: `data/incidents_am_aug.csv` (append with `--extra_data`)
-- Script: `python training/train_incident_classifier.py --data data/incidents_labeled.csv --extra_data data/incidents_am_aug.csv --output models/afroxlmr_incident_classifier --epochs 3 --batch 4`
+- Script: `python training/train_incident_classifier.py --data data/incidents_labeled.csv --extra_data data/incidents_am_aug.csv --output models/afroxlmr_incident_classifier --epochs 3 --batch 4 --version_tag amharic-aug-2025-12`
+- Stratified eval: `python training/evaluate_model.py --model models/afroxlmr_incident_classifier --data data/incidents_labeled.csv --extra_data data/incidents_am_aug.csv --batch 8 --save_report models/afroxlmr_incident_classifier/eval_report.json`
+- Golden regression (quick): `python test_amharic_golden.py`
 
 Latest training (batch=4, epochs=3) on ~650 rows:
 
@@ -29,4 +31,5 @@ Latest training (batch=4, epochs=3) on ~650 rows:
 Backups:
 
 - Keep a copy of `data/incidents_labeled.csv` and the trained `models/afroxlmr_incident_classifier/` outside git (local drive or artifact storage).
-- Use `training/validate_dataset.py` to audit new data, and `test_amharic_golden.py` to check regressions (AI service running on :8001).
+- Use `training/validate_dataset.py` to audit new data, `test_amharic_golden.py` to check regressions (AI service running on :8001), and `training/evaluate_model.py` for full per-language metrics.
+- Model metadata and version tag are stored in `models/afroxlmr_incident_classifier/metadata.json` and surfaced via `/health` in `model` field.

@@ -12,6 +12,7 @@ app = FastAPI()
 
 MODEL_DIR = Path(__file__).parent / "models" / "afroxlmr_incident_classifier"
 DEFAULT_MODEL_NAME = "Davlan/afro-xlmr-base"
+METADATA_PATH = MODEL_DIR / "metadata.json"
 
 
 class ClassifyRequest(BaseModel):
@@ -32,9 +33,17 @@ def load_model():
     Load a local fine-tuned model if present; otherwise fall back to the base model
     so the service keeps running even without weights.
     """
+    version = None
     if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
         model_path = MODEL_DIR
         print(f"Loading local model from {model_path}")
+        if METADATA_PATH.exists():
+            try:
+                import json
+
+                version = json.loads(METADATA_PATH.read_text(encoding="utf-8")).get("version_tag")
+            except Exception:
+                version = None
     else:
         model_path = DEFAULT_MODEL_NAME
         print(f"Loading default base model {model_path}")
@@ -42,7 +51,7 @@ def load_model():
     tokenizer = AutoTokenizer.from_pretrained(str(model_path))
     model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
     model.eval()
-    return tokenizer, model, str(model_path)
+    return tokenizer, model, version or str(model_path)
 
 
 def heuristic_category(text: str) -> str:

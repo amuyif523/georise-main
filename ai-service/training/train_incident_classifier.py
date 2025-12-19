@@ -9,6 +9,9 @@ This is sized for a small GPU/Colab. Adjust batch sizes/epochs as needed.
 """
 
 import argparse
+import json
+from datetime import datetime
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from datasets import Dataset
@@ -40,7 +43,9 @@ def load_dataset(path: str, label_names, extra_paths=None):
     else:
         df["label"] = df["label"].astype(int)
     df["label"] = df["label"].astype(int)
-    ds = Dataset.from_pandas(df[["text", "label"]])
+    # Preserve lang if present for stratified evaluation later
+    cols = ["text", "label"] + (["lang"] if "lang" in df.columns else [])
+    ds = Dataset.from_pandas(df[cols])
     # Simple split; avoid ClassLabel stratify issues
     ds = ds.train_test_split(test_size=0.2, seed=42)
     return ds, label2id, id2label
@@ -58,6 +63,7 @@ def main():
     parser.add_argument("--output", default="../models/afroxlmr_incident_classifier")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch", type=int, default=8)
+    parser.add_argument("--version_tag", default=None, help="Version tag to store in metadata.json")
     args = parser.parse_args()
 
     label_names = ["FIRE", "MEDICAL", "CRIME", "TRAFFIC", "INFRASTRUCTURE", "OTHER"]
@@ -73,8 +79,12 @@ def main():
             max_length=128,
         )
 
-    train_ds = ds["train"].map(preprocess, batched=True)
-    val_ds = ds["test"].map(preprocess, batched=True)
+    train_ds_raw = ds["train"]
+    val_ds_raw = ds["test"]
+    val_langs = val_ds_raw["lang"] if "lang" in val_ds_raw.column_names else None
+
+    train_ds = train_ds_raw.map(preprocess, batched=True)
+    val_ds = val_ds_raw.map(preprocess, batched=True)
     cols = ["input_ids", "attention_mask", "label"]
     train_ds.set_format(type="torch", columns=cols)
     val_ds.set_format(type="torch", columns=cols)
@@ -122,6 +132,46 @@ def main():
     trainer.train()
     trainer.save_model(args.output)
     tokenizer.save_pretrained(args.output)
+
+    # Language-stratified evaluation (if lang column exists)
+    metrics_report = {}
+    eval_out = trainer.predict(val_ds)
+    overall_preds = np.argmax(eval_out.predictions, axis=-1)
+    overall_labels = eval_out.label_ids
+    metrics_report["overall"] = {
+        "accuracy": accuracy_score(overall_labels, overall_preds),
+        "macro_f1": f1_score(overall_labels, overall_preds, average="macro"),
+    }
+
+    if val_langs:
+        per_lang = {}
+        for lang in set(val_langs):
+            idx = [i for i, l in enumerate(val_langs) if l == lang]
+            lang_labels = overall_labels[idx]
+            lang_preds = overall_preds[idx]
+            per_lang[lang] = {
+                "accuracy": accuracy_score(lang_labels, lang_preds),
+                "macro_f1": f1_score(lang_labels, lang_preds, average="macro"),
+                "count": len(idx),
+            }
+        metrics_report["per_language"] = per_lang
+
+    # Persist metadata
+    metadata = {
+        "trained_at": datetime.utcnow().isoformat() + "Z",
+        "base_model": args.model_name,
+        "version_tag": args.version_tag or "unversioned",
+        "train_rows": len(train_ds_raw),
+        "val_rows": len(val_ds_raw),
+        "label2id": label2id,
+        "id2label": id2label,
+        "metrics": metrics_report,
+    }
+    meta_path = Path(args.output) / "metadata.json"
+    meta_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+    print("\nSaved model + tokenizer to", args.output)
+    print("Eval metrics:", json.dumps(metrics_report, indent=2))
 
 
 if __name__ == "__main__":
