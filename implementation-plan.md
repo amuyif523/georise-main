@@ -1,54 +1,19 @@
-# GEORISE Implementation Plan (Sprints 4-8)
+# GEORISE Implementation Snapshot (Dec 2025)
 
-## Sprint 4: Operational Intelligence (Completed)
+This is a high-level implementation status for the platform. Detailed phase notes live in `docs/implementation-plan.md`.
 
-- [x] **Duplicate Detection Engine**
-  - [x] Backend: `findPotentialDuplicates` (PostGIS 200m + Jaccard Similarity).
-  - [x] Frontend: Citizen warning in `ReportIncidentWizard`.
-- [x] **Reputation Management System**
-  - [x] Backend: `ReputationService` (Scoring + Tiers).
-  - [x] Backend: Auto-flag low-trust reports.
-- [x] **Incident Merging**
-  - [x] Backend: `mergeIncidents` (Status update + Logging).
-  - [x] Frontend: Agency UI in `IncidentDetailPane` to merge duplicates.
+## Delivered
 
-## Sprint 5: Resource Management & Dispatch (Next)
+- Incident intelligence: duplicate detection, TrustScore tiers, shadow-ban, rate limits, spam throttles.
+- Communication: SMS/OTP login, incident chat/merge/share, proximity alerts via sockets + Web Push.
+- Dispatch & GIS: OSRM/Google routing with caching/heuristic fallback, SLA job, jurisdiction editing, spatial queries.
+- Resilience & UX: Crisis mode enforcement/broadcasts, multilingual (Amharic/English), hazard workflow, offline/PWA queues.
+- Evidence & notifications: Photo uploads, Twilio-backed SMS (with retry), VAPID Web Push, notification bell.
+- Analytics & quality: Heatmaps, KPIs, clustering, CSV/JSON exports, password reset flow, responder simulation, CI-backed unit/component/e2e tests.
 
-- [ ] **Unit Management**
-  - [ ] Backend: CRUD for `Unit` (Type, Capacity, Status).
-  - [ ] Frontend: `UnitsPage` for Agency Admins.
-- [ ] **Shift Management**
-  - [ ] Backend: `Shift` model (Start/End time, Personnel).
-  - [ ] Frontend: Shift assignment UI.
-- [ ] **Advanced Dispatch**
-  - [ ] Backend: Auto-dispatch logic based on Unit Type & Availability.
-  - [ ] Frontend: Dispatch recommendation UI improvements.
+## Remaining Hardening
 
-## Sprint 6: Analytics & Reporting
-
-- [ ] **Heatmaps**
-  - [ ] Backend: Aggregated incident data endpoint.
-  - [ ] Frontend: `Leaflet.heat` integration.
-- [ ] **Agency Performance Metrics**
-  - [ ] Backend: Response time calculation.
-  - [ ] Frontend: Dashboard charts (Recharts).
-- [ ] **Export**
-  - [ ] Backend: CSV/PDF export for reports.
-
-## Sprint 7: Communication & Notifications
-
-- [ ] **In-App Chat**
-  - [ ] Backend: Socket.io rooms for Incident-specific chat.
-  - [ ] Frontend: Chat UI in `IncidentDetailPane`.
-- [ ] **Push Notifications**
-  - [ ] Backend: WebPush integration.
-  - [ ] Frontend: Service Worker notification handling.
-
-## Sprint 8: System Hardening & Final Polish
-
-- [ ] **Role-Based Access Control (RBAC)**
-  - [ ] Audit all endpoints for permission checks.
-- [ ] **Rate Limiting**
-  - [ ] Redis-based rate limiting for API.
-- [ ] **Load Testing**
-  - [ ] Simulate high load with Artillery.
+- Provide production creds/keys (Twilio, VAPID; decide on FCM if needed).
+- Load/performance tests and tuning for DB/Redis/socket throughput.
+- Observability: metrics/tracing/alerting pipeline beyond current health check + logs.
+- Improve AI accuracy by adding fine-tuned AfroXLMR weights to `ai-service/models`.
