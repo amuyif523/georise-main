@@ -13,4 +13,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Attach retryAfterMs to 429 errors so callers can back off
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error?.response?.status === 429) {
+      const retryAfterHeader = error.response.headers?.['retry-after'];
+      const retrySeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+      if (!Number.isNaN(retrySeconds)) {
+        error.retryAfterMs = retrySeconds * 1000;
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;

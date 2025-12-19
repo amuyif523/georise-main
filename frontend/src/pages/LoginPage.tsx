@@ -22,6 +22,8 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rateLimitedUntil, setRateLimitedUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
@@ -29,36 +31,74 @@ const LoginPage: React.FC = () => {
     }
   }, [searchParams, t]);
 
+  useEffect(() => {
+    if (!rateLimitedUntil) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitedUntil]);
+
+  const rateLimitRemainingMs =
+    rateLimitedUntil && rateLimitedUntil > now ? rateLimitedUntil - now : 0;
+  const isRateLimited = rateLimitRemainingMs > 0;
+  const rateLimitMessage =
+    rateLimitRemainingMs > 0
+      ? `Too many requests. Please wait ${Math.ceil(rateLimitRemainingMs / 1000)}s and try again.`
+      : null;
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || isRateLimited) return;
     setError(null);
-    setSuccess(null);
+    setSuccess(rateLimitMessage);
     setLoading(true);
     try {
       await login(email, password);
       navigate('/redirect-after-login');
     } catch (err: any) {
-      setError(err?.response?.data?.message || t('common.error'));
+      const is429 = err?.response?.status === 429;
+      const retryMs: number | undefined = err?.retryAfterMs;
+      if (is429) {
+        const until = Date.now() + (retryMs ?? 60_000);
+        setRateLimitedUntil(until);
+        setError(
+          retryMs
+            ? `Too many requests. Try again in ${Math.ceil((retryMs ?? 0) / 1000)}s.`
+            : 'Too many requests. Please wait and retry.',
+        );
+      } else {
+        setError(err?.response?.data?.message || t('common.error'));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleSendOtp = async () => {
-    if (loading) return;
+    if (loading || isRateLimited) return;
     if (!phone) {
       setError('Phone number is required');
       return;
     }
     setLoading(true);
-    setError(null);
+    setError(rateLimitMessage);
     try {
       await api.post('/auth/otp/request', { phone });
       setOtpSent(true);
       setSuccess('OTP sent to your phone.');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to send OTP');
+      const is429 = err?.response?.status === 429;
+      const retryMs: number | undefined = err?.retryAfterMs;
+      if (is429) {
+        const until = Date.now() + (retryMs ?? 60_000);
+        setRateLimitedUntil(until);
+        setError(
+          retryMs
+            ? `Too many requests. Try again in ${Math.ceil((retryMs ?? 0) / 1000)}s.`
+            : 'Too many requests. Please wait and retry.',
+        );
+      } else {
+        setError(err?.response?.data?.message || 'Failed to send OTP');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,15 +106,27 @@ const LoginPage: React.FC = () => {
 
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-    setError(null);
+    if (loading || isRateLimited) return;
+    setError(rateLimitMessage);
     setLoading(true);
     try {
       const res = await api.post('/auth/otp/verify', { phone, code: otpCode });
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/redirect-after-login');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Invalid OTP');
+      const is429 = err?.response?.status === 429;
+      const retryMs: number | undefined = err?.retryAfterMs;
+      if (is429) {
+        const until = Date.now() + (retryMs ?? 60_000);
+        setRateLimitedUntil(until);
+        setError(
+          retryMs
+            ? `Too many requests. Try again in ${Math.ceil((retryMs ?? 0) / 1000)}s.`
+            : 'Too many requests. Please wait and retry.',
+        );
+      } else {
+        setError(err?.response?.data?.message || 'Invalid OTP');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,6 +160,11 @@ const LoginPage: React.FC = () => {
 
           {success && <div className="alert alert-success mb-3 text-sm">{success}</div>}
           {error && <div className="alert alert-error mb-3 text-sm">{error}</div>}
+          {isRateLimited && (
+            <div className="alert alert-warning mb-3 text-sm">
+              {rateLimitMessage || 'Too many requests. Please wait a moment.'}
+            </div>
+          )}
 
           {mode === 'EMAIL' ? (
             <form onSubmit={handleEmailLogin} className="space-y-4">
@@ -146,7 +203,7 @@ const LoginPage: React.FC = () => {
                 <button
                   className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isRateLimited}
                 >
                   {loading ? t('common.loading') : t('auth.login')}
                 </button>
@@ -170,7 +227,7 @@ const LoginPage: React.FC = () => {
                     <button
                       className={`btn btn-secondary ${loading ? 'loading' : ''}`}
                       onClick={handleSendOtp}
-                      disabled={loading}
+                      disabled={loading || isRateLimited}
                     >
                       Send OTP
                     </button>
@@ -195,7 +252,7 @@ const LoginPage: React.FC = () => {
                     <button
                       className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || isRateLimited}
                     >
                       Verify & Login
                     </button>
