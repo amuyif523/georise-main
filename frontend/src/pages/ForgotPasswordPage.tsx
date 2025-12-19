@@ -38,8 +38,24 @@ const ForgotPasswordPage = () => {
             {t('auth.forgot_title')}
           </h2>
           <p className="text-sm text-base-content/70 text-center">{t('auth.forgot_subtitle')}</p>
-          {status && <div className="alert alert-success text-sm">{status}</div>}
-          {error && <div className="alert alert-error text-sm">{error}</div>}
+          {status && (
+            <div
+              className="alert alert-success text-sm break-words"
+              role="status"
+              aria-live="polite"
+            >
+              {status}
+            </div>
+          )}
+          {error && (
+            <div
+              className="alert alert-error text-sm break-words"
+              role="alert"
+              aria-live="assertive"
+            >
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="form-control">
               <label className="label" htmlFor="identifier">

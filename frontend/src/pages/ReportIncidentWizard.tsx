@@ -78,7 +78,11 @@ const Step1Describe: React.FC<{
           <span>{t('incident.crisis_banner')}</span>
         </div>
       )}
-      {error && <div className="alert alert-error text-sm">{error}</div>}
+      {error && (
+        <div className="alert alert-error text-sm break-words" role="alert" aria-live="assertive">
+          {error}
+        </div>
+      )}
       <div className="space-y-3">
         <div>
           <label className="label">
