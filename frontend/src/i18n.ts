@@ -17,14 +17,28 @@ i18n
         translation: amTranslation,
       },
     },
-    fallbackLng: 'en',
+    fallbackLng: ['en'],
     debug: true,
+    saveMissing: true,
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage', 'querystring', 'navigator'],
       caches: ['localStorage'],
+    },
+    missingKeyHandler: (_lng, _ns, key) => {
+      try {
+        const stored = localStorage.getItem('i18n_missing_keys');
+        const parsed: string[] = stored ? JSON.parse(stored) : [];
+        if (!parsed.includes(key)) {
+          parsed.push(key);
+          localStorage.setItem('i18n_missing_keys', JSON.stringify(parsed));
+        }
+      } catch {
+        // swallow; this is best-effort for dev inventory
+        console.warn('i18n missing key (inventory only):', key);
+      }
     },
   });
 
