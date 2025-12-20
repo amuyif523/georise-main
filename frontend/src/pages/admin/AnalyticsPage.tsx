@@ -170,6 +170,12 @@ const AnalyticsPage: React.FC = () => {
     };
   }, [data?.byCategory]);
 
+  const fmtMinutes = (val: unknown) => {
+    const num = typeof val === 'number' ? val : Number(val);
+    if (!Number.isFinite(num)) return 'N/A';
+    return `${num.toFixed(1)} min`;
+  };
+
   const responseTimeChart = useMemo(() => {
     if (!responseTimeData?.length) return null;
     return {
@@ -293,16 +299,12 @@ const AnalyticsPage: React.FC = () => {
               />
               <KPICard
                 label="Avg Response Time"
-                value={
-                  data.avgResponseMinutes ? `${data.avgResponseMinutes.toFixed(1)} min` : 'N/A'
-                }
+                value={fmtMinutes(data.avgResponseMinutes)}
                 subtitle="Created → Arrived"
               />
               <KPICard
                 label="Avg Resolution Time"
-                value={
-                  data.avgResolutionMinutes ? `${data.avgResolutionMinutes.toFixed(1)} min` : 'N/A'
-                }
+                value={fmtMinutes(data.avgResolutionMinutes)}
                 subtitle="Created → Completed"
               />
             </div>
