@@ -7,6 +7,7 @@ const addMinutes = (date: Date, mins: number) => new Date(date.getTime() + mins 
 
 export class DemoService {
   async resetDemoData() {
+    await prisma.activityLog.deleteMany({ where: { incident: { isDemo: true } } });
     await prisma.incidentStatusHistory.deleteMany({ where: { incident: { isDemo: true } } });
     await prisma.incidentAIOutput.deleteMany({ where: { incident: { isDemo: true } } });
     await prisma.incident.deleteMany({ where: { isDemo: true } });
