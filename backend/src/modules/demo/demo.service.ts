@@ -229,7 +229,7 @@ export class DemoService {
          ST_GeomFromText('${locationWkt}'),
          '${createdAt.toISOString()}', '${now.toISOString()}', true, '${DEMO_CODE}',
          ${dispatchedAtVal}, ${arrivedAtVal}, ${resolvedAtVal})
-      RETURNING *;
+      RETURNING id;
     `);
     const incident = incidentRows[0];
 
