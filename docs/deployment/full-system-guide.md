@@ -150,7 +150,10 @@ E2E_BASE_URL=http://localhost:5173 npm run e2e:ui  # interactive
 ```powershell
 cd ai-service
 .\venv\Scripts\activate
-python -m pytest test_amharic.py
+python -m pytest test_amharic.py                  # smoke UTF-8 + inference path
+python training/validate_dataset.py --data data/incidents_labeled.csv --extra data/incidents_am_aug.csv
+python training/evaluate_model.py --model models/afroxlmr_incident_classifier --data data/incidents_labeled.csv --extra_data data/incidents_am_aug.csv --batch 8 --save_report models/afroxlmr_incident_classifier/eval_report.json
+python test_amharic_golden.py                     # golden-set regression (AI on :8001)
 ```
 
 ## Health & Troubleshooting
@@ -162,6 +165,8 @@ python -m pytest test_amharic.py
 - 429 Too Many Requests during `/auth/login` or `/auth/me`: the auth limiter (10 requests/hour/IP) is firing. In dev, either slow down login retries, restart the backend to reset in-memory counters, or flush Redis (`redis-cli flushall`) if using the Redis store.
 - Push/SMS optional: without VAPID/Twilio keys the app logs/simulates notifications instead of sending.
 - Prisma prompts for a migration when schema changes are detected; use `npx prisma migrate deploy` to apply existing migrations without creating new ones.
+- I18n: language toggle persists via localStorage; during QA you can inspect `localStorage["i18n_missing_keys"]` to spot untranslated strings; run UI in Amharic and verify text fits (no overflow).
+- AI eval: if `numpy`/PyTorch mismatch errors appear, pin `numpy<2` in the venv (`pip install 'numpy<2' --upgrade`), then rerun the AI tests above.
 
 ## Stopping Services
 
