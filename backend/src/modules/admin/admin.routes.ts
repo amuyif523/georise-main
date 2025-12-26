@@ -17,18 +17,8 @@ const idSchema = z.object({
 });
 
 const paginationSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((v) => (v ? Number(v) : 1))
-    .pipe(z.number().int().min(1))
-    .default('1'),
-  limit: z
-    .string()
-    .optional()
-    .transform((v) => (v ? Number(v) : 20))
-    .pipe(z.number().int().min(1).max(100))
-    .default('20'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().optional(),
   role: z.nativeEnum(Role).optional(),
 });
