@@ -1,75 +1,61 @@
-# GEORISE Implementation Plan: Status (Dec 2025)
+# GEORISE Implementation Plan: Updated (Dec 2025)
 
-This plan tracks progress toward 100% of the features listed in `feature-list.md`. All functional work through Sprint 12 is implemented in code; remaining tasks focus on production readiness and observability.
-
----
-
-## Phase 0: Testing & QA Foundation (Sprint 3.5) ✅
-
-- Backend unit/integration harness (Vitest) with test DB, migrations, and seeds.
-- Frontend component tests (Vitest + React Testing Library) for auth, report wizard, admin review, password reset.
-- Playwright smoke test covering admin login/analytics, agency map, citizen submission.
-- Lint/format baselines (ESLint, Prettier, Husky/lint-staged) and GitHub Actions CI with coverage reporting.
-
-## Phase 1: Operational Intelligence (Sprint 4) ✅
-
-- Duplicate detection (PostGIS radius + text similarity) with UI warnings.
-- Reputation/TrustScore tiers; low-trust auto-review and shadow-ban handling.
-- Rate limiting and anti-abuse rules (Redis-backed burst limits and spam throttles).
-
-## Phase 2: Communication & Coordination (Sprint 5) ✅
-
-- SMS/OTP login + verification via Twilio (with simulated fallback).
-- Inter-agency coordination: incident chat, merge, handoff/share for backup.
-- Proximity alerts (geo-fencing) delivered via sockets and Web Push.
-
-## Phase 3: Advanced Dispatch & GIS (Sprint 6) ✅
-
-- Smart routing with OSRM/Google + cached heuristic fallback.
-- SLA timer/escalation job.
-- Admin GIS management: draw/edit/save agency jurisdictions (GeoJSON).
-
-## Phase 4: Resilience & Analytics (Sprint 7) ✅
-
-- Crisis mode controls (category enforcement + UI banner) and broadcast alerts.
-- Analytics dashboards (response time, heatmaps, utilization, KPIs, clusters).
-- System health monitoring endpoint (DB, Redis, AI latency).
-
-## Phase 5: Localization & Polish (Sprint 8) ✅
-
-- Multilingual support (Amharic/English via i18next).
-- Dedicated infrastructure hazard reporting flow and UI polish.
-
-## Phase 6: Notifications & Messaging Hardening (Sprint 9) ✅
-
-- Twilio integration with retry/backoff; environment-based provider config.
-- Web Push (VAPID) storage and delivery; service worker handlers in frontend.
-
-## Phase 7: Incident Evidence & Media (Sprint 10) ✅
-
-- Incident photo uploads with validation, storage metadata, and UI display.
-
-## Phase 8: Crisis Controls & Routing Realism (Sprint 11) ✅
-
-- Crisis category enforcement on incident creation.
-- Routing scores in dispatch recommendations with provider toggles and caching.
-
-## Phase 9: Quality, Exports & Recovery (Sprint 12) ✅
-
-- Password reset flow (tokenized, SMS/email logging) + UI screens.
-- Analytics export (CSV/JSON) beyond incidents CSV.
-- Automated tests (backend+frontend) wired into CI.
-- Responder simulation job + UI toggle.
+This plan adds the newly identified RBAC/user-management gaps, AI/GIS validation, and observability work. Earlier sprints remain documented for traceability.
 
 ---
 
-## Remaining Hardening / Follow-Ups
+## Phases Delivered (baseline)
 
-- Provision production credentials: Twilio (SMS) and VAPID keys; decide on FCM/mobile push if needed.
-- Drop trained AfroXLMR weights into `ai-service/models` for higher-quality classification; current fallback uses the base model.
-- Add observability (metrics/tracing/alerting) beyond the existing health endpoint and logs.
-- Run load/performance testing (Artillery/JMeter) and tune Redis/DB connection limits before go-live.
+- **Phase 0: Testing & QA Foundation** — Backend unit/integration harness; frontend component tests; Playwright smoke; lint/format + CI with coverage.
+- **Phase 1: Operational Intelligence** — Duplicate detection; TrustScore tiers; rate limiting/anti-abuse.
+- **Phase 2: Communication & Coordination** — SMS/OTP; incident chat/merge/share; proximity alerts via sockets/Web Push.
+- **Phase 3: Advanced Dispatch & GIS** — Routing (OSRM/Google + cache); SLA job; admin GIS boundary editor.
+- **Phase 4: Resilience & Analytics** — Crisis mode; analytics dashboards; system health endpoint.
+- **Phase 5: Localization & Polish** — Amharic/English i18n; hazard flow polish.
+- **Phase 6: Notifications & Messaging** — Twilio with retry/backoff; Web Push (VAPID) + SW handlers.
+- **Phase 7: Evidence & Media** — Photo uploads with validation/metadata/UI.
+- **Phase 8: Crisis Controls & Routing Realism** — Crisis enforcement; routing scores/caching.
+- **Phase 9: Quality, Exports & Recovery** — Password reset flow; analytics exports; automated tests; responder simulation toggle.
 
 ---
 
-All functional phases are shipped; the focus now is production readiness, monitoring, and performance validation.
+## New Hardening Sprints (to address current gaps)
+
+### Sprint A: Agency/Responder/Dispatcher RBAC & CRUD
+
+- Agency-scoped user management: create/edit/deactivate dispatchers/responders; soft-delete/status flags; password reset/force-reset.
+- Super-admin user management: `/admin/users` list/create/role change/deactivate with audit logs.
+- Enforce role checks and agency scoping on responder/incident lists; add pagination/search.
+- Audit logging for all user CRUD by agency admins and super-admins.
+
+### Sprint B: Admin Console Enhancements
+
+- Admin CRUD for agencies + their users (pagination, search, role/status filters).
+- Agency admin console: user table with role dropdown/status toggle; invite/reset flows.
+- Prevent deletion of users with active assignments; require deactivate instead.
+- Add availability/status for responders; optional schedule/shift as stretch.
+
+### Sprint C: AI/GIS Validation & Safety Nets
+
+- Pin numpy/torch compatibility in AI venv; document `numpy<2` fallback.
+- Per-language eval + golden regression wired into CI for `/classify` (Amharic/English/mix).
+- Strengthen GIS access control and proximity/duplicate tests; unit tests for spatial queries and boundary validation.
+- Surface AI `metadata.json` version via `/health`; add retry/backoff in backend AI calls.
+
+### Sprint D: Observability & Load Checks
+
+- Metrics/tracing/alerting hooks (at least request/DB/AI latency and error rates).
+- Light load/performance runs (Locust/Artillery) with DB/Redis tuning guidance.
+- Audit events for critical actions (user CRUD, dispatch actions, crisis toggles) exposed to admins.
+
+---
+
+## Remaining Follow-Ups
+
+- Provision production credentials: Twilio (SMS) and VAPID; decide on FCM/mobile push.
+- Drop trained AfroXLMR weights into `ai-service/models` for higher-quality classification; base model remains fallback.
+- Run load/performance testing and tune Redis/DB connection limits before go-live.
+
+---
+
+Scope note: Core functionality is in place; these sprints close RBAC/CRUD gaps, harden AI/GIS validation, improve admin usability, and add observability/performance hygiene.
