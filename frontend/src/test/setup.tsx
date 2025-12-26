@@ -3,10 +3,22 @@ import { vi } from 'vitest';
 import React from 'react';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { changeLanguage: vi.fn() },
-  }),
+  useTranslation: () => {
+    const translations: Record<string, string> = {
+      'auth.email_or_phone': 'Email or phone',
+      'auth.send_reset_code': 'Send reset code',
+      'auth.reset_code': 'Reset code',
+      'auth.new_password': 'New password',
+      'auth.update_password': 'Update password',
+      'auth.sending': 'Sending...',
+      'validation.provide_title_description': 'Please provide a title and description',
+      'validation.select_location': 'Please select a location',
+    };
+    return {
+      t: (key: string) => translations[key] ?? key,
+      i18n: { changeLanguage: vi.fn() },
+    };
+  },
 }));
 
 vi.mock('leaflet', () => ({

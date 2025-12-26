@@ -270,6 +270,7 @@ const ReportIncidentWizard: React.FC = () => {
   const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
   const online = useNetworkStatus();
+  const { t } = useTranslation();
 
   const handleNextFromStep1 = () => {
     if (!form.title || !form.description) {

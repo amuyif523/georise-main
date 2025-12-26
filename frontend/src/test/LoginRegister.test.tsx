@@ -43,7 +43,7 @@ describe('Login/Register flows', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /login/i }));
-    expect(loginMock).toHaveBeenCalledWith('citizen@example.com', 'password123');
+    expect(loginMock).toHaveBeenCalledWith('citizen1@example.com', 'password123');
   });
 
   it('submits registration payload', async () => {
