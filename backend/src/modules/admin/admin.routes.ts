@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import prisma from '../../prisma';
 import { z } from 'zod';
@@ -13,6 +15,33 @@ const idSchema = z.object({
     .transform((v) => Number(v))
     .pipe(z.number().int().positive()),
 });
+
+const paginationSchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((v) => (v ? Number(v) : 1))
+    .pipe(z.number().int().min(1))
+    .default('1'),
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => (v ? Number(v) : 20))
+    .pipe(z.number().int().min(1).max(100))
+    .default('20'),
+  search: z.string().optional(),
+  role: z.nativeEnum(Role).optional(),
+});
+
+async function auditUser(actorId: number, action: string, targetId: number, note?: string) {
+  try {
+    await prisma.auditLog.create({
+      data: { actorId, action, targetType: 'User', targetId, note },
+    });
+  } catch (err) {
+    console.error('Failed to write audit log', err);
+  }
+}
 
 // Pending agencies
 router.get('/agencies/pending', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
@@ -105,47 +134,308 @@ router.patch(
   },
 );
 
-// List users (basic)
-router.get('/users', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      citizenVerification: { select: { status: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json({ users });
+// List users (paginated/searchable)
+router.get('/users', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  const parsed = paginationSchema.safeParse(req.query);
+  if (!parsed.success) return res.status(400).json({ message: 'Invalid query' });
+  const { page, limit, search, role } = parsed.data;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const where: any = {};
+  if (role) where.role = role;
+  if (search) {
+    where.OR = [
+      { fullName: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { phone: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [total, users] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      skip,
+      take: Number(limit),
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        citizenVerification: { select: { status: true } },
+      },
+    }),
+  ]);
+  res.json({ total, page: Number(page), limit: Number(limit), users });
 });
 
-// Toggle user active status
-router.patch('/users/:id/toggle', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+const createUserSchema = z.object({
+  fullName: z.string().min(3),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  role: z.nativeEnum(Role),
+  agencyId: z.number().optional(),
+});
+
+router.post(
+  '/users',
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  validateBody(createUserSchema),
+  async (req: any, res) => {
+    try {
+      const data = req.body as z.infer<typeof createUserSchema>;
+      if (data.role === Role.AGENCY_STAFF && !data.agencyId) {
+        return res.status(400).json({ message: 'agencyId required for agency staff' });
+      }
+      const tempPassword = crypto.randomBytes(6).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const user = await prisma.user.create({
+        data: {
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          role: data.role,
+          passwordHash,
+        },
+      });
+      if (data.role === Role.AGENCY_STAFF && data.agencyId) {
+        await prisma.agencyStaff.create({
+          data: { userId: user.id, agencyId: data.agencyId },
+        });
+      }
+      await auditUser(req.user!.id, 'CREATE_USER', user.id);
+      res.status(201).json({ user: { ...user, tempPassword } });
+    } catch (err: any) {
+      res.status(400).json({ message: err?.message || 'Failed to create user' });
+    }
+  },
+);
+
+const updateUserSchema = z.object({
+  fullName: z.string().optional(),
+  phone: z.string().optional(),
+  role: z.nativeEnum(Role).optional(),
+  agencyId: z.number().optional(),
+  isActive: z.boolean().optional(),
+});
+
+router.patch(
+  '/users/:id',
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  validateBody(updateUserSchema),
+  async (req, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+    const userId = parsed.data.id;
+    const body = req.body as z.infer<typeof updateUserSchema>;
+    try {
+      const updates: any = {};
+      if (body.fullName) updates.fullName = body.fullName;
+      if (body.phone !== undefined) updates.phone = body.phone;
+      if (body.role) updates.role = body.role;
+      if (body.isActive !== undefined) updates.isActive = body.isActive;
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: updates,
+      });
+
+      if (body.role === Role.AGENCY_STAFF && body.agencyId) {
+        const existing = await prisma.agencyStaff.findUnique({ where: { userId } });
+        if (existing) {
+          await prisma.agencyStaff.update({ where: { userId }, data: { agencyId: body.agencyId } });
+        } else {
+          await prisma.agencyStaff.create({ data: { userId, agencyId: body.agencyId } });
+        }
+      }
+      if (body.role && body.role !== Role.AGENCY_STAFF) {
+        await prisma.agencyStaff.deleteMany({ where: { userId } });
+      }
+
+      await auditUser(req.user!.id, 'UPDATE_USER', user.id);
+      res.json({ user });
+    } catch (err: any) {
+      res.status(400).json({ message: err?.message || 'Failed to update user' });
+    }
+  },
+);
+
+router.post('/users/:id/force-reset', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
   const parsed = idSchema.safeParse(req.params);
   if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
   const userId = parsed.data.id;
-  const current = await prisma.user.findUnique({ where: { id: userId } });
-  if (!current) return res.status(404).json({ message: 'User not found' });
-
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: { isActive: !current.isActive },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: req.user!.id,
-      action: updated.isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
-      targetType: 'User',
-      targetId: userId,
-    },
-  });
-
-  res.json({ user: updated });
+  try {
+    const tempPassword = crypto.randomBytes(6).toString('hex');
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    await auditUser(req.user!.id, 'FORCE_RESET_PASSWORD', user.id);
+    res.json({ userId: user.id, tempPassword });
+  } catch (err: any) {
+    res.status(400).json({ message: 'Failed to reset password' });
+  }
 });
+
+// --- Agency-admin scoped user management (AGENCY_STAFF only) ---
+const agencyUserCreateSchema = z.object({
+  fullName: z.string().min(3),
+  email: z.string().email(),
+  phone: z.string().optional(),
+});
+
+const agencyUserUpdateSchema = z.object({
+  fullName: z.string().optional(),
+  phone: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+router.get(
+  '/agency/users',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF]),
+  async (req: any, res) => {
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user!.id },
+      select: { agencyId: true },
+    });
+    if (!staff) return res.status(403).json({ message: 'No agency context' });
+    const parsed = paginationSchema.safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid query' });
+    const { page, limit, search } = parsed.data;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const where: any = { role: Role.AGENCY_STAFF, agencyStaff: { agencyId: staff.agencyId } };
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    res.json({ total, page: Number(page), limit: Number(limit), users });
+  },
+);
+
+router.post(
+  '/agency/users',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF]),
+  validateBody(agencyUserCreateSchema),
+  async (req: any, res) => {
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user!.id },
+      select: { agencyId: true },
+    });
+    if (!staff) return res.status(403).json({ message: 'No agency context' });
+    try {
+      const data = req.body as z.infer<typeof agencyUserCreateSchema>;
+      const tempPassword = crypto.randomBytes(6).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const user = await prisma.user.create({
+        data: {
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          role: Role.AGENCY_STAFF,
+          passwordHash,
+        },
+      });
+      await prisma.agencyStaff.create({ data: { userId: user.id, agencyId: staff.agencyId } });
+      await auditUser(req.user!.id, 'AGENCY_CREATE_USER', user.id);
+      res.status(201).json({ user: { ...user, tempPassword } });
+    } catch (err: any) {
+      res.status(400).json({ message: err?.message || 'Failed to create agency user' });
+    }
+  },
+);
+
+router.patch(
+  '/agency/users/:id',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF]),
+  validateBody(agencyUserUpdateSchema),
+  async (req: any, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+    const targetId = parsed.data.id;
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user!.id },
+      select: { agencyId: true },
+    });
+    if (!staff) return res.status(403).json({ message: 'No agency context' });
+    const target = await prisma.agencyStaff.findUnique({ where: { userId: targetId } });
+    if (!target || target.agencyId !== staff.agencyId)
+      return res.status(403).json({ message: 'Forbidden' });
+
+    const body = req.body as z.infer<typeof agencyUserUpdateSchema>;
+    const updates: any = {};
+    if (body.fullName) updates.fullName = body.fullName;
+    if (body.phone !== undefined) updates.phone = body.phone;
+    if (body.isActive !== undefined) updates.isActive = body.isActive;
+
+    const user = await prisma.user.update({ where: { id: targetId }, data: updates });
+    await auditUser(req.user!.id, 'AGENCY_UPDATE_USER', user.id);
+    res.json({ user });
+  },
+);
+
+router.post(
+  '/agency/users/:id/force-reset',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF]),
+  async (req: any, res) => {
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+    const targetId = parsed.data.id;
+    const staff = await prisma.agencyStaff.findUnique({
+      where: { userId: req.user!.id },
+      select: { agencyId: true },
+    });
+    if (!staff) return res.status(403).json({ message: 'No agency context' });
+    const target = await prisma.agencyStaff.findUnique({ where: { userId: targetId } });
+    if (!target || target.agencyId !== staff.agencyId)
+      return res.status(403).json({ message: 'Forbidden' });
+
+    try {
+      const tempPassword = crypto.randomBytes(6).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const user = await prisma.user.update({
+        where: { id: targetId },
+        data: { passwordHash },
+      });
+      await auditUser(req.user!.id, 'AGENCY_FORCE_RESET_PASSWORD', user.id);
+      res.json({ userId: user.id, tempPassword });
+    } catch (err: any) {
+      res.status(400).json({ message: 'Failed to reset password' });
+    }
+  },
+);
 
 // Verify citizen
 router.patch('/users/:id/verify', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {

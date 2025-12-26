@@ -6,32 +6,66 @@ import logger from '../../logger';
 
 const router = Router();
 
-// List responders (admin sees all, agency sees own)
-router.get('/', requireAuth, async (req: any, res) => {
+async function auditResponder(actorId: number, action: string, targetId: number, note?: string) {
   try {
-    const user = req.user!;
-    const where: Record<string, unknown> = {};
-
-    if (user.role === Role.AGENCY_STAFF) {
-      const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
-      if (!staff) return res.status(403).json({ message: 'No agency context' });
-      where.agencyId = staff.agencyId;
-    }
-
-    const responders = await prisma.responder.findMany({
-      where,
-      include: {
-        agency: true,
-        incident: true,
-        user: { select: { id: true, fullName: true, email: true } },
-      },
+    await prisma.auditLog.create({
+      data: { actorId, action, targetType: 'Responder', targetId, note },
     });
-    res.json(responders);
-  } catch (err: any) {
-    logger.error({ err }, 'List responders error');
-    res.status(400).json({ message: 'Failed to list responders' });
+  } catch (err) {
+    logger.error({ err }, 'Failed to write responder audit log');
   }
-});
+}
+
+// List responders (admin sees all, agency sees own) with pagination/search
+router.get(
+  '/',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req: any, res) => {
+    try {
+      const user = req.user!;
+      const where: Record<string, unknown> = {};
+
+      if (user.role === Role.AGENCY_STAFF) {
+        const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
+        if (!staff) return res.status(403).json({ message: 'No agency context' });
+        where.agencyId = staff.agencyId;
+      }
+
+      const page = Math.max(Number(req.query.page) || 1, 1);
+      const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+      const skip = (page - 1) * limit;
+      const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { user: { is: { fullName: { contains: search, mode: 'insensitive' } } } },
+          { user: { is: { email: { contains: search, mode: 'insensitive' } } } },
+        ];
+      }
+
+      const [total, responders] = await Promise.all([
+        prisma.responder.count({ where }),
+        prisma.responder.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            agency: true,
+            incident: true,
+            user: { select: { id: true, fullName: true, email: true, isActive: true } },
+          },
+        }),
+      ]);
+      res.json({ total, page, limit, responders });
+    } catch (err: any) {
+      logger.error({ err }, 'List responders error');
+      res.status(400).json({ message: 'Failed to list responders' });
+    }
+  },
+);
 
 // Create responder (admin or agency staff)
 router.post(
@@ -59,10 +93,79 @@ router.post(
           userId: userId ? Number(userId) : null,
         },
       });
+      await auditResponder(req.user!.id, 'CREATE_RESPONDER', created.id);
       res.status(201).json(created);
     } catch (err: any) {
       logger.error({ err }, 'Create responder error');
       res.status(400).json({ message: err?.message || 'Failed to create responder' });
+    }
+  },
+);
+
+// Update responder (name/type/status/user linkage)
+router.patch(
+  '/:id',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req: any, res) => {
+    try {
+      const responderId = Number(req.params.id);
+      const { name, type, status, userId } = req.body;
+      const data: any = {};
+      if (name) data.name = name;
+      if (type) data.type = type;
+      if (status) data.status = status;
+      if (userId !== undefined) data.userId = userId ? Number(userId) : null;
+
+      // Enforce agency scoping for staff
+      if (req.user!.role === Role.AGENCY_STAFF) {
+        const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
+        if (!staff) return res.status(403).json({ message: 'No agency context' });
+        const target = await prisma.responder.findUnique({ where: { id: responderId } });
+        if (!target || target.agencyId !== staff.agencyId)
+          return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const updated = await prisma.responder.update({
+        where: { id: responderId },
+        data,
+      });
+      await auditResponder(req.user!.id, 'UPDATE_RESPONDER', responderId);
+      res.json(updated);
+    } catch (err: any) {
+      logger.error({ err }, 'Update responder error');
+      res.status(400).json({ message: 'Failed to update responder' });
+    }
+  },
+);
+
+// Deactivate responder (soft: mark OFFLINE and clear incident)
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req: any, res) => {
+    try {
+      const responderId = Number(req.params.id);
+      const data = { status: 'OFFLINE' as any, incidentId: null };
+
+      if (req.user!.role === Role.AGENCY_STAFF) {
+        const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
+        if (!staff) return res.status(403).json({ message: 'No agency context' });
+        const target = await prisma.responder.findUnique({ where: { id: responderId } });
+        if (!target || target.agencyId !== staff.agencyId)
+          return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      const updated = await prisma.responder.update({
+        where: { id: responderId },
+        data,
+      });
+      await auditResponder(req.user!.id, 'DEACTIVATE_RESPONDER', responderId);
+      res.json({ message: 'Responder deactivated', responder: updated });
+    } catch (err: any) {
+      logger.error({ err }, 'Deactivate responder error');
+      res.status(400).json({ message: 'Failed to deactivate responder' });
     }
   },
 );

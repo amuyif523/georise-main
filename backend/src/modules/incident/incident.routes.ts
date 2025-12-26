@@ -30,21 +30,6 @@ const router = Router();
 const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
-type AgencyIncidentRow = {
-  id: number;
-  title: string;
-  category: string | null;
-  severityScore: number | null;
-  status: IncidentStatus;
-  latitude: number | null;
-  longitude: number | null;
-  subCityId: number | null;
-  reviewStatus: string;
-  createdAt: Date;
-  reporterName: string | null;
-  reporterContact: string | null;
-};
-
 const incidentLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 20,
@@ -182,7 +167,7 @@ router.patch(
   },
 );
 
-// List/filter for agencies/admins
+// List/filter for agencies/admins with pagination/search
 router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async (req, res) => {
   try {
     let agencyId: number | null = null;
@@ -195,7 +180,7 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
       agencyId = staff.agencyId;
     }
 
-    const { status, hours, reviewStatus } = req.query;
+    const { status, hours, reviewStatus, search } = req.query;
     const conditions: Prisma.IncidentWhereInput = {};
     if (status && typeof status === 'string') conditions.status = status as IncidentStatus;
     if (reviewStatus && typeof reviewStatus === 'string') {
@@ -213,69 +198,66 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
     if (req.query.subCityId) {
       conditions.subCityId = Number(req.query.subCityId);
     }
+    if (search && typeof search === 'string') {
+      conditions.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     if (agencyId) {
       // Enforce agency isolation: only incidents assigned to this agency
       conditions.assignedAgencyId = agencyId;
     }
 
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const baseSelect = {
+      id: true,
+      title: true,
+      category: true,
+      severityScore: true,
+      status: true,
+      latitude: true,
+      longitude: true,
+      subCityId: true,
+      reviewStatus: true,
+      createdAt: true,
+    };
+
     if (req.user?.role === Role.ADMIN) {
-      const incidents = await prisma.incident.findMany({
-        where: conditions,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          severityScore: true,
-          status: true,
-          latitude: true,
-          longitude: true,
-          subCityId: true,
-          reviewStatus: true,
-          createdAt: true,
-          reporter: {
-            select: { id: true, fullName: true, trustScore: true, email: true, phone: true },
+      const [total, incidents] = await Promise.all([
+        prisma.incident.count({ where: conditions }),
+        prisma.incident.findMany({
+          where: conditions,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+          select: {
+            ...baseSelect,
+            reporter: {
+              select: { id: true, fullName: true, trustScore: true, email: true, phone: true },
+            },
           },
-        },
-      });
-      return res.json({ incidents });
+        }),
+      ]);
+      return res.json({ total, page, limit, incidents });
     }
 
     if (!agencyId) return res.status(403).json({ message: 'Forbidden' });
 
-    const filters: string[] = [];
-    if (conditions.status) filters.push(`status = '${conditions.status}'`);
-    if (conditions.reviewStatus) filters.push(`"reviewStatus" = '${conditions.reviewStatus}'`);
-    if (createdAtFilter?.gte) filters.push(`"createdAt" >= '${createdAtFilter.gte.toISOString()}'`);
-
-    const whereClause = filters.length ? `AND ${filters.join(' AND ')}` : '';
-
-    const incidents = await prisma.$queryRawUnsafe<AgencyIncidentRow[]>(`
-        SELECT id, title, category, "severityScore", status, latitude, longitude, "subCityId", "reviewStatus", "createdAt",
-               NULL::text as "reporterName",
-               NULL::text as "reporterContact"
-        FROM "Incident" i
-        WHERE 1=1
-        ${whereClause}
-          AND (
-            i."assignedAgencyId" = ${agencyId}
-            OR (
-              i.location IS NOT NULL AND EXISTS (
-                SELECT 1 FROM "AgencyJurisdiction" aj
-                JOIN "SubCity" s ON aj."boundaryId" = s.id AND aj."boundaryType" = 'SUBCITY'
-                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
-              )
-              OR i.location IS NOT NULL AND EXISTS (
-                SELECT 1 FROM "AgencyJurisdiction" aj
-                JOIN "Woreda" w ON aj."boundaryId" = w.id AND aj."boundaryType" = 'WOREDA'
-                WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.boundary, i.location)
-              )
-            )
-          )
-        ORDER BY i."createdAt" DESC
-      `);
-
-    res.json({ incidents });
+    const [total, incidents] = await Promise.all([
+      prisma.incident.count({ where: conditions }),
+      prisma.incident.findMany({
+        where: conditions,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: baseSelect,
+      }),
+    ]);
+    res.json({ total, page, limit, incidents });
   } catch (err: unknown) {
     console.error('List incidents error:', err);
     res.status(400).json({ message: errorMessage(err, 'Failed to fetch incidents') });
