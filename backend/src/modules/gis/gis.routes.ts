@@ -25,50 +25,64 @@ router.get(
   },
 );
 
-router.get('/boundaries', requireAuth, async (req, res) => {
-  const level = (req.query.level as string) || 'subcity';
-  if (level === 'agency') {
-    const rows = await prisma.$queryRawUnsafe<any[]>(`
+router.get(
+  '/boundaries',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req, res) => {
+    const level = (req.query.level as string) || 'subcity';
+    if (level === 'agency') {
+      const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, name, type, ST_AsGeoJSON(boundary) AS geometry
       FROM "Agency"
       WHERE boundary IS NOT NULL
     `);
-    return res.json(rows);
-  }
-  if (level === 'woreda') {
-    const rows = await prisma.$queryRawUnsafe<any[]>(`
+      return res.json(rows);
+    }
+    if (level === 'woreda') {
+      const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, name, subcity_id AS "subCityId", ST_AsGeoJSON(boundary) AS geometry
       FROM "Woreda"
       WHERE boundary IS NOT NULL
     `);
-    return res.json(rows);
-  }
-  const rows = await prisma.$queryRawUnsafe<any[]>(`
+      return res.json(rows);
+    }
+    const rows = await prisma.$queryRawUnsafe<any[]>(`
     SELECT id, name, code, ST_AsGeoJSON(jurisdiction) AS geometry
     FROM "SubCity"
     WHERE jurisdiction IS NOT NULL
   `);
-  return res.json(rows);
-});
+    return res.json(rows);
+  },
+);
 
-router.get('/boundaries/:id/incidents', requireAuth, async (req, res) => {
-  const id = Number(req.params.id);
-  const level = (req.query.level as string) || 'subcity';
-  const table = level === 'woreda' ? '"Woreda"' : '"SubCity"';
-  const geomColumn = level === 'woreda' ? 'boundary' : 'jurisdiction';
-  const incidents = await prisma.$queryRawUnsafe<any[]>(`
+router.get(
+  '/boundaries/:id/incidents',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const level = (req.query.level as string) || 'subcity';
+    const table = level === 'woreda' ? '"Woreda"' : '"SubCity"';
+    const geomColumn = level === 'woreda' ? 'boundary' : 'jurisdiction';
+    const incidents = await prisma.$queryRawUnsafe<any[]>(`
     SELECT i.id, i.title, i.status, i.latitude, i.longitude
     FROM "Incident" i
     JOIN ${table} b
       ON ST_Contains(b.${geomColumn}, i.location)
     WHERE b.id = ${id}
   `);
-  res.json(incidents);
-});
+    res.json(incidents);
+  },
+);
 
-router.get('/incident/:id/context', requireAuth, async (req, res) => {
-  const id = Number(req.params.id);
-  const context = await prisma.$queryRawUnsafe<any[]>(`
+router.get(
+  '/incident/:id/context',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const context = await prisma.$queryRawUnsafe<any[]>(`
     SELECT
       i.id,
       i.title,
@@ -80,8 +94,9 @@ router.get('/incident/:id/context', requireAuth, async (req, res) => {
     WHERE i.id = ${id}
     LIMIT 1
   `);
-  res.json(context[0] || null);
-});
+    res.json(context[0] || null);
+  },
+);
 
 // Incidents with geometry for maps
 router.get(

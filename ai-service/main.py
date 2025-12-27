@@ -13,6 +13,7 @@ app = FastAPI()
 MODEL_DIR = Path(__file__).parent / "models" / "afroxlmr_incident_classifier"
 DEFAULT_MODEL_NAME = "Davlan/afro-xlmr-base"
 METADATA_PATH = MODEL_DIR / "metadata.json"
+model_metadata = None
 
 
 class ClassifyRequest(BaseModel):
@@ -34,6 +35,7 @@ def load_model():
     so the service keeps running even without weights.
     """
     version = None
+    global model_metadata
     if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
         model_path = MODEL_DIR
         print(f"Loading local model from {model_path}")
@@ -41,9 +43,11 @@ def load_model():
             try:
                 import json
 
-                version = json.loads(METADATA_PATH.read_text(encoding="utf-8")).get("version_tag")
+                model_metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
+                version = model_metadata.get("version_tag")
             except Exception:
                 version = None
+                model_metadata = None
     else:
         model_path = DEFAULT_MODEL_NAME
         print(f"Loading default base model {model_path}")
@@ -143,7 +147,11 @@ tokenizer, model, model_version = load_model()
 
 @app.get("/health")
 def health():
-    return {"status": "AI service running", "model": model_version}
+    return {
+        "status": "AI service running",
+        "model": model_version,
+        "metadata": model_metadata or {},
+    }
 
 
 @app.post("/classify", response_model=ClassifyResponse)
