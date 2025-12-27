@@ -110,11 +110,23 @@ export class IncidentService {
         summary: null,
       };
     } else {
+      const classifyPayload = {
+        title: incident.title,
+        description: incident.description,
+      };
+      const attemptClassify = async () => {
+        return axios.post(AI_ENDPOINT, classifyPayload, { timeout: 4000 });
+      };
+
       try {
-        const res = await axios.post(AI_ENDPOINT, {
-          title: incident.title,
-          description: incident.description,
-        });
+        let res;
+        try {
+          res = await attemptClassify();
+        } catch (err) {
+          // brief backoff and one retry
+          await new Promise((r) => setTimeout(r, 500));
+          res = await attemptClassify();
+        }
         aiOutput = res.data;
       } catch (err) {
         logger.error({ err }, 'AI classification failed, using fallback');

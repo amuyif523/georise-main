@@ -14,6 +14,7 @@ Model weights:
 
 - Fine-tuned weights live in `models/afroxlmr_incident_classifier/`.
 - Do **not** commit large weight files to git. Keep them local or store externally.
+- Dependencies: `torch==2.3.1`, `transformers==4.46.3`, `numpy<2` (pin to avoid ABI issues with torch builds).
 
 Training:
 
