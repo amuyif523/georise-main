@@ -3,6 +3,7 @@ import prisma from '../../prisma';
 import { dispatchService } from './dispatch.service';
 import { IncidentStatus } from '@prisma/client';
 import logger from '../../logger';
+import type { Prisma } from '@prisma/client';
 
 export const getRecommendations = async (req: Request, res: Response) => {
   try {
@@ -38,6 +39,16 @@ export const assignIncident = async (req: Request, res: Response) => {
       });
     }
 
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'DISPATCH_ASSIGN',
+        targetType: 'Incident',
+        targetId: incidentId,
+        note: JSON.stringify({ agencyId, unitId } satisfies Record<string, Prisma.JsonValue>),
+      },
+    });
+
     res.json({ incident });
   } catch (err: any) {
     logger.error({ err }, 'Assign error');
@@ -67,6 +78,20 @@ export const autoAssignIncident = async (req: Request, res: Response) => {
         data: { status: 'ASSIGNED' },
       });
     }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: 'DISPATCH_AUTO_ASSIGN',
+        targetType: 'Incident',
+        targetId: id,
+        note: JSON.stringify({
+          agencyId: top.agencyId,
+          unitId: top.unitId ?? null,
+          score: top.score ?? null,
+        } satisfies Record<string, Prisma.JsonValue>),
+      },
+    });
 
     res.json({ incident, selected: top });
   } catch (err: any) {

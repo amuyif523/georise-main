@@ -32,6 +32,16 @@ export const updateSystemConfig = async (req: Request, res: Response) => {
     create: { key, value },
   });
 
+  await prisma.auditLog.create({
+    data: {
+      actorId: req.user!.id,
+      action: 'UPDATE_SYSTEM_CONFIG',
+      targetType: 'SystemConfig',
+      targetId: null,
+      note: JSON.stringify({ key, value }),
+    },
+  });
+
   // Emit event if crisis mode changes
   if (key === 'CRISIS_MODE') {
     const io = getIO();
@@ -50,20 +60,24 @@ export const sendBroadcast = async (req: Request, res: Response) => {
   if (!parsed.success) return res.status(400).json({ message: 'Invalid body' });
 
   const { message, targetGeoJSON } = parsed.data;
+  let broadcastId: number | null = null;
 
   // Save log
   if (targetGeoJSON) {
-    await prisma.$executeRaw`
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
       INSERT INTO "BroadcastLog" (message, "targetArea", "sentBy", "sentAt")
-      VALUES (${message}, ST_SetSRID(ST_GeomFromGeoJSON(${targetGeoJSON}), 4326), ${req.user!.id}, NOW());
+      VALUES (${message}, ST_SetSRID(ST_GeomFromGeoJSON(${targetGeoJSON}), 4326), ${req.user!.id}, NOW())
+      RETURNING id;
     `;
+    broadcastId = rows[0]?.id ?? null;
   } else {
-    await prisma.broadcastLog.create({
+    const created = await prisma.broadcastLog.create({
       data: {
         message,
         sentBy: req.user!.id,
       },
     });
+    broadcastId = created.id;
   }
 
   // Emit to all connected clients
@@ -72,6 +86,16 @@ export const sendBroadcast = async (req: Request, res: Response) => {
     message,
     targetGeoJSON: targetGeoJSON ? JSON.parse(targetGeoJSON) : null,
     sentAt: new Date(),
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: req.user!.id,
+      action: 'SEND_BROADCAST',
+      targetType: 'Broadcast',
+      targetId: broadcastId,
+      note: targetGeoJSON ? 'targeted' : 'global',
+    },
   });
 
   res.json({ success: true });
