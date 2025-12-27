@@ -13,6 +13,7 @@ import { reputationService } from '../reputation/reputation.service';
 import { logActivity } from './activity.service';
 import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
+import { metrics } from '../../metrics/metrics.service';
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || 'http://localhost:8001/classify';
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
@@ -118,14 +119,18 @@ export class IncidentService {
         return axios.post(AI_ENDPOINT, classifyPayload, { timeout: 4000 });
       };
 
+      const aiStart = process.hrtime.bigint();
+      let aiSuccess = false;
       try {
         let res;
         try {
           res = await attemptClassify();
+          aiSuccess = true;
         } catch (err) {
           // brief backoff and one retry
           await new Promise((r) => setTimeout(r, 500));
           res = await attemptClassify();
+          aiSuccess = true;
         }
         aiOutput = res.data;
       } catch (err) {
@@ -137,6 +142,9 @@ export class IncidentService {
           model_version: 'stub-v0',
           summary: null,
         };
+      } finally {
+        const durationMs = Number(process.hrtime.bigint() - aiStart) / 1_000_000;
+        metrics.logAiCall({ durationMs: Number(durationMs.toFixed(2)), success: aiSuccess });
       }
     }
 

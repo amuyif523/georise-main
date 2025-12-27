@@ -16,6 +16,7 @@ import demoRoutes from './modules/demo/demo.routes';
 import userRoutes from './modules/user/user.routes';
 import systemRoutes from './modules/system/system.routes';
 import logger from './logger';
+import { metrics } from './metrics/metrics.service';
 
 const app = express();
 
@@ -46,6 +47,27 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Global rate limiter
 app.use(apiLimiter);
+
+// Lightweight request timing/metrics
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+    metrics.logRequest({
+      path: req.path,
+      method: req.method,
+      status: res.statusCode,
+      durationMs: Number(durationMs.toFixed(2)),
+    });
+    if (res.statusCode >= 500) {
+      logger.error(
+        { path: req.path, method: req.method, status: res.statusCode, durationMs },
+        'Request finished with server error',
+      );
+    }
+  });
+  next();
+});
 
 // Health check
 app.get('/health', (_req, res) => {

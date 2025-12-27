@@ -7,6 +7,7 @@ import prisma from '../../prisma';
 import { z } from 'zod';
 import { validateBody } from '../../middleware/validate';
 import * as systemController from './system.controller';
+import { metrics } from '../../metrics/metrics.service';
 
 const router = Router();
 const idSchema = z.object({
@@ -472,6 +473,11 @@ router.get('/audit', requireAuth, requireRole([Role.ADMIN]), async (req, res) =>
     prisma.auditLog.count(),
   ]);
   res.json({ logs, total, page, pageSize });
+});
+
+// Live metrics snapshot (requests/DB/AI latency + error rates)
+router.get('/metrics', requireAuth, requireRole([Role.ADMIN]), (_req, res) => {
+  res.json({ metrics: metrics.snapshot() });
 });
 
 // Analytics
