@@ -147,13 +147,19 @@ router.delete(
   async (req: any, res) => {
     try {
       const responderId = Number(req.params.id);
+      const current = await prisma.responder.findUnique({ where: { id: responderId } });
+      if (!current) return res.status(404).json({ message: 'Responder not found' });
+      if (current.incidentId) {
+        return res
+          .status(400)
+          .json({ message: 'Responder has an active assignment; unassign first.' });
+      }
       const data = { status: 'OFFLINE' as any, incidentId: null };
 
       if (req.user!.role === Role.AGENCY_STAFF) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
         if (!staff) return res.status(403).json({ message: 'No agency context' });
-        const target = await prisma.responder.findUnique({ where: { id: responderId } });
-        if (!target || target.agencyId !== staff.agencyId)
+        if (!current || current.agencyId !== staff.agencyId)
           return res.status(403).json({ message: 'Forbidden' });
       }
 
