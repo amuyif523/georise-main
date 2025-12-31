@@ -11,9 +11,18 @@ type User = {
   phone?: string;
   role: string;
   isActive: boolean;
+  deactivatedAt?: string | null;
   createdAt: string;
   citizenVerification?: { status: string } | null;
+  agencyStaff?: {
+    staffRole?: string | null;
+    isActive?: boolean;
+    deactivatedAt?: string | null;
+    agencyId?: number;
+  } | null;
 };
+
+type Agency = { id: number; name: string };
 
 const badge = (text: string, tone: 'blue' | 'green' | 'gray') => {
   const map: Record<string, string> = {
@@ -24,6 +33,8 @@ const badge = (text: string, tone: 'blue' | 'green' | 'gray') => {
   return <span className={`badge badge-sm border ${map[tone]}`}>{text}</span>;
 };
 
+const staffRoleOptions = ['DISPATCHER', 'RESPONDER', 'SUPERVISOR'];
+
 const UsersPage: React.FC = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -32,9 +43,11 @@ const UsersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [staffRoleFilter, setStaffRoleFilter] = useState<string>('ALL');
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
 
   const [createModal, setCreateModal] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -42,6 +55,8 @@ const UsersPage: React.FC = () => {
     email: '',
     phone: '',
     role: 'AGENCY_STAFF',
+    staffRole: 'DISPATCHER',
+    agencyId: '',
   });
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
@@ -54,9 +69,14 @@ const UsersPage: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const params: Record<string, string | number> = { page, limit };
       if (search) params.search = search;
       if (roleFilter !== 'ALL') params.role = roleFilter;
+      if (statusFilter !== 'ALL') params.status = statusFilter === 'ACTIVE' ? 'active' : 'inactive';
+      if (staffRoleFilter !== 'ALL' && (isAgencyAdmin || roleFilter === 'AGENCY_STAFF')) {
+        params.staffRole = staffRoleFilter;
+      }
       const url = isAgencyAdmin ? '/admin/agency/users' : '/admin/users';
       const res = await api.get(url, { params });
       setUsers(res.data.users || []);
@@ -71,7 +91,20 @@ const UsersPage: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, roleFilter, page, isAgencyAdmin]);
+  }, [search, roleFilter, statusFilter, staffRoleFilter, page, isAgencyAdmin]);
+
+  useEffect(() => {
+    if (isAgencyAdmin) return;
+    const loadAgencies = async () => {
+      try {
+        const res = await api.get('/admin/agencies');
+        setAgencies(res.data.agencies || []);
+      } catch (err) {
+        console.error('Failed to load agencies', err);
+      }
+    };
+    loadAgencies();
+  }, [isAgencyAdmin]);
 
   const setStatus = async (id: number, next: boolean) => {
     if (!window.confirm(`${next ? 'Activate' : 'Deactivate'} this user?`)) return;
@@ -79,6 +112,16 @@ const UsersPage: React.FC = () => {
     const body = isAgencyAdmin ? { isActive: next } : { isActive: next };
     await api.patch(url, body);
     fetchUsers();
+  };
+
+  const updateStaffRole = async (id: number, staffRole: string) => {
+    try {
+      const url = isAgencyAdmin ? `/admin/agency/users/${id}` : `/admin/users/${id}`;
+      await api.patch(url, { staffRole });
+      fetchUsers();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to update staff role');
+    }
   };
 
   const verify = async (id: number) => {
@@ -93,16 +136,28 @@ const UsersPage: React.FC = () => {
       email: newUser.email,
       phone: newUser.phone || undefined,
       role: newUser.role,
+      staffRole: newUser.role === 'AGENCY_STAFF' ? newUser.staffRole : undefined,
+      agencyId:
+        newUser.role === 'AGENCY_STAFF' && !isAgencyAdmin ? Number(newUser.agencyId) : undefined,
     };
+    if (!isAgencyAdmin && payload.role === 'AGENCY_STAFF' && !payload.agencyId) {
+      setError('Select an agency for agency staff');
+      return;
+    }
     const url = isAgencyAdmin ? '/admin/agency/users' : '/admin/users';
     const res = await api.post(url, payload);
     setTempPassword(res.data?.user?.tempPassword ?? null);
+    if (res.data?.user?.tempPassword) {
+      alert(`Temporary password: ${res.data.user.tempPassword}`);
+    }
     setCreateModal(false);
     setNewUser({
       fullName: '',
       email: '',
       phone: '',
       role: isAgencyAdmin ? 'AGENCY_STAFF' : 'CITIZEN',
+      staffRole: 'DISPATCHER',
+      agencyId: '',
     });
     fetchUsers();
   };
@@ -122,6 +177,9 @@ const UsersPage: React.FC = () => {
   const filtered = users.filter((u) => {
     if (statusFilter === 'ACTIVE' && !u.isActive) return false;
     if (statusFilter === 'INACTIVE' && u.isActive) return false;
+    if (staffRoleFilter !== 'ALL' && u.role === 'AGENCY_STAFF') {
+      if ((u.agencyStaff?.staffRole || 'DISPATCHER') !== staffRoleFilter) return false;
+    }
     return (
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase())
@@ -158,13 +216,27 @@ const UsersPage: React.FC = () => {
           <option value="ACTIVE">Active</option>
           <option value="INACTIVE">Inactive</option>
         </select>
+        {(isAgencyAdmin || roleFilter === 'AGENCY_STAFF' || roleFilter === 'ALL') && (
+          <select
+            className="select select-sm select-bordered bg-slate-900 border-slate-700 text-white"
+            value={staffRoleFilter}
+            onChange={(e) => setStaffRoleFilter(e.target.value)}
+          >
+            <option value="ALL">All staff roles</option>
+            {staffRoleOptions.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        )}
         <button className="btn btn-sm btn-primary" onClick={() => setCreateModal(true)}>
           Invite user
         </button>
       </div>
       {error && <div className="alert alert-error text-sm">{error}</div>}
       {loading ? (
-        <div className="text-slate-300">Loading…</div>
+        <div className="text-slate-300">Loading...</div>
       ) : (
         <div className="overflow-x-auto cyber-card">
           <table className="table table-sm text-sm">
@@ -174,6 +246,7 @@ const UsersPage: React.FC = () => {
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
+                <th>Staff Role</th>
                 <th>Status</th>
                 <th>Verification</th>
                 <th></th>
@@ -184,8 +257,25 @@ const UsersPage: React.FC = () => {
                 <tr key={u.id}>
                   <td>{u.fullName}</td>
                   <td>{u.email}</td>
-                  <td>{u.phone ?? '—'}</td>
+                  <td>{u.phone ?? '-'}</td>
                   <td>{badge(u.role, 'blue')}</td>
+                  <td>
+                    {u.role === 'AGENCY_STAFF' ? (
+                      <select
+                        className="select select-xs bg-slate-900 border-slate-700 text-white"
+                        value={u.agencyStaff?.staffRole || 'DISPATCHER'}
+                        onChange={(e) => updateStaffRole(u.id, e.target.value)}
+                      >
+                        {staffRoleOptions.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td>
                     {badge(u.isActive ? 'Active' : 'Inactive', u.isActive ? 'green' : 'gray')}
                   </td>
@@ -286,6 +376,43 @@ const UsersPage: React.FC = () => {
                 ))}
               </select>
             </div>
+            {newUser.role === 'AGENCY_STAFF' && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Staff role</span>
+                </label>
+                <select
+                  className="select select-bordered"
+                  value={newUser.staffRole}
+                  onChange={(e) => setNewUser((p) => ({ ...p, staffRole: e.target.value }))}
+                >
+                  {staffRoleOptions.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {newUser.role === 'AGENCY_STAFF' && !isAgencyAdmin && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Agency</span>
+                </label>
+                <select
+                  className="select select-bordered"
+                  value={newUser.agencyId}
+                  onChange={(e) => setNewUser((p) => ({ ...p, agencyId: e.target.value }))}
+                >
+                  <option value="">Select agency</option>
+                  {agencies.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {tempPassword && (
               <div className="alert alert-info text-sm">
                 Temporary password: <strong>{tempPassword}</strong>
