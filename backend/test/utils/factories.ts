@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { AgencyType, IncidentStatus, Role, StaffRole } from '@prisma/client';
+import { AgencyType, IncidentStatus, ResponderStatus, Role, StaffRole } from '@prisma/client';
 import prisma from '../../src/prisma';
 
 type CreateUserInput = {
@@ -28,6 +28,9 @@ type CreateAgencyInput = {
   name?: string;
   city?: string;
   type?: AgencyType;
+  isApproved?: boolean;
+  isActive?: boolean;
+  description?: string | null;
 };
 
 export const createAgency = async (input: CreateAgencyInput = {}) =>
@@ -36,8 +39,9 @@ export const createAgency = async (input: CreateAgencyInput = {}) =>
       name: input.name || `Agency ${Date.now()}`,
       city: input.city || 'Addis Ababa',
       type: input.type || AgencyType.POLICE,
-      isApproved: true,
-      isActive: true,
+      description: input.description ?? null,
+      isApproved: input.isApproved ?? true,
+      isActive: input.isActive ?? true,
     },
   });
 
@@ -55,8 +59,30 @@ export const linkAgencyStaff = async (
     },
   });
 
+type CreateResponderInput = {
+  name?: string;
+  type?: string;
+  status?: ResponderStatus;
+  agencyId: number;
+  userId?: number | null;
+  incidentId?: number | null;
+};
+
+export const createResponder = async (input: CreateResponderInput) =>
+  prisma.responder.create({
+    data: {
+      name: input.name ?? `Responder ${Date.now()}`,
+      type: input.type ?? 'VEHICLE',
+      status: input.status ?? ResponderStatus.AVAILABLE,
+      agencyId: input.agencyId,
+      userId: input.userId ?? null,
+      incidentId: input.incidentId ?? null,
+    },
+  });
+
 type CreateIncidentInput = {
-  reporterId: number;
+  reporterId?: number;
+  assignedAgencyId?: number | null;
   title?: string;
   description?: string;
   category?: string;
@@ -66,10 +92,19 @@ type CreateIncidentInput = {
   status?: IncidentStatus;
 };
 
-export const createIncident = async (input: CreateIncidentInput) => {
+export const createIncident = async (input: CreateIncidentInput = {}) => {
+  const reporterId =
+    input.reporterId ??
+    (
+      await createUser({
+        email: `reporter_${Date.now()}@example.com`,
+        role: Role.CITIZEN,
+      })
+    ).id;
   const incident = await prisma.incident.create({
     data: {
-      reporterId: input.reporterId,
+      reporterId,
+      assignedAgencyId: input.assignedAgencyId ?? null,
       title: input.title || 'Test incident',
       description: input.description || 'Test description for incident',
       category: input.category,
