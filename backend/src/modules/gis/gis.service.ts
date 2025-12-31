@@ -1,7 +1,24 @@
 import prisma from '../../prisma';
+import redis from '../../redis';
+
+const ADMIN_AREA_CACHE_TTL_SECONDS = 300;
 
 export class GisService {
   async findAdministrativeAreaForPoint(lat: number, lng: number) {
+    const cacheKey = `gis:admin-area:${lat.toFixed(4)}:${lng.toFixed(4)}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          // fall through on parse error
+        }
+      }
+    } catch (err) {
+      // Cache unavailable, continue with DB lookup
+    }
+
     const pointWkt = `SRID=4326;POINT(${lng} ${lat})`;
     const subCity = await prisma.$queryRawUnsafe<any[]>(
       `
@@ -25,10 +42,17 @@ export class GisService {
       pointWkt,
     );
 
-    return {
+    const result = {
       subCity: subCity[0] || null,
       woreda: woreda[0] || null,
     };
+
+    try {
+      await redis.setex(cacheKey, ADMIN_AREA_CACHE_TTL_SECONDS, JSON.stringify(result));
+    } catch {
+      // Ignore cache failures
+    }
+    return result;
   }
 
   async findCandidateAgenciesForIncident(category: string, lat: number, lng: number) {

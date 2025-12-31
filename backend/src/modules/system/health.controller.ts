@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../../prisma';
 import redis from '../../redis';
 import axios from 'axios';
+import { fetchAiMetadata } from '../incident/aiClient';
 
 const AI_ENDPOINT = process.env.AI_ENDPOINT || 'http://localhost:8001';
 
@@ -41,10 +42,14 @@ export const getSystemHealth = async (req: Request, res: Response) => {
   // Check AI Service
   const aiStart = Date.now();
   try {
-    // Just check root or docs to verify connectivity
-    await axios.get(`${AI_ENDPOINT}/docs`, { timeout: 2000 });
+    const [docs, meta] = await Promise.all([
+      axios.get(`${AI_ENDPOINT}/health`, { timeout: 2000 }),
+      fetchAiMetadata(),
+    ]);
     health.services.ai.status = 'up';
     health.services.ai.latency = Date.now() - aiStart;
+    health.services.ai.model = docs.data?.model ?? meta?.model;
+    health.services.ai.metadata = meta?.metadata ?? docs.data?.metadata ?? {};
   } catch (err) {
     health.services.ai.status = 'down';
     health.status = 'degraded';

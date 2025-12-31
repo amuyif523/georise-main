@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type { Express } from 'express';
 import { IncidentStatus } from '@prisma/client';
 import prisma from '../../prisma';
@@ -14,8 +13,8 @@ import { logActivity } from './activity.service';
 import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
 import { metrics } from '../../metrics/metrics.service';
+import { classifyWithBackoff } from './aiClient';
 
-const AI_ENDPOINT = process.env.AI_ENDPOINT || 'http://localhost:8001/classify';
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
 
 export class IncidentService {
@@ -115,24 +114,12 @@ export class IncidentService {
         title: incident.title,
         description: incident.description,
       };
-      const attemptClassify = async () => {
-        return axios.post(AI_ENDPOINT, classifyPayload, { timeout: 4000 });
-      };
-
       const aiStart = process.hrtime.bigint();
       let aiSuccess = false;
       try {
-        let res;
-        try {
-          res = await attemptClassify();
-          aiSuccess = true;
-        } catch (err) {
-          // brief backoff and one retry
-          await new Promise((r) => setTimeout(r, 500));
-          res = await attemptClassify();
-          aiSuccess = true;
-        }
-        aiOutput = res.data;
+        const res = await classifyWithBackoff(classifyPayload);
+        aiOutput = res;
+        aiSuccess = true;
       } catch (err) {
         logger.error({ err }, 'AI classification failed, using fallback');
         aiOutput = {

@@ -5,6 +5,13 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
+async function getAgencyContext(userId: number) {
+  return prisma.agencyStaff.findUnique({
+    where: { userId },
+    select: { agencyId: true },
+  });
+}
+
 // Legacy subcity endpoint (kept for compatibility)
 router.get(
   '/subcities',
@@ -29,29 +36,57 @@ router.get(
   '/boundaries',
   requireAuth,
   requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
-  async (req, res) => {
+  async (req: any, res) => {
     const level = (req.query.level as string) || 'subcity';
+    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
+
     if (level === 'agency') {
+      if (staff) {
+        const agency = await prisma.agency.findUnique({
+          where: { id: staff.agencyId },
+          select: { id: true, name: true, type: true, boundary: true },
+        });
+        if (!agency) return res.status(404).json({ message: 'Agency not found' });
+        return res.json(
+          agency.boundary
+            ? [
+                {
+                  id: agency.id,
+                  name: agency.name,
+                  type: agency.type,
+                  geometry: JSON.parse(agency.boundary as any),
+                },
+              ]
+            : [],
+        );
+      }
       const rows = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT id, name, type, ST_AsGeoJSON(boundary) AS geometry
-      FROM "Agency"
-      WHERE boundary IS NOT NULL
-    `);
+        SELECT id, name, type, ST_AsGeoJSON(boundary) AS geometry
+        FROM "Agency"
+        WHERE boundary IS NOT NULL
+      `);
       return res.json(rows);
     }
+
+    if (staff) {
+      return res
+        .status(403)
+        .json({ message: 'Agency staff can only access their agency boundary' });
+    }
+
     if (level === 'woreda') {
       const rows = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT id, name, subcity_id AS "subCityId", ST_AsGeoJSON(boundary) AS geometry
-      FROM "Woreda"
-      WHERE boundary IS NOT NULL
-    `);
+        SELECT id, name, subcity_id AS "subCityId", ST_AsGeoJSON(boundary) AS geometry
+        FROM "Woreda"
+        WHERE boundary IS NOT NULL
+      `);
       return res.json(rows);
     }
     const rows = await prisma.$queryRawUnsafe<any[]>(`
-    SELECT id, name, code, ST_AsGeoJSON(jurisdiction) AS geometry
-    FROM "SubCity"
-    WHERE jurisdiction IS NOT NULL
-  `);
+      SELECT id, name, code, ST_AsGeoJSON(jurisdiction) AS geometry
+      FROM "SubCity"
+      WHERE jurisdiction IS NOT NULL
+    `);
     return res.json(rows);
   },
 );
@@ -60,9 +95,16 @@ router.get(
   '/boundaries/:id/incidents',
   requireAuth,
   requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
-  async (req, res) => {
+  async (req: any, res) => {
     const id = Number(req.params.id);
     const level = (req.query.level as string) || 'subcity';
+    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
+    if (staff) {
+      if (level !== 'agency' || id !== staff.agencyId) {
+        return res.status(403).json({ message: 'Forbidden for this agency boundary' });
+      }
+    }
+
     const table = level === 'woreda' ? '"Woreda"' : '"SubCity"';
     const geomColumn = level === 'woreda' ? 'boundary' : 'jurisdiction';
     const incidents = await prisma.$queryRawUnsafe<any[]>(`
@@ -70,7 +112,7 @@ router.get(
     FROM "Incident" i
     JOIN ${table} b
       ON ST_Contains(b.${geomColumn}, i.location)
-    WHERE b.id = ${id}
+    WHERE b.id = ${id} ${staff ? `AND (i."assignedAgencyId" = ${staff.agencyId} OR i."assignedAgencyId" IS NULL)` : ''}
   `);
     res.json(incidents);
   },
@@ -80,8 +122,9 @@ router.get(
   '/incident/:id/context',
   requireAuth,
   requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
-  async (req, res) => {
+  async (req: any, res) => {
     const id = Number(req.params.id);
+    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
     const context = await prisma.$queryRawUnsafe<any[]>(`
     SELECT
       i.id,
@@ -94,7 +137,17 @@ router.get(
     WHERE i.id = ${id}
     LIMIT 1
   `);
-    res.json(context[0] || null);
+    const record = context[0] || null;
+    if (staff && record) {
+      const incident = await prisma.incident.findUnique({
+        where: { id },
+        select: { assignedAgencyId: true },
+      });
+      if (incident?.assignedAgencyId && incident.assignedAgencyId !== staff.agencyId) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+    }
+    res.json(record);
   },
 );
 
@@ -103,15 +156,18 @@ router.get(
   '/incidents',
   requireAuth,
   requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
-  async (_req, res) => {
+  async (req: any, res) => {
+    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, title, category, "severityScore",
              ST_Y(location) AS lat,
-             ST_X(location) AS lon
+             ST_X(location) AS lon,
+             "assignedAgencyId"
       FROM "Incident"
       WHERE location IS NOT NULL
     `);
-    res.json(rows);
+    const scoped = staff ? rows.filter((r) => r.assignedAgencyId === staff.agencyId) : rows;
+    res.json(scoped);
   },
 );
 
