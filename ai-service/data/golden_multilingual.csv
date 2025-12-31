@@ -1,0 +1,7 @@
+id,text,category
+1,"Fire smoke in the market, flames visible","FIRE"
+2,"Injury with blood, need ambulance and hospital","MEDICAL"
+3,"Armed robbery, gun shots, call police","POLICE"
+4,"Traffic accident car crash blocking the road","TRAFFIC"
+5,"Power outage and electric wires down, flooding street","INFRASTRUCTURE"
+6,"Unclear noise reported, not sure what happened","OTHER"

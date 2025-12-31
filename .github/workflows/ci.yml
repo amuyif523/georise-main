@@ -113,3 +113,31 @@ jobs:
       - name: Responder app build
         working-directory: responder-app
         run: npm run build
+
+  ai_golden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install AI service deps
+        working-directory: ai-service
+        run: pip install -r requirements.txt
+
+      - name: Start AI service
+        working-directory: ai-service
+        run: |
+          nohup uvicorn main:app --host 0.0.0.0 --port 8001 >/tmp/ai.log 2>&1 &
+          sleep 12
+
+      - name: Golden regression (Amharic + English)
+        working-directory: ai-service
+        run: |
+          python test_amharic_golden.py
+          python test_multilingual_golden.py
