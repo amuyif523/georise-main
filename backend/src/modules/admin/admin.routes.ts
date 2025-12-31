@@ -351,21 +351,21 @@ router.post(
   requireRole([Role.ADMIN]),
   userCrudLimiter,
   async (req, res) => {
-  const parsed = idSchema.safeParse(req.params);
-  if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
-  const userId = parsed.data.id;
-  try {
-    const tempPassword = crypto.randomBytes(6).toString('hex');
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash, tokenVersion: { increment: 1 } },
-    });
-    await auditUser(req.user!.id, 'FORCE_RESET_PASSWORD', user.id);
-    res.json({ userId: user.id, tempPassword });
-  } catch (err: any) {
-    res.status(400).json({ message: 'Failed to reset password' });
-  }
+    const parsed = idSchema.safeParse(req.params);
+    if (!parsed.success) return res.status(400).json({ message: 'Invalid user id' });
+    const userId = parsed.data.id;
+    try {
+      const tempPassword = crypto.randomBytes(6).toString('hex');
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+      });
+      await auditUser(req.user!.id, 'FORCE_RESET_PASSWORD', user.id);
+      res.json({ userId: user.id, tempPassword });
+    } catch (err: any) {
+      res.status(400).json({ message: 'Failed to reset password' });
+    }
   },
 );
 

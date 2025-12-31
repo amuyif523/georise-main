@@ -38,7 +38,10 @@ describe('User RBAC and deactivation', () => {
   });
 
   it('prevents agency staff from mutating users in other agencies', async () => {
-    const [agencyA, agencyB] = await Promise.all([createAgency({ name: 'A' }), createAgency({ name: 'B' })]);
+    const [agencyA, agencyB] = await Promise.all([
+      createAgency({ name: 'A' }),
+      createAgency({ name: 'B' }),
+    ]);
     const staffAEmail = `staffA_${Date.now()}@example.com`;
     const staffBEmail = `staffB_${Date.now()}@example.com`;
 
