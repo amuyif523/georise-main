@@ -50,6 +50,45 @@ This plan adds the newly identified RBAC/user-management gaps, AI/GIS validation
 
 ---
 
+## Detailed Remaining Implementation Plan
+
+### Sprint A: Agency/Responder/Dispatcher RBAC & CRUD
+
+- Backend: Add Prisma migrations for user status/role flags; implement agency-scoped user CRUD endpoints (create/edit/deactivate/reactivate, password reset/force-reset); enforce soft-delete and audit logging for all user mutations; paginate/search responders/dispatchers with agency scoping.
+- Frontend: Agency admin console views for user table (search/filter, role dropdown, status toggle), invite/reset flows, error states; wire to backend auth tokens and show audit outcomes.
+- Security: Enforce RBAC/ownership on responder/incident lists; deny cross-agency access; rate-limit user CRUD; update JWT claims/refresh logic as needed.
+- Tests/QA: Integration tests for user CRUD + audit logs; e2e flow for agency admin managing responders; regression on incident list scoping.
+
+### Sprint B: Admin Console Enhancements
+
+- Backend: Admin CRUD for agencies and their users with pagination, search, role/status filters; prevent deletion when active assignments exist and require deactivate; add responder availability/status fields.
+- Frontend: Admin console tables for agencies and users (filters, status chips, role selectors); availability toggle + optional schedule UI; confirmation modals for deactivation; empty/loading states.
+- Data integrity: Validate assignments before status changes; add audit events for agency/user changes.
+- Tests/QA: Integration tests for admin CRUD constraints; e2e coverage for admin console interactions; UX polish checks (pagination/filter accuracy).
+
+### Sprint C: AI/GIS Validation & Safety Nets
+
+- AI service: Pin numpy/torch versions; document fallback; expose `metadata.json` version via `/health`; add retry/backoff in backend AI client; cache model metadata.
+- Evaluation: Add golden regression tests for `/classify` (Amharic/English/mixed) in CI; training data sanity checks; document model drop-in to `ai-service/models`.
+- GIS: Enforce access control on spatial endpoints; add unit tests for proximity/duplicate queries and boundary validation; cache jurisdiction lookups in Redis.
+- Tests/QA: Backend integration for AI retries and GIS guards; CI job running golden eval; smoke test that health reports model version.
+
+### Sprint D: Observability & Load Checks
+
+- Metrics/logging: Extend request/DB/AI metrics with p95/p99, error rates; expose admin metrics endpoint with recent samples; add tracing stubs and log correlation IDs; emit audit events for critical actions.
+- Alerting/runbooks: Add lightweight alert thresholds (error rate, slow queries, AI failures); document runbooks in `docs/observability-load.md`.
+- Load testing: Script Artillery/Locust scenarios (health, incident list, metrics, timeline); capture DB/Redis CPU/connections; iterate with connection caps and indexes; store baselines before/after tuning.
+- Tests/QA: Add automated smoke load script to CI optional job; verify metrics endpoint authz; ensure logs redact PII.
+
+### Sprint E: Production Readiness & Credentials
+
+- Credentials: Provision Twilio (SMS/OTP) and VAPID keys; decide on FCM/mobile push; update `.env.example` templates and secret management docs.
+- Deployability: Finalize Docker Compose/infra overrides for prod (PostGIS, Redis limits); ensure AI weights can be mounted to `ai-service/models`; confirm backup/restore notes.
+- Performance: Run final load/perf pass post-tuning; document p95 targets and accepted error budgets.
+- Tests/QA: Checklist-driven release validation (auth flows, notifications, AI classify, GIS boundaries, offline/PWA); update QA log with findings.
+
+---
+
 ## Remaining Follow-Ups
 
 - Provision production credentials: Twilio (SMS) and VAPID; decide on FCM/mobile push.
