@@ -45,6 +45,12 @@ enum ResponderStatus {
   OFFLINE
 }
 
+enum StaffRole {
+  DISPATCHER
+  RESPONDER
+  SUPERVISOR
+}
+
 enum ActivityType {
   STATUS_CHANGE
   COMMENT
@@ -76,6 +82,7 @@ model User {
   passwordHash String
   role         Role      @default(CITIZEN)
   isActive     Boolean   @default(true)
+  deactivatedAt DateTime?
   isShadowBanned Boolean @default(false)
   tokenVersion Int       @default(0)
   failedLoginAttempts Int @default(0)
@@ -183,6 +190,9 @@ model AgencyStaff {
   userId   Int     @unique
   agencyId Int
   position String?
+  staffRole StaffRole @default(DISPATCHER)
+  isActive  Boolean   @default(true)
+  deactivatedAt DateTime?
 
   user   User   @relation(fields: [userId], references: [id])
   agency Agency @relation(fields: [agencyId], references: [id])

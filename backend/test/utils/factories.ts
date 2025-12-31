@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { AgencyType, IncidentStatus, Role } from '@prisma/client';
+import { AgencyType, IncidentStatus, Role, StaffRole } from '@prisma/client';
 import prisma from '../../src/prisma';
 
 type CreateUserInput = {
@@ -41,12 +41,17 @@ export const createAgency = async (input: CreateAgencyInput = {}) =>
     },
   });
 
-export const linkAgencyStaff = async (userId: number, agencyId: number) =>
+export const linkAgencyStaff = async (
+  userId: number,
+  agencyId: number,
+  staffRole: StaffRole = StaffRole.DISPATCHER,
+) =>
   prisma.agencyStaff.create({
     data: {
       userId,
       agencyId,
       position: 'Dispatcher',
+      staffRole,
     },
   });
 

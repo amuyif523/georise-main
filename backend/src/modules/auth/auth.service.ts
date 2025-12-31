@@ -121,6 +121,7 @@ export class AuthService {
     });
 
     if (!user || !user.citizenVerification) throw new Error('Invalid request');
+    if (user.isActive === false || user.deactivatedAt) throw new Error('Account is inactive');
 
     const { otpCode, otpExpiresAt } = user.citizenVerification;
     if (!otpCode || !otpExpiresAt || otpExpiresAt < new Date()) {
@@ -164,6 +165,10 @@ export class AuthService {
     if (!user) {
       await this.bumpFailureByEmail(data.email);
       throw new Error('Invalid credentials');
+    }
+
+    if (user.isActive === false || user.deactivatedAt) {
+      throw new Error('Account is inactive');
     }
 
     const now = Date.now();
@@ -241,7 +246,7 @@ export class AuthService {
       where: { id: decoded.userId },
       include: { agencyStaff: true },
     });
-    if (!user || user.isActive === false) throw new Error('User not active');
+    if (!user || user.isActive === false || user.deactivatedAt) throw new Error('User not active');
     if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
       throw new Error('Invalid refresh token');
     }
