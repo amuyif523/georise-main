@@ -48,12 +48,13 @@ const percentile = (values: number[], p: number) => {
 
 const summarize = (durations: number[]) => {
   if (!durations.length) {
-    return { avgMs: 0, p95Ms: 0, maxMs: 0 };
+    return { avgMs: 0, p95Ms: 0, p99Ms: 0, maxMs: 0 };
   }
   const total = durations.reduce((acc, cur) => acc + cur, 0);
   return {
     avgMs: Number((total / durations.length).toFixed(2)),
     p95Ms: Number(percentile(durations, 95).toFixed(2)),
+    p99Ms: Number(percentile(durations, 99).toFixed(2)),
     maxMs: Math.max(...durations),
   };
 };

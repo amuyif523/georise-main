@@ -496,6 +496,15 @@ router.post(
       }
 
       emitIncidentUpdated(toIncidentPayload(updated));
+      await prisma.auditLog.create({
+        data: {
+          actorId: req.user!.id,
+          action: 'REVIEW_INCIDENT',
+          targetType: 'Incident',
+          targetId: Number(id),
+          note: JSON.stringify({ decision, note: note ?? null }),
+        },
+      });
       return res.json({ incident: updated });
     } catch (err: unknown) {
       console.error('Review incident error:', err);
