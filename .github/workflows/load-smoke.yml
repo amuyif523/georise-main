@@ -1,0 +1,116 @@
+name: Load Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_smoke:
+        description: 'Run smoke load test'
+        required: true
+        default: 'true'
+
+jobs:
+  load_smoke:
+    if: ${{ github.event.inputs.run_smoke == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: georise_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d georise_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Write backend load env
+        run: |
+          cat <<'EOF' > backend/.env
+          NODE_ENV=production
+          PORT=4000
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+          JWT_SECRET=ci_test_secret
+          JWT_REFRESH_SECRET=ci_test_refresh_secret
+          JWT_EXPIRES_IN=1h
+          JWT_REFRESH_EXPIRES_IN=7d
+          REDIS_URL=redis://localhost:6379
+          CLIENT_ORIGIN=http://localhost:5173
+          AI_ENDPOINT=http://localhost:8001
+          EOF
+
+      - name: Backend migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Seed load users
+        working-directory: backend
+        env:
+          ADMIN_EMAIL: admin_load@example.com
+          AGENCY_EMAIL: agency_load@example.com
+          CITIZEN_EMAIL: citizen_load@example.com
+          LOAD_PASSWORD: loadpass123
+        run: npx ts-node scripts/seedLoadUsers.ts
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Install AI service deps
+        working-directory: ai-service
+        run: pip install -r requirements.txt
+
+      - name: Start AI service
+        working-directory: ai-service
+        run: |
+          nohup uvicorn main:app --host 0.0.0.0 --port 8001 >/tmp/ai.log 2>&1 &
+          sleep 8
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup node dist/server.js >/tmp/backend.log 2>&1 &
+          sleep 6
+
+      - name: Run Artillery smoke
+        env:
+          ADMIN_EMAIL: admin_load@example.com
+          ADMIN_PASSWORD: loadpass123
+          AGENCY_EMAIL: agency_load@example.com
+          AGENCY_PASSWORD: loadpass123
+        run: npx artillery run load/artillery.smoke.yml

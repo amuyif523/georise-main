@@ -1,0 +1,58 @@
+config:
+  target: 'http://localhost:4000'
+  phases:
+    - duration: 30
+      arrivalRate: 2
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+  variables:
+    adminEmail: '{{ $processEnvironment.ADMIN_EMAIL }}'
+    adminPassword: '{{ $processEnvironment.ADMIN_PASSWORD }}'
+    agencyEmail: '{{ $processEnvironment.AGENCY_EMAIL }}'
+    agencyPassword: '{{ $processEnvironment.AGENCY_PASSWORD }}'
+
+scenarios:
+  - name: 'System health'
+    flow:
+      - get:
+          url: '/health'
+      - get:
+          url: '/api/system/health'
+
+  - name: 'Admin metrics'
+    flow:
+      - post:
+          url: '/api/auth/login'
+          json:
+            email: '{{ adminEmail }}'
+            password: '{{ adminPassword }}'
+          capture:
+            json: '$.token'
+            as: 'adminToken'
+      - get:
+          url: '/api/admin/metrics'
+          headers:
+            Authorization: 'Bearer {{ adminToken }}'
+
+  - name: 'Agency incidents + timeline'
+    flow:
+      - post:
+          url: '/api/auth/login'
+          json:
+            email: '{{ agencyEmail }}'
+            password: '{{ agencyPassword }}'
+          capture:
+            json: '$.token'
+            as: 'agencyToken'
+      - get:
+          url: '/api/incidents?page=1&limit=5'
+          headers:
+            Authorization: 'Bearer {{ agencyToken }}'
+          capture:
+            json: '$.incidents[0].id'
+            as: 'incidentId'
+      - get:
+          url: '/api/incidents/{{ incidentId }}/timeline'
+          headers:
+            Authorization: 'Bearer {{ agencyToken }}'
