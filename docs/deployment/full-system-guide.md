@@ -28,6 +28,7 @@ Optional for real messaging:
 
 - Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, set `SMS_PROVIDER=twilio`
 - Web Push: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+- Secrets guidance: see `docs/deployment/production-secrets.md`
 
 ## Start Order (separate terminals)
 
@@ -167,6 +168,12 @@ python test_amharic_golden.py                     # golden-set regression (AI on
 - Prisma prompts for a migration when schema changes are detected; use `npx prisma migrate deploy` to apply existing migrations without creating new ones.
 - I18n: language toggle persists via localStorage; during QA you can inspect `localStorage["i18n_missing_keys"]` to spot untranslated strings; run UI in Amharic and verify text fits (no overflow).
 - AI eval: if `numpy`/PyTorch mismatch errors appear, pin `numpy<2` in the venv (`pip install 'numpy<2' --upgrade`), then rerun the AI tests above.
+
+## Production Notes
+
+- Use `infra/docker-compose.prod.yml` as a baseline and override with real secrets.
+- Mount AI weights into `ai-service/models/` or the service falls back to base model.
+- Backup/restore notes are in `docs/deployment/backup-restore.md`.
 
 ## Stopping Services
 

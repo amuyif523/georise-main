@@ -52,4 +52,11 @@ This guide documents the lightweight instrumentation added to the platform and h
 - AI call failures/latency spikes: validate the model pod/host, retry budget, and network path.
 - Missing or mismatched correlation IDs: verify upstream proxies preserve `x-correlation-id` and `x-trace-id`.
 
+## Performance Targets & Error Budgets
+
+- Target p95 <= 800ms and p99 <= 2500ms for API requests under smoke load.
+- DB p95 <= 300ms, p99 <= 800ms.
+- AI p95 <= 1500ms, p99 <= 2500ms.
+- Error budget: 0.2% 5xx requests per day; if exceeded, pause releases and fix.
+
 These steps keep observability lightweight while giving admins fast signals to triage performance and stability regressions.
