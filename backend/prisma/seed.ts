@@ -1,400 +1,669 @@
-import { PrismaClient, Role, AgencyType, ResponderStatus } from '@prisma/client';
+import {
+  AgencyType,
+  IncidentStatus,
+  ReviewStatus,
+  ResponderStatus,
+  Role,
+  StaffRole,
+} from '@prisma/client';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const passwordHash = await bcrypt.hash('password123', 10);
+const SEED_PASSWORD = 'password123';
+const NUM_AGENCIES_PER_TYPE = 2;
+const NUM_CITIZENS = 400;
+const NUM_INCIDENTS = 600;
+const NUM_BROADCASTS = 25;
+const NUM_NOTIFICATIONS = 600;
+const NUM_AUDIT_LOGS = 1000;
 
-  const agencies = [
-    { name: 'Bole Police Dept', type: 'POLICE', city: 'Bole', lat: 9.0106, lng: 38.7835 },
-    { name: 'Piassa Fire Station', type: 'FIRE', city: 'Arada', lat: 9.037, lng: 38.756 },
-    { name: 'CMC Ambulance Center', type: 'MEDICAL', city: 'Yeka', lat: 9.0405, lng: 38.834 },
-    {
-      name: 'Teklehaymanot Traffic Post',
-      type: 'TRAFFIC',
-      city: 'Lideta',
-      lat: 9.012,
-      lng: 38.741,
-    },
-    { name: 'Summit Utility Response', type: 'ELECTRIC', city: 'Yeka', lat: 9.047, lng: 38.813 },
-    { name: 'Aware Flood Response Unit', type: 'DISASTER', city: 'Akaki', lat: 8.963, lng: 38.807 },
-    { name: 'AAWSA Water Ops - Megenagna', type: 'WATER', city: 'Yeka', lat: 9.019, lng: 38.811 },
-    {
-      name: 'Environmental Hazard Unit - Gullele',
-      type: 'ENVIRONMENT',
-      city: 'Gullele',
-      lat: 9.056,
-      lng: 38.722,
-    },
-    {
-      name: 'Public Health Rapid Response',
-      type: 'PUBLIC_HEALTH',
-      city: 'Addis Ababa',
-      lat: 9.025,
-      lng: 38.77,
-    },
-    {
-      name: 'Construction Safety Corps',
-      type: 'CONSTRUCTION',
-      city: 'Addis Ababa',
-      lat: 9.015,
-      lng: 38.77,
-    },
-    {
-      name: 'City Administration Ops',
-      type: 'ADMINISTRATION',
-      city: 'Addis Ababa',
-      lat: 9.03,
-      lng: 38.75,
-    },
-    { name: 'General Support Unit', type: 'OTHER', city: 'Addis Ababa', lat: 9.02, lng: 38.79 },
-  ];
+const rand = (() => {
+  let seed = 123456789;
+  return () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+})();
 
-  const createdAgencies = [];
-  for (const a of agencies) {
-    let agency = await prisma.agency.findFirst({ where: { name: a.name } });
-    if (!agency) {
-      agency = await prisma.agency.create({
-        data: {
-          name: a.name,
-          city: a.city,
-          type: a.type as AgencyType,
-          description: `${a.type} unit in ${a.city}`,
-          isApproved: true,
-          isActive: true,
-        },
-      });
-    } else {
-      agency = await prisma.agency.update({
-        where: { id: agency.id },
-        data: {
-          city: a.city,
-          type: a.type as AgencyType,
-          isApproved: true,
-          isActive: true,
-        },
-      });
-    }
+const randomInt = (min: number, max: number) => Math.floor(rand() * (max - min + 1)) + min;
+const randomChoice = <T>(arr: T[]) => arr[randomInt(0, arr.length - 1)];
+const randomBool = (chance = 0.5) => rand() < chance;
 
+const chunk = <T>(arr: T[], size: number) => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
+};
+
+const randomDateWithinDays = (days: number) => {
+  const now = Date.now();
+  const past = now - days * 24 * 60 * 60 * 1000;
+  return new Date(randomInt(past, now));
+};
+
+const names = [
+  'Amanuel',
+  'Sara',
+  'Mekdes',
+  'Hana',
+  'Samuel',
+  'Natnael',
+  'Rahel',
+  'Yonas',
+  'Biruk',
+  'Ruth',
+  'Michael',
+  'Eden',
+  'Daniel',
+  'Tigist',
+  'Abel',
+  'Selam',
+  'Yared',
+  'Liya',
+  'Henok',
+  'Meseret',
+];
+
+const surnames = [
+  'Tesfaye',
+  'Abebe',
+  'Bekele',
+  'Kebede',
+  'Mekonnen',
+  'Alemu',
+  'Girma',
+  'Hailu',
+  'Tadesse',
+  'Assefa',
+  'Solomon',
+  'Getachew',
+  'Wolde',
+  'Demissie',
+  'Haile',
+  'Negash',
+];
+
+const categoryList = [
+  'FIRE',
+  'TRAFFIC',
+  'MEDICAL',
+  'POLICE',
+  'DISASTER',
+  'ELECTRIC',
+  'WATER',
+  'ENVIRONMENT',
+  'PUBLIC_HEALTH',
+  'CONSTRUCTION',
+  'OTHER',
+];
+
+const incidentTitles = [
+  'Smoke seen near junction',
+  'Multi-vehicle collision',
+  'Power line down',
+  'Collapsed wall',
+  'Severe injury reported',
+  'Flooding in low area',
+  'Suspicious activity',
+  'Gas leak complaint',
+  'Bus crash',
+  'Fire in apartment block',
+  'Medical emergency at market',
+  'Road blocked by debris',
+];
+
+const subCitySeeds = [
+  { name: 'Bole', lat: 9.01, lng: 38.78 },
+  { name: 'Arada', lat: 9.04, lng: 38.74 },
+  { name: 'Yeka', lat: 9.03, lng: 38.82 },
+  { name: 'Lideta', lat: 9.01, lng: 38.73 },
+  { name: 'Akaki', lat: 8.98, lng: 38.8 },
+  { name: 'Gullele', lat: 9.06, lng: 38.7 },
+  { name: 'Addis Ketema', lat: 9.03, lng: 38.73 },
+  { name: 'Kirkos', lat: 9.01, lng: 38.76 },
+  { name: 'Nifas Silk-Lafto', lat: 8.98, lng: 38.74 },
+  { name: 'Kolfe Keranio', lat: 9.06, lng: 38.68 },
+];
+
+const agencyTypes = Object.values(AgencyType);
+
+const randomLatLng = () => ({
+  lat: 8.95 + rand() * 0.15,
+  lng: 38.68 + rand() * 0.2,
+});
+
+const sanitizePhone = (num: number) => `+2519${num.toString().padStart(8, '0')}`;
+
+async function createGeometries() {
+  const subCities = [];
+  for (const seed of subCitySeeds) {
+    const subCity = await prisma.subCity.upsert({
+      where: { name: seed.name },
+      update: { code: seed.name.slice(0, 3).toUpperCase() },
+      create: { name: seed.name, code: seed.name.slice(0, 3).toUpperCase() },
+    });
     await prisma.$executeRaw`
-      UPDATE "Agency"
-      SET "centerLatitude" = ${a.lat},
-          "centerLongitude" = ${a.lng},
-          type = ${a.type}::"AgencyType",
-          boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 1200)::geometry,
-          jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 1200)::geometry
-      WHERE id = ${agency.id};
+      UPDATE "SubCity"
+      SET jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${seed.lng}, ${seed.lat}), 4326)::geography, 2500)::geometry
+      WHERE id = ${subCity.id};
     `;
-    createdAgencies.push(agency);
+    subCities.push({ ...subCity, lat: seed.lat, lng: seed.lng });
   }
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      fullName: 'System Admin',
-      email: 'admin@example.com',
-      passwordHash,
-      role: Role.ADMIN,
-    },
-  });
+  const woredas = [];
+  let woredaIndex = 1;
+  for (const subCity of subCities) {
+    for (let i = 0; i < 6; i += 1) {
+      const lat = subCity.lat + (rand() - 0.5) * 0.04;
+      const lng = subCity.lng + (rand() - 0.5) * 0.04;
+      const woreda = await prisma.woreda.create({
+        data: {
+          name: `${subCity.name} Woreda ${woredaIndex}`,
+          code: `W${woredaIndex.toString().padStart(3, '0')}`,
+          subCityId: subCity.id,
+        },
+      });
+      await prisma.$executeRaw`
+        UPDATE "Woreda"
+        SET boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, 1200)::geometry
+        WHERE id = ${woreda.id};
+      `;
+      woredas.push({ ...woreda, lat, lng });
+      woredaIndex += 1;
+    }
+  }
+  return { subCities, woredas };
+}
 
-  const agencyUser = await prisma.user.upsert({
-    where: { email: 'police1@example.com' },
-    update: {},
-    create: {
-      fullName: 'Police Officer One',
-      email: 'police1@example.com',
-      passwordHash,
-      role: Role.AGENCY_STAFF,
-    },
-  });
+async function createAgencies(subCities: any[], woredas: any[]) {
+  const agencies = [];
+  let agencyIndex = 1;
+  for (const type of agencyTypes) {
+    for (let i = 0; i < NUM_AGENCIES_PER_TYPE; i += 1) {
+      const { lat, lng } = randomLatLng();
+      const subCity = randomChoice(subCities);
+      const woreda = randomChoice(woredas.filter((w) => w.subCityId === subCity.id));
+      const name = `${type} Response Unit ${agencyIndex}`;
+      const agency = await prisma.agency.create({
+        data: {
+          name,
+          type,
+          city: subCity.name,
+          description: `${type} response unit serving ${subCity.name}`,
+          isApproved: true,
+          isActive: true,
+          subCityId: subCity.id,
+          woredaId: woreda?.id ?? null,
+        },
+      });
+      await prisma.$executeRaw`
+        UPDATE "Agency"
+        SET "centerLatitude" = ${lat},
+            "centerLongitude" = ${lng},
+            boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, 1800)::geometry,
+            jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, 1800)::geometry
+        WHERE id = ${agency.id};
+      `;
+      agencies.push({ ...agency, lat, lng });
+      agencyIndex += 1;
+    }
+  }
+  return agencies;
+}
 
-  const fireUser = await prisma.user.upsert({
-    where: { email: 'fire1@example.com' },
-    update: {},
-    create: {
-      fullName: 'Fire Chief One',
-      email: 'fire1@example.com',
-      passwordHash,
-      role: Role.AGENCY_STAFF,
-    },
-  });
+async function createUsers(passwordHash: string) {
+  const adminEmails = ['admin@example.com', 'admin2@example.com', 'ops@example.com'];
+  const admins = [];
+  for (const email of adminEmails) {
+    admins.push(
+      await prisma.user.upsert({
+        where: { email },
+        update: { passwordHash, role: Role.ADMIN, isActive: true },
+        create: {
+          fullName: `Admin ${email.split('@')[0]}`,
+          email,
+          passwordHash,
+          role: Role.ADMIN,
+          isActive: true,
+        },
+      }),
+    );
+  }
 
-  const medicalUser = await prisma.user.upsert({
-    where: { email: 'medical1@example.com' },
-    update: {},
-    create: {
-      fullName: 'Medic One',
-      email: 'medical1@example.com',
-      passwordHash,
-      role: Role.AGENCY_STAFF,
-    },
-  });
-
-  const trafficUser = await prisma.user.upsert({
-    where: { email: 'traffic1@example.com' },
-    update: {},
-    create: {
-      fullName: 'Traffic Officer One',
-      email: 'traffic1@example.com',
-      passwordHash,
-      role: Role.AGENCY_STAFF,
-    },
-  });
-
-  const citizen = await prisma.user.upsert({
-    where: { email: 'citizen1@example.com' },
-    update: {},
-    create: {
-      fullName: 'Citizen One',
-      email: 'citizen1@example.com',
-      passwordHash,
-      role: Role.CITIZEN,
-    },
-  });
-
-  // Additional Citizens
-  const citizen2 = await prisma.user.upsert({
-    where: { email: 'citizen2@example.com' },
-    update: {},
-    create: {
-      fullName: 'Citizen Two',
-      email: 'citizen2@example.com',
-      passwordHash,
-      role: Role.CITIZEN,
-    },
-  });
-
-  const citizen3 = await prisma.user.upsert({
-    where: { email: 'citizen3@example.com' },
-    update: {},
-    create: {
-      fullName: 'Citizen Three',
-      email: 'citizen3@example.com',
-      passwordHash,
-      role: Role.CITIZEN,
-    },
-  });
-
-  // Ensure every agency has at least one staff member and one responder
-  const agencyStaffUsers = [];
-  for (const agency of createdAgencies) {
-    // Skip if we already created specific users for these types above
-    if (['POLICE', 'FIRE', 'MEDICAL', 'TRAFFIC'].includes(agency.type)) continue;
-
-    const email = `${agency.type.toLowerCase()}1@example.com`;
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        fullName: `${agency.type} Officer`,
+  const citizens = [];
+  for (let i = 0; i < NUM_CITIZENS; i += 1) {
+    const fullName = `${randomChoice(names)} ${randomChoice(surnames)}`;
+    const email = `citizen${i + 1}@example.com`;
+    const phone = sanitizePhone(90000000 + i);
+    const citizen = await prisma.user.create({
+      data: {
+        fullName,
         email,
+        phone,
         passwordHash,
-        role: Role.AGENCY_STAFF,
+        role: Role.CITIZEN,
+        isActive: true,
+        trustScore: randomInt(-2, 10),
+        lastReportAt: randomBool(0.5) ? randomDateWithinDays(30) : null,
       },
     });
-
-    await prisma.agencyStaff.upsert({
-      where: { userId: user.id },
-      update: { agencyId: agency.id },
-      create: {
-        userId: user.id,
-        agencyId: agency.id,
-        position: 'Operator',
-      },
-    });
-    agencyStaffUsers.push({ user, agency });
+    citizens.push(citizen);
   }
 
-  const policeAgencyId =
-    createdAgencies.find((a) => a.type === 'POLICE')?.id ?? createdAgencies[0]?.id;
-  await prisma.agencyStaff.upsert({
-    where: { userId: agencyUser.id },
-    update: { agencyId: policeAgencyId },
-    create: {
-      userId: agencyUser.id,
-      agencyId: policeAgencyId,
-      position: 'Dispatcher',
-    },
-  });
+  return { admins, citizens };
+}
 
-  const fireAgencyId = createdAgencies.find((a) => a.type === 'FIRE')?.id;
-  if (fireAgencyId) {
-    await prisma.agencyStaff.upsert({
-      where: { userId: fireUser.id },
-      update: { agencyId: fireAgencyId },
-      create: { userId: fireUser.id, agencyId: fireAgencyId, position: 'Station Chief' },
-    });
-  }
+async function createAgencyStaffAndResponders(agencies: any[], passwordHash: string) {
+  const staffUsers = [];
+  const responders = [];
+  let staffIndex = 1;
 
-  const medicalAgencyId = createdAgencies.find((a) => a.type === 'MEDICAL')?.id;
-  if (medicalAgencyId) {
-    await prisma.agencyStaff.upsert({
-      where: { userId: medicalUser.id },
-      update: { agencyId: medicalAgencyId },
-      create: { userId: medicalUser.id, agencyId: medicalAgencyId, position: 'Head Medic' },
-    });
-  }
+  for (const agency of agencies) {
+    const staffCount = randomInt(8, 14);
+    for (let i = 0; i < staffCount; i += 1) {
+      const fullName = `${randomChoice(names)} ${randomChoice(surnames)}`;
+      const email = `staff${staffIndex}@example.com`;
+      const phone = sanitizePhone(91000000 + staffIndex);
+      const role = Role.AGENCY_STAFF;
+      const staffRole = randomChoice([
+        StaffRole.DISPATCHER,
+        StaffRole.RESPONDER,
+        StaffRole.SUPERVISOR,
+      ]);
+      const user = await prisma.user.create({
+        data: {
+          fullName,
+          email,
+          phone,
+          passwordHash,
+          role,
+          isActive: true,
+        },
+      });
+      await prisma.agencyStaff.create({
+        data: {
+          userId: user.id,
+          agencyId: agency.id,
+          staffRole,
+          position: staffRole === StaffRole.SUPERVISOR ? 'Supervisor' : 'Operator',
+          isActive: true,
+        },
+      });
+      staffUsers.push({ user, agency });
 
-  const trafficAgencyId = createdAgencies.find((a) => a.type === 'TRAFFIC')?.id;
-  if (trafficAgencyId) {
-    await prisma.agencyStaff.upsert({
-      where: { userId: trafficUser.id },
-      update: { agencyId: trafficAgencyId },
-      create: { userId: trafficUser.id, agencyId: trafficAgencyId, position: 'Traffic Controller' },
-    });
-  }
-
-  // Seed Responders (linked to the staff users for demo purposes)
-  // In a real scenario, responders might be different from office staff, but for demo we use the same accounts.
-  const responders = [
-    { user: agencyUser, agencyId: policeAgencyId, type: 'PATROL', lat: 9.01, lng: 38.78 },
-    { user: fireUser, agencyId: fireAgencyId, type: 'TRUCK', lat: 9.03, lng: 38.75 },
-    { user: medicalUser, agencyId: medicalAgencyId, type: 'AMBULANCE', lat: 9.04, lng: 38.83 },
-    { user: trafficUser, agencyId: trafficAgencyId, type: 'MOTORCYCLE', lat: 9.01, lng: 38.74 },
-  ];
-
-  // Add responders for the other agencies we just created staff for
-  for (const item of agencyStaffUsers) {
-    responders.push({
-      user: item.user,
-      agencyId: item.agency.id,
-      type: 'UNIT',
-      lat: (item.agency.centerLatitude || 9.0) + 0.005, // slightly offset from HQ
-      lng: (item.agency.centerLongitude || 38.7) + 0.005,
-    });
-  }
-
-  for (const r of responders) {
-    if (r.agencyId) {
-      // Check if responder exists for this user
-      const existing = await prisma.responder.findFirst({ where: { userId: r.user.id } });
-      if (!existing) {
-        await prisma.responder.create({
+      if (randomBool(0.7)) {
+        const responder = await prisma.responder.create({
           data: {
-            name: `${r.user.fullName} (Unit)`,
-            type: r.type,
-            status: ResponderStatus.AVAILABLE,
-            agencyId: r.agencyId,
-            userId: r.user.id,
-            latitude: r.lat,
-            longitude: r.lng,
-            lastSeenAt: new Date(),
+            name: `${fullName} Unit`,
+            type: randomChoice(['AMBULANCE', 'TRUCK', 'PATROL', 'BIKE', 'UNIT']),
+            status: randomChoice([
+              ResponderStatus.AVAILABLE,
+              ResponderStatus.ASSIGNED,
+              ResponderStatus.EN_ROUTE,
+              ResponderStatus.ON_SCENE,
+              ResponderStatus.OFFLINE,
+            ]),
+            agencyId: agency.id,
+            userId: user.id,
+            latitude: agency.lat + (rand() - 0.5) * 0.02,
+            longitude: agency.lng + (rand() - 0.5) * 0.02,
+            lastSeenAt: randomDateWithinDays(3),
             isDemo: true,
           },
+        });
+        responders.push(responder);
+      }
+      staffIndex += 1;
+    }
+  }
+
+  return { staffUsers, responders };
+}
+
+async function createSystemConfig() {
+  await prisma.systemConfig.upsert({
+    where: { key: 'CRISIS_MODE' },
+    update: { value: 'false' },
+    create: { key: 'CRISIS_MODE', value: 'false' },
+  });
+}
+
+async function createDispatchRules() {
+  await prisma.dispatchRule.deleteMany();
+  await prisma.dispatchRule.createMany({
+    data: [
+      { category: 'FIRE', defaultAgencyType: AgencyType.FIRE },
+      { category: 'TRAFFIC', defaultAgencyType: AgencyType.TRAFFIC },
+      { category: 'MEDICAL', defaultAgencyType: AgencyType.MEDICAL },
+      { category: 'POLICE', defaultAgencyType: AgencyType.POLICE },
+      { category: 'DISASTER', defaultAgencyType: AgencyType.DISASTER },
+      { category: 'ELECTRIC', defaultAgencyType: AgencyType.ELECTRIC },
+      { category: 'WATER', defaultAgencyType: AgencyType.WATER },
+    ],
+  });
+}
+
+async function createAgencyJurisdictions(agencies: any[], subCities: any[], woredas: any[]) {
+  const jurisdictionRows = [];
+  for (const agency of agencies) {
+    const picks = randomInt(1, 3);
+    for (let i = 0; i < picks; i += 1) {
+      if (randomBool(0.5)) {
+        const subCity = randomChoice(subCities);
+        jurisdictionRows.push({
+          agencyId: agency.id,
+          boundaryType: 'SUBCITY',
+          boundaryId: subCity.id,
+        });
+      } else {
+        const woreda = randomChoice(woredas);
+        jurisdictionRows.push({
+          agencyId: agency.id,
+          boundaryType: 'WOREDA',
+          boundaryId: woreda.id,
         });
       }
     }
   }
+  for (const batch of chunk(jurisdictionRows, 200)) {
+    await prisma.agencyJurisdiction.createMany({ data: batch });
+  }
+}
 
-  const incidents = [
-    {
-      title: 'Apartment fire near Bole',
-      description: 'Smoke visible from 3rd floor apartment near Bole Medhanealem.',
-      category: 'FIRE',
-      severityScore: 4,
-      latitude: 9.0123,
-      longitude: 38.7612,
-    },
-    {
-      title: 'Traffic crash near Mexico',
-      description: 'Two-car collision near Mexico roundabout, injuries reported.',
-      category: 'TRAFFIC',
-      severityScore: 3,
-      latitude: 9.0105,
-      longitude: 38.7471,
-    },
-    {
-      title: 'Medical emergency at Stadium',
-      description: 'Person collapsed at Addis Ababa Stadium stands, needs medical help.',
-      category: 'MEDICAL',
-      severityScore: 3,
-      latitude: 9.032,
-      longitude: 38.7615,
-    },
-    {
-      title: 'Power outage in Yeka',
-      description: 'Transformer sparked and power is out for the whole block.',
-      category: 'ELECTRIC',
-      severityScore: 2,
-      latitude: 9.045,
-      longitude: 38.81,
-    },
-    {
-      title: 'Flooding in Akaki',
-      description: 'River overflowing near the bridge, road blocked.',
-      category: 'DISASTER',
-      severityScore: 4,
-      latitude: 8.965,
-      longitude: 38.805,
-    },
-  ];
+async function createIncidents(agencies: any[], citizens: any[], subCities: any[], woredas: any[]) {
+  const incidents: any[] = [];
+  const aiOutputs: any[] = [];
+  const statusHistory: any[] = [];
+  const activityLogs: any[] = [];
+  const chatMessages: any[] = [];
+  const photos: any[] = [];
+  const shared: any[] = [];
 
-  for (const inc of incidents) {
-    const created = await prisma.incident.create({
+  for (let i = 0; i < NUM_INCIDENTS; i += 1) {
+    const reporter = randomChoice(citizens);
+    const assignedAgency = randomBool(0.7) ? randomChoice(agencies) : null;
+    const category = randomChoice(categoryList);
+    const severityScore = randomInt(1, 5);
+    const status = randomChoice([
+      IncidentStatus.RECEIVED,
+      IncidentStatus.UNDER_REVIEW,
+      IncidentStatus.ASSIGNED,
+      IncidentStatus.RESPONDING,
+      IncidentStatus.RESOLVED,
+    ]);
+    const subCity = randomChoice(subCities);
+    const woreda = randomChoice(woredas.filter((w) => w.subCityId === subCity.id));
+    const lat = subCity.lat + (rand() - 0.5) * 0.04;
+    const lng = subCity.lng + (rand() - 0.5) * 0.04;
+
+    const incident = await prisma.incident.create({
       data: {
-        title: inc.title,
-        description: inc.description,
-        reporterId: citizen.id,
-        category: inc.category,
-        severityScore: inc.severityScore,
-        latitude: inc.latitude,
-        longitude: inc.longitude,
+        title: `${randomChoice(incidentTitles)} #${i + 1}`,
+        description: `Report ${i + 1}: ${category} incident reported by ${reporter.fullName}.`,
+        reporterId: reporter.id,
+        assignedAgencyId: assignedAgency?.id ?? null,
+        category,
+        severityScore,
+        status,
+        latitude: lat,
+        longitude: lng,
+        subCityId: subCity.id,
+        woredaId: woreda?.id ?? null,
+        reviewStatus: randomChoice([
+          ReviewStatus.NOT_REQUIRED,
+          ReviewStatus.PENDING_REVIEW,
+          ReviewStatus.APPROVED,
+          ReviewStatus.REJECTED,
+        ]),
+        createdAt: randomDateWithinDays(30),
       },
     });
     await prisma.$executeRaw`
       UPDATE "Incident"
-      SET location = ST_SetSRID(ST_MakePoint(${inc.longitude}, ${inc.latitude}), 4326)
-      WHERE id = ${created.id};
+      SET location = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
+      WHERE id = ${incident.id};
     `;
-  }
+    incidents.push(incident);
 
-  // Dispatch rules seed (basic)
-  const rules = [
-    { category: 'FIRE', defaultAgencyType: 'FIRE' },
-    { category: 'TRAFFIC', defaultAgencyType: 'TRAFFIC' },
-    { category: 'MEDICAL', defaultAgencyType: 'MEDICAL' },
-    { category: 'CRIME', defaultAgencyType: 'POLICE' },
-    { category: 'DISASTER', defaultAgencyType: 'DISASTER' },
-  ];
-  await prisma.dispatchRule.deleteMany();
-  await prisma.dispatchRule.createMany({
-    data: rules.map((r) => ({
-      category: r.category,
-      defaultAgencyType: r.defaultAgencyType as AgencyType,
-    })),
-  });
+    if (randomBool(0.8)) {
+      aiOutputs.push({
+        incidentId: incident.id,
+        modelVersion: 'seed-v1',
+        predictedCategory: category,
+        severityScore,
+        confidence: Number((0.55 + rand() * 0.4).toFixed(2)),
+        summary: `Seeded summary for incident ${incident.id}`,
+      });
+    }
 
-  // Seed basic SubCities for development (Placeholders)
-  const subCities = [
-    'Bole',
-    'Arada',
-    'Yeka',
-    'Lideta',
-    'Akaki',
-    'Gullele',
-    'Addis Ketema',
-    'Kirkos',
-    'Nifas Silk-Lafto',
-    'Kolfe Keranio',
-  ];
-  for (const name of subCities) {
-    await prisma.subCity.upsert({
-      where: { name },
-      update: {},
-      create: { name, code: name.substring(0, 3).toUpperCase() },
+    const historySteps = [
+      { from: null, to: IncidentStatus.RECEIVED },
+      { from: IncidentStatus.RECEIVED, to: IncidentStatus.UNDER_REVIEW },
+      { from: IncidentStatus.UNDER_REVIEW, to: IncidentStatus.ASSIGNED },
+      { from: IncidentStatus.ASSIGNED, to: IncidentStatus.RESPONDING },
+      { from: IncidentStatus.RESPONDING, to: IncidentStatus.RESOLVED },
+    ];
+    const steps = randomInt(2, 5);
+    for (let s = 0; s < steps; s += 1) {
+      statusHistory.push({
+        incidentId: incident.id,
+        actorUserId: reporter.id,
+        fromStatus: historySteps[s].from,
+        toStatus: historySteps[s].to,
+        note: `Status changed to ${historySteps[s].to}`,
+        changedAt: randomDateWithinDays(30),
+      });
+    }
+
+    activityLogs.push({
+      incidentId: incident.id,
+      userId: reporter.id,
+      type: 'SYSTEM',
+      message: 'Incident created via seed',
     });
-    // Note: Real geometry would be seeded here from GeoJSON
+
+    if (randomBool(0.3)) {
+      const shareWith = randomChoice(agencies);
+      if (shareWith) {
+        shared.push({
+          incidentId: incident.id,
+          agencyId: shareWith.id,
+          reason: randomChoice(['Backup', 'Jurisdiction overlap', 'High severity']),
+        });
+      }
+    }
+
+    const chatCount = randomInt(0, 3);
+    for (let c = 0; c < chatCount; c += 1) {
+      chatMessages.push({
+        incidentId: incident.id,
+        senderId: reporter.id,
+        message: `Seeded chat message ${c + 1} for incident ${incident.id}`,
+        createdAt: randomDateWithinDays(15),
+      });
+    }
+
+    if (randomBool(0.2)) {
+      photos.push({
+        incidentId: incident.id,
+        uploadedById: reporter.id,
+        url: `/uploads/incident-photos/seed-${incident.id}.jpg`,
+        storagePath: `uploads/incident-photos/seed-${incident.id}.jpg`,
+        mimeType: 'image/jpeg',
+        size: randomInt(25000, 250000),
+        originalName: `seed-${incident.id}.jpg`,
+      });
+    }
   }
 
-  console.log('Seed complete');
+  for (const batch of chunk(aiOutputs, 200)) {
+    await prisma.incidentAIOutput.createMany({ data: batch });
+  }
+  for (const batch of chunk(statusHistory, 200)) {
+    await prisma.incidentStatusHistory.createMany({ data: batch });
+  }
+  for (const batch of chunk(activityLogs, 200)) {
+    await prisma.activityLog.createMany({ data: batch });
+  }
+  for (const batch of chunk(chatMessages, 200)) {
+    await prisma.incidentChat.createMany({ data: batch });
+  }
+  for (const batch of chunk(photos, 200)) {
+    await prisma.incidentPhoto.createMany({ data: batch });
+  }
+  for (const batch of chunk(shared, 200)) {
+    await prisma.sharedIncident.createMany({ data: batch, skipDuplicates: true });
+  }
+
+  return incidents;
+}
+
+async function createNotifications(users: any[]) {
+  const notifications = [];
+  for (let i = 0; i < NUM_NOTIFICATIONS; i += 1) {
+    const user = randomChoice(users);
+    notifications.push({
+      userId: user.id,
+      title: 'System Notice',
+      message: `Notification ${i + 1} for ${user.fullName}`,
+      type: randomChoice(['SYSTEM', 'PROXIMITY_ALERT', 'STATUS']),
+      isRead: randomBool(0.4),
+      data: { seed: true },
+    });
+  }
+  for (const batch of chunk(notifications, 200)) {
+    await prisma.notification.createMany({ data: batch });
+  }
+}
+
+async function createCitizenVerification(citizens: any[]) {
+  const rows = [];
+  for (const citizen of citizens.slice(0, 80)) {
+    rows.push({
+      userId: citizen.id,
+      nationalId: `ID${randomInt(100000, 999999)}`,
+      phone: citizen.phone ?? sanitizePhone(92000000 + citizen.id),
+      status: randomChoice(['PENDING', 'VERIFIED', 'REJECTED']),
+      otpCode: randomBool(0.5) ? randomInt(100000, 999999).toString() : null,
+      otpExpiresAt: randomBool(0.5) ? randomDateWithinDays(1) : null,
+    });
+  }
+  for (const batch of chunk(rows, 200)) {
+    await prisma.citizenVerification.createMany({ data: batch, skipDuplicates: true });
+  }
+}
+
+async function createBroadcasts(admins: any[]) {
+  const rows = [];
+  for (let i = 0; i < NUM_BROADCASTS; i += 1) {
+    const admin = randomChoice(admins);
+    rows.push({
+      message: `Broadcast message ${i + 1}`,
+      sentBy: admin.id,
+      sentAt: randomDateWithinDays(14),
+    });
+  }
+  for (const batch of chunk(rows, 200)) {
+    await prisma.broadcastLog.createMany({ data: batch });
+  }
+}
+
+async function createAuditLogs(users: any[]) {
+  const actions = [
+    'CREATE_USER',
+    'UPDATE_USER',
+    'DEACTIVATE_USER',
+    'ASSIGN_INCIDENT',
+    'RESPOND_INCIDENT',
+    'RESOLVE_INCIDENT',
+    'REVIEW_INCIDENT',
+    'SEND_BROADCAST',
+    'UPDATE_SYSTEM_CONFIG',
+  ];
+  const logs = [];
+  for (let i = 0; i < NUM_AUDIT_LOGS; i += 1) {
+    const actor = randomChoice(users);
+    logs.push({
+      actorId: actor.id,
+      action: randomChoice(actions),
+      targetType: randomChoice(['User', 'Incident', 'Agency', 'SystemConfig', 'Broadcast']),
+      targetId: randomBool(0.7) ? randomInt(1, 1000) : null,
+      note: randomBool(0.3) ? 'Seeded audit entry' : null,
+      createdAt: randomDateWithinDays(30),
+    });
+  }
+  for (const batch of chunk(logs, 200)) {
+    await prisma.auditLog.createMany({ data: batch });
+  }
+}
+
+async function createPasswordResets(users: any[]) {
+  const rows = [];
+  for (const user of users.slice(0, 30)) {
+    rows.push({
+      userId: user.id,
+      tokenHash: crypto.randomBytes(24).toString('hex'),
+      expiresAt: randomDateWithinDays(3),
+      usedAt: randomBool(0.3) ? randomDateWithinDays(2) : null,
+    });
+  }
+  for (const batch of chunk(rows, 200)) {
+    await prisma.passwordResetToken.createMany({ data: batch, skipDuplicates: true });
+  }
+}
+
+async function createPushSubscriptions(users: any[]) {
+  const rows = [];
+  for (const user of users.slice(0, 60)) {
+    rows.push({
+      userId: user.id,
+      endpoint: `https://push.example.com/sub/${crypto.randomUUID()}`,
+      p256dh: crypto.randomBytes(16).toString('hex'),
+      auth: crypto.randomBytes(12).toString('hex'),
+      isActive: randomBool(0.8),
+    });
+  }
+  for (const batch of chunk(rows, 200)) {
+    await prisma.pushSubscription.createMany({ data: batch, skipDuplicates: true });
+  }
+}
+
+async function main() {
+  const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
+
+  await createSystemConfig();
+  const { subCities, woredas } = await createGeometries();
+  const agencies = await createAgencies(subCities, woredas);
+  await createDispatchRules();
+  await createAgencyJurisdictions(agencies, subCities, woredas);
+
+  const { admins, citizens } = await createUsers(passwordHash);
+  const { staffUsers } = await createAgencyStaffAndResponders(agencies, passwordHash);
+  const incidents = await createIncidents(agencies, citizens, subCities, woredas);
+
+  await createCitizenVerification(citizens);
+  await createNotifications([...citizens, ...admins, ...staffUsers.map((s) => s.user)]);
+  await createBroadcasts(admins);
+  await createAuditLogs([...citizens, ...admins, ...staffUsers.map((s) => s.user)]);
+  await createPasswordResets([...citizens, ...admins, ...staffUsers.map((s) => s.user)]);
+  await createPushSubscriptions([...citizens, ...staffUsers.map((s) => s.user)]);
+
+  console.log('Seed complete', {
+    agencies: agencies.length,
+    subCities: subCities.length,
+    woredas: woredas.length,
+    citizens: citizens.length,
+    staffUsers: staffUsers.length,
+    incidents: incidents.length,
+  });
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((err) => {
+    console.error(err);
     process.exit(1);
   })
   .finally(async () => {
