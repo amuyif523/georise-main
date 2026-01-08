@@ -5,12 +5,21 @@ import {
   ResponderStatus,
   Role,
   StaffRole,
+  VerificationStatus,
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
-const prisma = new PrismaClient();
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(pool),
+});
 
 const SEED_PASSWORD = 'password123';
 const NUM_AGENCIES_PER_TYPE = 2;
@@ -113,6 +122,12 @@ const incidentTitles = [
   'Fire in apartment block',
   'Medical emergency at market',
   'Road blocked by debris',
+];
+
+const verificationStatuses: VerificationStatus[] = [
+  VerificationStatus.PENDING,
+  VerificationStatus.VERIFIED,
+  VerificationStatus.REJECTED,
 ];
 
 const subCitySeeds = [
@@ -546,7 +561,7 @@ async function createCitizenVerification(citizens: any[]) {
       userId: citizen.id,
       nationalId: `ID${randomInt(100000, 999999)}`,
       phone: citizen.phone ?? sanitizePhone(92000000 + citizen.id),
-      status: randomChoice(['PENDING', 'VERIFIED', 'REJECTED']),
+      status: randomChoice(verificationStatuses),
       otpCode: randomBool(0.5) ? randomInt(100000, 999999).toString() : null,
       otpExpiresAt: randomBool(0.5) ? randomDateWithinDays(1) : null,
     });
