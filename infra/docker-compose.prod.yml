@@ -2,13 +2,19 @@ version: '3.9'
 
 services:
   db:
-    image: postgis/postgis:15-3.3
+    image: postgis/postgis:16-3.4
     container_name: georisem-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: georisem
       POSTGRES_PASSWORD: georisem123
       POSTGRES_DB: georisem_db
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
     ports:
       - '54320:5432'
     volumes:
@@ -19,17 +25,58 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: georisem-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command:
+      - redis-server
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --maxclients
+      - '1000'
+    volumes:
+      - georise_redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli ping | grep PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: ../backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       DATABASE_URL: 'postgresql://georisem:georisem123@db:5432/georisem_db?schema=public'
+      REDIS_URL: 'redis://redis:6379'
+      CLIENT_ORIGIN: 'https://your-frontend-domain'
       JWT_SECRET: 'CHANGE_THIS_TO_A_RANDOM_64_CHAR_SECRET'
-      AI_SERVICE_URL: 'http://ai-service:8001'
+      JWT_REFRESH_SECRET: 'CHANGE_THIS_TO_A_RANDOM_64_CHAR_SECRET'
+      JWT_EXPIRES_IN: '30m'
+      JWT_REFRESH_EXPIRES_IN: '7d'
+      AI_ENDPOINT: 'http://ai-service:8001/classify'
+      SMS_PROVIDER: 'twilio'
+      TWILIO_ACCOUNT_SID: ''
+      TWILIO_AUTH_TOKEN: ''
+      TWILIO_FROM_NUMBER: ''
+      VAPID_PUBLIC_KEY: ''
+      VAPID_PRIVATE_KEY: ''
+      VAPID_SUBJECT: 'mailto:admin@georise.local'
+      ROUTING_PROVIDER: 'osrm'
+      OSRM_BASE_URL: 'https://router.project-osrm.org/route/v1/driving'
+      ROUTING_CACHE_TTL_SECONDS: '300'
+      ROUTING_TIMEOUT_MS: '3500'
+      ROUTING_FALLBACK_PROVIDER: 'heuristic'
     ports:
       - '4000:4000'
 
@@ -40,6 +87,10 @@ services:
       - ../ai-service/models:/app/models:ro
     ports:
       - '8001:8001'
+    environment:
+      MODEL_PATH: /app/models/afroxlmr_incident_classifier
+      MODEL_METADATA_PATH: /app/models/afroxlmr_incident_classifier/metadata.json
 
 volumes:
   georise_db_data:
+  georise_redis_data:
