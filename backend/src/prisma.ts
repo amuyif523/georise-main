@@ -8,35 +8,72 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-const prisma = new PrismaClient({
+const basePrisma = new PrismaClient({
   adapter: new PrismaPg(pool),
 });
 
-(prisma as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
-  const start = process.hrtime.bigint();
-  let success = true;
-  try {
-    const result = await next(params);
-    return result;
-  } catch (err) {
-    success = false;
-    throw err;
-  } finally {
-    const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
-    metrics.logDbQuery({
-      model: params.model ?? 'raw',
-      action: params.action,
-      durationMs: Number(durationMs.toFixed(2)),
-      success,
-    });
-
-    if (params.action === 'queryRaw' && durationMs > 1000) {
-      logger.warn(
-        { durationMs, action: params.action },
-        'Slow raw query detected (consider optimizing)',
-      );
-    }
-  }
+const prisma = basePrisma.$extends({
+  query: {
+    $allModels: {
+      async $allOperations({ model, operation, args, query }) {
+        const start = process.hrtime.bigint();
+        let success = true;
+        try {
+          return await query(args);
+        } catch (err) {
+          success = false;
+          throw err;
+        } finally {
+          const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+          metrics.logDbQuery({
+            model: model ?? 'Unknown',
+            action: operation,
+            durationMs: Number(durationMs.toFixed(2)),
+            success,
+          });
+        }
+      },
+    },
+    async $queryRaw({ args, query }) {
+      const start = process.hrtime.bigint();
+      let success = true;
+      try {
+        return await query(args);
+      } catch (err) {
+        success = false;
+        throw err;
+      } finally {
+        const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+        metrics.logDbQuery({
+          model: 'raw',
+          action: 'queryRaw',
+          durationMs: Number(durationMs.toFixed(2)),
+          success,
+        });
+        if (durationMs > 1000) {
+          logger.warn({ durationMs, action: 'queryRaw' }, 'Slow raw query detected');
+        }
+      }
+    },
+    async $executeRaw({ args, query }) {
+      const start = process.hrtime.bigint();
+      let success = true;
+      try {
+        return await query(args);
+      } catch (err) {
+        success = false;
+        throw err;
+      } finally {
+        const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;
+        metrics.logDbQuery({
+          model: 'raw',
+          action: 'executeRaw',
+          durationMs: Number(durationMs.toFixed(2)),
+          success,
+        });
+      }
+    },
+  },
 });
 
 export default prisma;
