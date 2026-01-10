@@ -48,6 +48,11 @@ export class IncidentService {
         citizenVerification: { select: { status: true } },
       },
     });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     if (user?.lastReportAt) {
       const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
       if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
@@ -57,6 +62,14 @@ export class IncidentService {
 
     // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
     if (user?.citizenVerification?.status !== 'VERIFIED' && (user?.trustScore ?? 0) < 50) {
+      logger.warn(
+        {
+          userId: reporterId,
+          trustScore: user?.trustScore,
+          verificationStatus: user?.citizenVerification?.status,
+        },
+        'Security blocks report: Unverified ghost reporter',
+      );
       throw new Error(
         'Account Verification Required: You must verify your account (National ID/Phone) before reporting incidents to ensure system integrity.',
       );
@@ -192,7 +205,7 @@ export class IncidentService {
       FROM "Incident"
       WHERE location IS NOT NULL
         AND "createdAt" >= '${since.toISOString()}'
-        AND status NOT IN ('RESOLVED', 'REJECTED', 'CANCELLED')
+        AND status NOT IN ('RESOLVED', 'CANCELLED')
         AND ST_DWithin(
           location::geography,
           ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,

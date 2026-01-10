@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
+// getAgencyContext is now mostly replaced by req.user.agencyId, but kept for deep queries if needed
 async function getAgencyContext(userId: number) {
   return prisma.agencyStaff.findUnique({
     where: { userId },
@@ -38,14 +39,14 @@ router.get(
   requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
   async (req: any, res) => {
     const level = (req.query.level as string) || 'subcity';
-    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
+    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
 
     if (level === 'agency') {
-      if (staff) {
+      if (agencyId) {
         const rows = await prisma.$queryRawUnsafe<any[]>(`
           SELECT id, name, type, ST_AsGeoJSON(boundary) AS boundary
           FROM "Agency"
-          WHERE id = ${staff.agencyId}
+          WHERE id = ${agencyId}
           LIMIT 1
         `);
         const agency = rows[0];
@@ -71,7 +72,7 @@ router.get(
       return res.json(rows);
     }
 
-    if (staff) {
+    if (agencyId) {
       return res
         .status(403)
         .json({ message: 'Agency staff can only access their agency boundary' });
@@ -101,9 +102,9 @@ router.get(
   async (req: any, res) => {
     const id = Number(req.params.id);
     const level = (req.query.level as string) || 'subcity';
-    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
-    if (staff) {
-      if (level !== 'agency' || id !== staff.agencyId) {
+    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
+    if (agencyId) {
+      if (level !== 'agency' || id !== agencyId) {
         return res.status(403).json({ message: 'Forbidden for this agency boundary' });
       }
     }
@@ -115,7 +116,7 @@ router.get(
     FROM "Incident" i
     JOIN ${table} b
       ON ST_Contains(b.${geomColumn}, i.location)
-    WHERE b.id = ${id} ${staff ? `AND (i."assignedAgencyId" = ${staff.agencyId} OR i."assignedAgencyId" IS NULL)` : ''}
+    WHERE b.id = ${id} ${agencyId ? `AND (i."assignedAgencyId" = ${agencyId} OR i."assignedAgencyId" IS NULL)` : ''}
   `);
     res.json(incidents);
   },
@@ -160,7 +161,7 @@ router.get(
   requireAuth,
   requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
   async (req: any, res) => {
-    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
+    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, title, category, "severityScore",
              ST_Y(location) AS lat,
@@ -169,7 +170,7 @@ router.get(
       FROM "Incident"
       WHERE location IS NOT NULL
     `);
-    const scoped = staff ? rows.filter((r) => r.assignedAgencyId === staff.agencyId) : rows;
+    const scoped = agencyId ? rows.filter((r) => r.assignedAgencyId === agencyId) : rows;
     res.json(scoped);
   },
 );
