@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { List, MapPin, Plus, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TrustBadge from '../components/user/TrustBadge';
@@ -7,12 +7,13 @@ import AppLayout from '../layouts/AppLayout';
 
 const CitizenDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   return (
     <AppLayout>
       <div className="grid lg:grid-cols-2 gap-6">
         <button
           className="btn btn-error w-full p-6 text-lg shadow-lg shadow-red-500/20"
-          onClick={() => (window.location.href = '/citizen/report')}
+          onClick={() => navigate('/citizen/report')}
         >
           🚨 Report Emergency
         </button>

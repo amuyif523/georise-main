@@ -4,6 +4,7 @@ import prisma from './prisma';
 import logger from './logger';
 import { authService } from './modules/auth/auth.service';
 import { ResponderStatus } from '@prisma/client';
+import redis from './redis';
 
 let io: Server | null = null;
 
@@ -40,20 +41,6 @@ export const initSocketServer = (server: HttpServer) => {
       if (agencyId) {
         socket.join(`agency:${agencyId}`);
         logger.info({ userId, agencyId }, 'Joined agency room');
-      } else {
-        // Fallback for older tokens or if agencyId wasn't in payload
-        try {
-          const staff = await prisma.agencyStaff.findUnique({
-            where: { userId },
-            select: { agencyId: true },
-          });
-          if (staff?.agencyId) {
-            socket.join(`agency:${staff.agencyId}`);
-            logger.info({ userId, agencyId: staff.agencyId }, 'Joined agency room (fallback)');
-          }
-        } catch (err) {
-          logger.error({ err }, 'Failed joining agency room');
-        }
       }
 
       // Incident Chat Rooms
@@ -70,9 +57,11 @@ export const initSocketServer = (server: HttpServer) => {
       try {
         const resp = await prisma.responder.findFirst({
           where: { userId },
-          select: { id: true },
+          select: { id: true, agencyId: true },
         });
         if (resp) {
+          (socket as any).responderId = resp.id;
+          (socket as any).responderAgencyId = resp.agencyId;
           socket.join(`responder:${resp.id}`);
           logger.info({ userId, responderId: resp.id }, 'Joined responder room');
         }
@@ -83,26 +72,30 @@ export const initSocketServer = (server: HttpServer) => {
       // Location updates from responder
       socket.on('responder:locationUpdate', async (payload) => {
         try {
-          const resp = await prisma.responder.findFirst({ where: { userId } });
-          if (!resp) return;
+          const responderId = (socket as any).responderId;
+          const agencyId = (socket as any).responderAgencyId;
+
+          if (!responderId) return; // Not a responder
+
           const { lat, lng, status } = payload;
 
-          const updateData: any = { latitude: lat, longitude: lng };
-          if (status && Object.values(ResponderStatus).includes(status)) {
-            updateData.status = status;
-          }
+          // Write-Behind: Save to Redis
+          const data = {
+            lat,
+            lng,
+            status: status && Object.values(ResponderStatus).includes(status) ? status : undefined,
+            updatedAt: Date.now(),
+          };
 
-          const updated = await prisma.responder.update({
-            where: { id: resp.id },
-            data: updateData,
-          });
+          await redis.hset('responder:locations', String(responderId), JSON.stringify(data));
 
-          if (updated.agencyId) {
-            io?.to(`agency:${updated.agencyId}`).emit('responder:position', {
-              responderId: updated.id,
+          // Real-time emit to agency
+          if (agencyId) {
+            io?.to(`agency:${agencyId}`).emit('responder:position', {
+              responderId,
               lat,
               lng,
-              status: updated.status,
+              status: data.status,
             });
           }
         } catch (err) {
@@ -119,6 +112,36 @@ export const initSocketServer = (server: HttpServer) => {
     }
   });
 };
+
+// Background Worker: Sync Redis locations to DB every 30 seconds
+setInterval(async () => {
+  try {
+    const locations = (await redis.hgetall('responder:locations')) as Record<string, string>;
+    const updates = Object.entries(locations);
+    if (updates.length === 0) return;
+
+    // Process in chunks or parallel
+    await prisma.$transaction(
+      updates.map(([idStr, jsonStr]) => {
+        const id = Number(idStr);
+        const data = JSON.parse(jsonStr);
+        // Only update if data is valid
+        const updateData: any = { latitude: data.lat, longitude: data.lng };
+        if (data.status) updateData.status = data.status;
+
+        return prisma.responder.update({
+          where: { id },
+          data: updateData,
+        });
+      }),
+    );
+
+    // Optional: Clear or expire? No, we keep it as latest state.
+    // Ideally we track "lastSynced" or just overwrite. Overwriting is safe.
+  } catch (err) {
+    logger.error({ err }, 'Failed to sync responder locations');
+  }
+}, 30000); // 30 seconds
 
 export const getIO = () => {
   if (!io) throw new Error('Socket.IO not initialized');
