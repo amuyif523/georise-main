@@ -3,7 +3,7 @@ import { REDIS_URL } from '../config/env';
 import prisma from '../prisma';
 import { classifyWithBackoff } from '../modules/incident/aiClient';
 import { emitIncidentUpdated, toIncidentPayload } from '../events/incidentEvents';
-import { smsService } from '../modules/sms/sms.service';
+import { notificationService } from '../modules/notifications/notification.service';
 import logger from '../logger';
 import { metrics } from '../metrics/metrics.service';
 
@@ -76,17 +76,14 @@ export const aiWorker = new Worker(
 
     // 4. Critical Alert Logic (Async)
     if (updated.severityScore && updated.severityScore >= 4) {
-      try {
-        const reporter = await prisma.user.findUnique({ where: { id: reporterId } });
-        if (reporter?.phone) {
-          await smsService.sendSMS(
-            reporter.phone,
-            `GEORISE Update: Your report #${updated.id} has been analyzed as HIGH severity (${updated.category}). Help is being prioritized.`,
-          );
-        }
-      } catch (err) {
-        logger.error({ err }, 'Failed to send severity alert SMS');
-      }
+      await notificationService.send({
+        userId: reporterId,
+        title: 'High Severity Alert',
+        message: `Your report #${updated.id} has been analyzed as HIGH severity (${updated.category}). Help is being prioritized.`,
+        type: 'INCIDENT_UPDATE',
+        data: { incidentId: updated.id },
+        channels: ['SMS', 'PUSH', 'IN_APP'],
+      });
     }
   },
   {

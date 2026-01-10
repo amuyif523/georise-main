@@ -22,6 +22,7 @@ import CrisisBanner from './components/CrisisBanner';
 import BroadcastModal from './components/BroadcastModal';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import SyncManager from './components/SyncManager';
 
 const AgencyMap = React.lazy(() => import('./pages/AgencyMap'));
 const AgenciesPage = React.lazy(() => import('./pages/admin/AgenciesPage'));
@@ -55,6 +56,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         <BrowserRouter>
           <OnlineStatusBanner />
           <NotificationManager />
+          <SyncManager />
           <CrisisBanner />
           <BroadcastModal />
           <Routes>

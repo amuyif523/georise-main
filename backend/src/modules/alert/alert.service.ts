@@ -1,7 +1,6 @@
 import prisma from '../../prisma';
-import { getIO } from '../../socket';
 import logger from '../../logger';
-import { pushService } from '../push/push.service';
+import { notificationService } from '../notifications/notification.service';
 
 export class AlertService {
   async checkProximityAndAlert(incidentId: number) {
@@ -35,41 +34,17 @@ export class AlertService {
 
       if (users.length === 0) return;
 
-      logger.info({ incidentId, userCount: users.length }, 'Sending proximity alerts');
-
-      const notifications = users.map((u) => ({
-        userId: u.id,
-        title: 'Danger Nearby',
-        message: `High severity incident reported near you: ${incident.title}`,
-        type: 'PROXIMITY_ALERT',
-        data: { incidentId: incident.id, lat: incident.latitude, lng: incident.longitude },
-      }));
-
-      // Batch insert notifications
-      await prisma.notification.createMany({
-        data: notifications,
-      });
-
-      // Emit socket events
-      const io = getIO();
-      users.forEach((u) => {
-        io.to(`user:${u.id}`).emit('alert:proximity', {
+      // Process notifications and alerts
+      for (const u of users) {
+        await notificationService.send({
+          userId: u.id,
           title: 'Danger Nearby',
           message: `High severity incident reported near you: ${incident.title}`,
-          incidentId: incident.id,
-          lat: incident.latitude,
-          lng: incident.longitude,
+          type: 'PROXIMITY_ALERT',
+          data: { incidentId: incident.id, lat: incident.latitude, lng: incident.longitude },
+          channels: ['PUSH', 'IN_APP'],
         });
-      });
-
-      await pushService.sendToUsers(
-        users.map((u) => u.id),
-        {
-          title: 'Danger Nearby',
-          body: `High severity incident reported near you: ${incident.title}`,
-          data: { incidentId: incident.id, url: '/citizen/my-reports' },
-        },
-      );
+      }
     } catch (err) {
       logger.error({ err }, 'Failed to process proximity alerts');
     }
