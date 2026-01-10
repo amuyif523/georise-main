@@ -374,6 +374,14 @@ export class AuthService {
 
     return { message: 'Password has been reset. You can now sign in with the new password.' };
   }
+
+  async revokeSession(userId: number) {
+    // Sprint 6: Session Revocation
+    // Blacklist the user for 24 hours (matching token expiry)
+    await redis.set(`revoked:user:${userId}`, 'true', 'EX', 24 * 60 * 60);
+    logger.info({ userId }, 'User session revoked by admin');
+  }
 }
 
+import redis from '../../redis';
 export const authService = new AuthService();

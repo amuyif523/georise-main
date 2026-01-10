@@ -3,7 +3,9 @@ import { Role } from '@prisma/client';
 import { authService } from '../modules/auth/auth.service';
 import logger from '../logger';
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+import redis from '../redis';
+
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -12,6 +14,12 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
     const token = authHeader.split(' ')[1];
     const payload = authService.verifyToken(token);
+
+    // Sprint 6: Session Revocation Check
+    const isRevoked = await redis.get(`revoked:user:${payload.userId}`);
+    if (isRevoked) {
+      return res.status(401).json({ message: 'Session revoked. Please contact administration.' });
+    }
 
     req.user = {
       id: payload.userId,

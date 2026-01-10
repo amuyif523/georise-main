@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, requireRole } from '../../middleware/auth';
+import { Role } from '@prisma/client';
+import { authService } from './auth.service';
 import {
   login,
   me,
@@ -37,6 +39,22 @@ router.post(
   confirmPasswordReset,
 );
 router.get('/me', requireAuth, sessionLimiter, me);
+
+router.post(
+  '/revoke/:userId',
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  async (req: any, res: any) => {
+    try {
+      const userId = Number(req.params.userId);
+      await authService.revokeSession(userId);
+      res.json({ success: true, message: `User ${userId} revoked.` });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  },
+);
+
 router.use('/', refreshRouter);
 
 export default router;
