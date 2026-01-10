@@ -1,64 +1,119 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, GeoJSON } from 'react-leaflet';
-import type * as GeoJSONType from 'geojson';
+import { Marker, Popup, TileLayer, MapContainer, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet.heat';
 import api from '../../lib/api';
 
 type IncidentPoint = {
   id: number;
   title: string;
   category: string | null;
-  severityscore?: number | null;
   severityScore?: number | null;
   lat: number;
-  lon: number;
+  lng: number;
 };
 
-type Boundary = {
+type ClusterPoint = {
   id: number;
-  geometry: GeoJSONType.Geometry;
-  name?: string;
-  zone_name?: string;
-  woreda_name?: string;
+  cluster_id: number;
+  lat: number;
+  lng: number;
+  severity: number;
 };
 
-const IncidentMap: React.FC = () => {
+interface Props {
+  historyMode?: boolean;
+}
+
+const IncidentMap: React.FC<Props> = ({ historyMode }) => {
   const [incidents, setIncidents] = useState<IncidentPoint[]>([]);
-  const [boundaries, setBoundaries] = useState<Boundary[]>([]);
+  const [clusters, setClusters] = useState<ClusterPoint[]>([]);
+  const [heatmapPoints, setHeatmapPoints] = useState<any[]>([]);
+  const map = useMap();
 
   useEffect(() => {
-    api.get('/gis/incidents').then((res) => setIncidents(res.data || []));
-    api.get('/gis/boundaries').then((res) => setBoundaries(res.data || []));
-  }, []);
+    if (historyMode) {
+      api.get('/analytics/clusters').then((res) => setClusters(res.data || []));
+      api.get('/analytics/heatmap', { params: { hours: 720 } }).then((res) => {
+        setHeatmapPoints(res.data || []);
+      });
+    } else {
+      api.get('/gis/incidents').then((res) => {
+        const data = res.data || [];
+        // Map lon to lng for consistency
+        setIncidents(data.map((i: any) => ({ ...i, lng: i.lon })));
+      });
+    }
+  }, [historyMode]);
+
+  useEffect(() => {
+    if (historyMode && heatmapPoints.length > 0) {
+      // @ts-ignore
+      const heat = L.heatLayer(
+        heatmapPoints.map((p) => [p.lat, p.lng, p.weight ?? 1]),
+        { radius: 25, blur: 15, maxZoom: 17 },
+      ).addTo(map);
+      return () => {
+        map.removeLayer(heat);
+      };
+    }
+  }, [historyMode, heatmapPoints, map]);
 
   return (
-    <MapContainer
-      center={[9.03, 38.75]}
-      zoom={12}
-      className="w-full h-[calc(100vh-220px)] rounded-xl overflow-hidden"
-    >
+    <>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {boundaries.map((b) => (
-        <GeoJSON
-          key={b.id}
-          data={typeof b.geometry === 'string' ? JSON.parse(b.geometry) : b.geometry}
-          style={{ color: '#38bdf8', weight: 1.5, fillOpacity: 0.05 }}
-        />
-      ))}
+      {!historyMode &&
+        incidents.map((i) => (
+          <Marker
+            key={i.id}
+            position={[i.lat, i.lng]}
+            icon={L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="background:${(i.severityScore || 0) >= 4 ? '#ef4444' : '#3b82f6'
+                }; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>`,
+            })}
+          >
+            <Popup>
+              <strong>{i.title}</strong>
+              <br />
+              Severity: {i.severityScore ?? '?'}
+            </Popup>
+          </Marker>
+        ))}
 
-      {incidents.map((i) => (
-        <Marker key={i.id} position={[i.lat, i.lon]}>
-          <Popup>
-            <strong>{i.title}</strong>
-            <br />
-            {i.category || 'Uncategorized'}
-            <br />
-            Severity: {i.severityScore ?? i.severityscore ?? '?'}
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+      {historyMode &&
+        clusters.map((c, idx) => (
+          <Marker
+            key={idx}
+            position={[c.lat, c.lng]}
+            icon={L.divIcon({
+              className: 'cluster-point',
+              html: `<div style="background:rgba(234, 179, 8, 0.4); border: 2px solid #eab308; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold;">C-${c.cluster_id}</div>`,
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+            })}
+          >
+            <Popup>
+              <strong>Hotspot Cluster #{c.cluster_id}</strong>
+              <br />
+              Predictive risk factor based on historical density.
+            </Popup>
+          </Marker>
+        ))}
+    </>
   );
 };
 
-export default IncidentMap;
+const MapWrapper: React.FC<Props> = (props) => (
+  <MapContainer
+    center={[9.03, 38.75]}
+    zoom={12}
+    className="w-full h-full rounded-xl overflow-hidden"
+  >
+    <IncidentMap {...props} />
+  </MapContainer>
+);
+
+export default MapWrapper;
+

@@ -7,6 +7,7 @@ import {
   emitIncidentUpdated,
   toIncidentPayload,
 } from '../../events/incidentEvents';
+import { getIO } from '../../socket';
 import { gisService } from '../gis/gis.service';
 import { reputationService } from '../reputation/reputation.service';
 import { logActivity } from './activity.service';
@@ -54,15 +55,11 @@ export class IncidentService {
       }
     }
 
-    // Security Hardening: Block Unverified Ghost Reporters
-    // if (user?.citizenVerification?.status !== 'VERIFIED') {
-    //   throw new Error('You must verify your account (Phone/ID) before reporting incidents. Go to Profile -> Verify.');
-    // }
-    // NOTE: Commeneted out for now because we don't have a way to verify in the demo seed data easily without SMS.
-    // Ideally this is uncommented in PROD.
-    // For this demonstration, we will just checking for presence of verification record or trust score > -5
-    if (!user?.citizenVerification && (user?.trustScore ?? 0) < -5) {
-      throw new Error('Account flagged as potential spam. Please verify your identity.');
+    // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
+    if (user?.citizenVerification?.status !== 'VERIFIED' && (user?.trustScore ?? 0) < 50) {
+      throw new Error(
+        'Account Verification Required: You must verify your account (National ID/Phone) before reporting incidents to ensure system integrity.',
+      );
     }
 
     let subCityId: number | undefined;
@@ -287,9 +284,22 @@ export class IncidentService {
       `Incident shared with ${shared.agency.name}: ${reason}`,
     );
 
-    // Emit update
+    // Emit update to the target agency
     const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
-    if (incident) emitIncidentUpdated(toIncidentPayload(incident));
+    if (incident) {
+      const payload = toIncidentPayload(incident);
+      emitIncidentUpdated(payload);
+      getIO().to(`agency:${agencyId}`).emit('incident:shared', payload);
+
+      const { notificationService } = await import('../notifications/notification.service');
+      // Notify all admins/staff of that agency (simplification: emit is enough for now, but service call is better)
+      await notificationService.send({
+        agencyId,
+        title: 'Incident Shared',
+        message: `Incident #${incidentId} has been shared with your agency: ${reason}`,
+        type: 'IN_APP',
+      });
+    }
 
     return shared;
   }

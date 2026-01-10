@@ -4,6 +4,7 @@ import prisma from '../prisma';
 import { classifyWithBackoff } from '../modules/incident/aiClient';
 import { emitIncidentUpdated, toIncidentPayload } from '../events/incidentEvents';
 import { notificationService } from '../modules/notifications/notification.service';
+import { dispatchService } from '../modules/dispatch/dispatch.service';
 import logger from '../logger';
 import { metrics } from '../metrics/metrics.service';
 
@@ -74,7 +75,20 @@ export const aiWorker = new Worker(
     emitIncidentUpdated(toIncidentPayload(updated));
     logger.info({ incidentId, category: updated.category }, 'Incident AI analysis complete');
 
-    // 4. Critical Alert Logic (Async)
+    // 4. Auto-Pilot Dispatch (Task 1 of Sprint 5)
+    try {
+      const autoResult = await dispatchService.executeAutoAssignment(incidentId);
+      if (autoResult) {
+        logger.info(
+          { incidentId, unit: autoResult.unit.name },
+          'Auto-Pilot successfully dispatched incident',
+        );
+      }
+    } catch (err) {
+      logger.error({ err, incidentId }, 'Auto-Pilot dispatch check failed');
+    }
+
+    // 5. Critical Alert Logic (Async)
     if (updated.severityScore && updated.severityScore >= 4) {
       await notificationService.send({
         userId: reporterId,

@@ -24,6 +24,7 @@ import { getSocket } from '../lib/socket';
 
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
+  const [view, setView] = useState<'live' | 'history'>('live');
   const [recent, setRecent] = useState<IncidentListItem[]>([]);
   const [suggestion, setSuggestion] = useState<{
     agencyId: number;
@@ -127,17 +128,33 @@ const AgencyDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <MapPin size={18} className="text-cyan-300" />
-              <h2 className="font-semibold">Live Map</h2>
+              <h2 className="font-semibold">{view === 'live' ? 'Live Map' : 'Predictive Risk Hotspots'}</h2>
+              <div className="flex bg-slate-900 rounded-lg p-1 ml-4 border border-slate-700">
+                <button
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${view === 'live' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                  onClick={() => setView('live')}
+                >
+                  Live
+                </button>
+                <button
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${view === 'history' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                  onClick={() => setView('history')}
+                >
+                  History (30d)
+                </button>
+              </div>
             </div>
             <a href="/agency/map" className="btn btn-sm btn-primary">
-              Open map
+              Full screen
             </a>
           </div>
           <p className="text-sm text-slate-500">
-            GIS map with incidents, responders, heat/cluster layers.
+            {view === 'live'
+              ? 'Real-time situational awareness with active responders.'
+              : 'AI-generated hotspots based on high-severity clusters over the last 30 days.'}
           </p>
-          <div className="mt-4 h-full rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden">
-            <IncidentMap />
+          <div className="mt-4 h-[calc(100%-100px)] rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden">
+            <IncidentMap historyMode={view === 'history'} />
           </div>
         </motion.div>
 

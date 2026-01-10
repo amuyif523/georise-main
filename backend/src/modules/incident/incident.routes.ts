@@ -205,8 +205,8 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
       ];
     }
     if (agencyId) {
-      // Enforce agency isolation: only incidents assigned to this agency
-      conditions.assignedAgencyId = agencyId;
+      // Enforce agency isolation: incidents assigned to OR shared with this agency
+      conditions.OR = [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }];
     }
 
     const page = Math.max(Number(req.query.page) || 1, 1);

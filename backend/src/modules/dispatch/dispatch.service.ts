@@ -202,6 +202,62 @@ export class DispatchService {
     candidates.sort((a, b) => b.totalScore - a.totalScore);
     return candidates;
   }
+
+  async executeAutoAssignment(incidentId: number) {
+    const incident = await prisma.incident.findUnique({
+      where: { id: incidentId },
+      include: { aiOutput: true },
+    });
+
+    if (!incident || incident.status !== 'RECEIVED') return null;
+
+    // Auto-pilot trigger conditions: Critical severity (5)
+    if ((incident.severityScore ?? 0) < 5) return null;
+
+    const recs = await this.recommendForIncident(incidentId);
+    if (!recs.length) return null;
+
+    const top = recs[0];
+
+    // High confidence threshold for auto-pilot:
+    // 1. Top candidate has a specific unit assigned
+    // 2. Unit is within 2km
+    // 3. Top candidate is highly suitable (totalScore > 0.75)
+    if (top.unitId && top.distanceKm && top.distanceKm <= 2 && top.totalScore >= 0.75) {
+      const unit = await prisma.responder.findUnique({ where: { id: top.unitId } });
+      if (!unit || unit.status !== 'AVAILABLE') return null;
+
+      const updatedIncident = await prisma.incident.update({
+        where: { id: incidentId },
+        data: {
+          assignedAgencyId: top.agencyId,
+          assignedResponderId: top.unitId,
+          status: 'ASSIGNED',
+          dispatchedAt: new Date(),
+        },
+      });
+
+      await prisma.responder.update({
+        where: { id: top.unitId },
+        data: { status: 'ASSIGNED' },
+      });
+
+      const { logActivity } = await import('../incident/activity.service');
+      await logActivity(
+        incidentId,
+        'SYSTEM',
+        `Auto-Pilot: Critical incident auto-assigned to ${unit.name} (${top.distanceKm.toFixed(1)}km)`,
+      );
+
+      const { emitIncidentUpdated, toIncidentPayload } =
+        await import('../../events/incidentEvents');
+      emitIncidentUpdated(toIncidentPayload(updatedIncident));
+
+      return { incident: updatedIncident, unit };
+    }
+
+    return null;
+  }
 }
 
 export const dispatchService = new DispatchService();
