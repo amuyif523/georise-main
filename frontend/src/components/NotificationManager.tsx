@@ -91,8 +91,10 @@ const NotificationManager: React.FC = () => {
     };
 
     socket.on('alert:proximity', handleAlert);
+    socket.on('notification:new', handleAlert);
     return () => {
       socket.off('alert:proximity', handleAlert);
+      socket.off('notification:new', handleAlert);
     };
   }, [user]);
 
