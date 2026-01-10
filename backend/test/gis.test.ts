@@ -1,36 +1,29 @@
-import { beforeAll, afterAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, afterAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import app from '../src/app';
 import prisma from '../src/prisma';
 import { createAgency, createIncident, createUser, linkAgencyStaff } from './utils/factories';
 import { Role } from '@prisma/client';
 
+import { authService } from '../src/modules/auth/auth.service';
+
 let adminToken: string;
 let agencyToken: string;
 let citizenToken: string;
 let agencyId: number;
 
-beforeAll(async () => {
-  const admin = await createUser({ role: Role.ADMIN, email: 'admin_gis@example.com' });
-  const adminLogin = await request(app)
-    .post('/api/auth/login')
-    .send({ email: admin.email, password: 'password123' });
-  adminToken = `Bearer ${adminLogin.body.token}`;
+beforeEach(async () => {
+  const admin = await createUser({ role: Role.ADMIN });
+  adminToken = `Bearer ${authService.createAccessToken(admin.id, Role.ADMIN, 0)}`;
 
   const agency = await createAgency({ name: 'GIS Agency' });
   agencyId = agency.id;
-  const staff = await createUser({ role: Role.AGENCY_STAFF, email: 'staff_gis@example.com' });
+  const staff = await createUser({ role: Role.AGENCY_STAFF });
   await linkAgencyStaff(staff.id, agency.id);
-  const staffLogin = await request(app)
-    .post('/api/auth/login')
-    .send({ email: staff.email, password: 'password123' });
-  agencyToken = `Bearer ${staffLogin.body.token}`;
+  agencyToken = `Bearer ${authService.createAccessToken(staff.id, Role.AGENCY_STAFF, 0, agency.id)}`;
 
-  const citizen = await createUser({ email: 'citizen_gis@example.com' });
-  const citizenLogin = await request(app)
-    .post('/api/auth/login')
-    .send({ email: citizen.email, password: 'password123' });
-  citizenToken = `Bearer ${citizenLogin.body.token}`;
+  const citizen = await createUser({ role: Role.CITIZEN });
+  citizenToken = `Bearer ${authService.createAccessToken(citizen.id, Role.CITIZEN, 0)}`;
 
   await createIncident({
     reporterId: citizen.id,

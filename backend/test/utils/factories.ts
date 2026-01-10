@@ -20,6 +20,7 @@ export const createUser = async (input: CreateUserInput = {}) => {
       phone: input.phone ?? null,
       passwordHash,
       role: input.role || Role.CITIZEN,
+      trustScore: 100, // High trust for test users to bypass strict verification
     },
   });
 };

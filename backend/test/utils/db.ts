@@ -1,4 +1,5 @@
 import prisma from '../../src/prisma';
+import redis from '../../src/redis';
 
 const TABLES = [
   'Notification',
@@ -25,4 +26,5 @@ const TABLES = [
 export const resetDatabase = async () => {
   const quoted = TABLES.map((t) => `"${t}"`).join(', ');
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE;`);
+  await redis.flushall();
 };

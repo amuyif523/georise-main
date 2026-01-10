@@ -4,15 +4,12 @@ import { Role } from '@prisma/client';
 import app from '../src/app';
 import prisma from '../src/prisma';
 import { createUser } from './utils/factories';
+import { authService } from '../src/modules/auth/auth.service';
 
 describe('Incident flows', () => {
   it('creates an incident as a citizen', async () => {
-    const email = `citizen_${Date.now()}@example.com`;
-    const password = 'password123';
-    await createUser({ email, password, role: Role.CITIZEN });
-
-    const loginRes = await request(app).post('/api/auth/login').send({ email, password });
-    const token = loginRes.body.token as string;
+    const user = await createUser({ role: Role.CITIZEN });
+    const token = authService.createAccessToken(user.id, Role.CITIZEN, 0);
 
     const res = await request(app)
       .post('/api/incidents')
@@ -29,17 +26,11 @@ describe('Incident flows', () => {
   });
 
   it('allows admin to review and approve an incident', async () => {
-    const citizenEmail = `citizen_${Date.now()}@example.com`;
-    const password = 'password123';
-    await createUser({ email: citizenEmail, password, role: Role.CITIZEN });
+    const user = await createUser({ role: Role.CITIZEN });
+    const citizenToken = authService.createAccessToken(user.id, Role.CITIZEN, 0);
 
-    const adminEmail = `admin_${Date.now()}@example.com`;
-    await createUser({ email: adminEmail, password, role: Role.ADMIN });
-
-    const citizenLogin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: citizenEmail, password });
-    const citizenToken = citizenLogin.body.token as string;
+    const admin = await createUser({ role: Role.ADMIN });
+    const adminToken = authService.createAccessToken(admin.id, Role.ADMIN, 0);
 
     const incidentRes = await request(app)
       .post('/api/incidents')
@@ -53,11 +44,6 @@ describe('Incident flows', () => {
 
     const incidentId = incidentRes.body.incident?.id;
     expect(incidentId).toBeTruthy();
-
-    const adminLogin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: adminEmail, password });
-    const adminToken = adminLogin.body.token as string;
 
     const reviewRes = await request(app)
       .post(`/api/incidents/${incidentId}/review`)
