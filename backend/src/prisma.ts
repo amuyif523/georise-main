@@ -12,7 +12,6 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(pool),
 });
 
-// @ts-expect-error - $use is deprecated in Prisma 6+ but used here for legacy metrics
 (prisma as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
   const start = process.hrtime.bigint();
   let success = true;
