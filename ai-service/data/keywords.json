@@ -1,0 +1,49 @@
+{
+  "fire": ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ", "የእሳት አደጋ"],
+  "medical": [
+    "medical",
+    "injury",
+    "blood",
+    "hurt",
+    "pain",
+    "sick",
+    "hospital",
+    "ambulance",
+    "ሕክምና",
+    "ደም",
+    "ጉዳት",
+    "ወድቆ",
+    "ህመም",
+    "አምቡላንስ"
+  ],
+  "infrastructure": [
+    "road",
+    "bridge",
+    "collapse",
+    "hole",
+    "pothole",
+    "electric",
+    "pole",
+    "wire",
+    "መንገድ",
+    "ድልድይ",
+    "ፈራረሰ",
+    "ቀዳዳ",
+    "የመብራት ምሰሶ"
+  ],
+  "security": [
+    "gun",
+    "shoot",
+    "fight",
+    "thief",
+    "robber",
+    "police",
+    "attack",
+    " weapon",
+    "መሳሪያ",
+    "ተኩስ",
+    "ፀብ",
+    "ሌባ",
+    "ፖሊስ"
+  ]
+}

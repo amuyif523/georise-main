@@ -58,87 +58,37 @@ def load_model():
     return tokenizer, model, version or str(model_path)
 
 
+KEYWORDS_PATH = MODEL_DIR.parent / "data" / "keywords.json"
+KEYWORDS = {}
+
+def load_keywords():
+    global KEYWORDS
+    if KEYWORDS_PATH.exists():
+        try:
+            import json
+            KEYWORDS = json.loads(KEYWORDS_PATH.read_text(encoding="utf-8"))
+            print(f"Loaded {len(KEYWORDS)} keyword categories from {KEYWORDS_PATH}")
+        except Exception as e:
+            print(f"Failed to load keywords: {e}")
+    else:
+        print(f"Keywords file not found at {KEYWORDS_PATH}")
+
+load_keywords()
+
 def heuristic_category(text: str) -> str:
     t = text.lower()
-    # English + Amharic keywords to guide fallback when the model is unsure
-    if any(w in t for w in ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ"]):
-        return "FIRE"
-    if any(
-        w in t
-        for w in [
-            "medical",
-            "injury",
-            "blood",
-            "hurt",
-            "pain",
-            "sick",
-            "hospital",
-            "ambulance",
-            "ሕክምና",
-            "ደም",
-            "ጉዳት",
-            "ወድቆ",
-            "ህመም",
-        ]
-    ):
-        return "MEDICAL"
-    if any(
-        w in t
-        for w in [
-            "crime",
-            "theft",
-            "robbery",
-            "assault",
-            "kill",
-            "gun",
-            "shoot",
-            "police",
-            "ወንጀል",
-            "ስርቆት",
-            "ጥቃት",
-            "ግድያ",
-            "ተደፍሯል",
-            "ፖሊስ",
-        ]
-    ):
-        return "POLICE"
-    if any(
-        w in t
-        for w in [
-            "traffic",
-            "accident",
-            "crash",
-            "car",
-            "vehicle",
-            "road",
-            "collision",
-            "ትራፊክ",
-            "መኪና",
-            "አደጋ",
-            "ግጭት",
-            "መንገድ ተዘግቷል",
-        ]
-    ):
-        return "TRAFFIC"
-    if any(
-        w in t
-        for w in [
-            "flood",
-            "storm",
-            "quake",
-            "disaster",
-            "water",
-            "electric",
-            "power",
-            "light",
-            "ኃይል",
-            "መብራት",
-            "ውሃ",
-            "መስመር ተቋርጧል",
-            "ዝናብ",
-        ]
-    ):
-        return "INFRASTRUCTURE"
+    # Dynamic keyword lookup
+    for category, words in KEYWORDS.items():
+        if any(w in t for w in words):
+            return category.upper()
+    
+    # Fallback to hardcoded if JSON missing or empty (Safety Net)
+    if not KEYWORDS:
+        if any(w in t for w in ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ"]):
+            return "FIRE"
+        if any(w in t for w in ["medical", "injury", "blood", "ambulance", "ሕክምና"]):
+            return "MEDICAL"
+            
     return "OTHER"
 
 
