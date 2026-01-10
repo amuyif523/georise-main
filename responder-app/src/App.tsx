@@ -158,13 +158,42 @@ const App: React.FC = () => {
                     <AlertCircle className="w-4 h-4 text-orange-400" />
                     <span>Status: {activeIncident.status || 'ASSIGNED'}</span>
                   </div>
-                  <div className="flex gap-2 pt-2">
-                    <button className="btn btn-primary btn-lg flex-1" onClick={openMaps}>
-                      <Navigation2 className="w-4 h-4" /> Navigate
-                    </button>
-                    <button className="btn btn-success btn-lg flex-1" onClick={markResolved}>
-                      <CheckCircle className="w-4 h-4" /> Resolve
-                    </button>
+                  <div className="flex flex-col gap-3 pt-2">
+                    {(!activeIncident.status ||
+                      ['ASSIGNED', 'EN_ROUTE'].includes(activeIncident.status)) && (
+                      <button
+                        className="btn btn-warning btn-lg w-full h-20 text-lg shadow-lg"
+                        onClick={async () => {
+                          const socket = getSocket();
+                          if (socket && coords) {
+                            socket.emit('responder:locationUpdate', {
+                              lat: coords.lat,
+                              lng: coords.lng,
+                              status: 'ON_SCENE',
+                            });
+                            setActiveIncident({ ...activeIncident, status: 'ON_SCENE' });
+                            setMessage('Status: On Scene');
+                          }
+                        }}
+                      >
+                        <MapPin className="w-6 h-6" /> I HAVE ARRIVED
+                      </button>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button className="btn btn-primary btn-lg flex-1 h-16" onClick={openMaps}>
+                        <Navigation2 className="w-5 h-5" /> Navigate
+                      </button>
+
+                      {activeIncident.status === 'ON_SCENE' && (
+                        <button
+                          className="btn btn-success btn-lg flex-1 h-16"
+                          onClick={markResolved}
+                        >
+                          <CheckCircle className="w-5 h-5" /> Resolve
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </>
               ) : (
