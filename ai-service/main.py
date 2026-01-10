@@ -58,7 +58,7 @@ def load_model():
     return tokenizer, model, version or str(model_path)
 
 
-KEYWORDS_PATH = MODEL_DIR.parent / "data" / "keywords.json"
+KEYWORDS_PATH = Path(__file__).parent / "data" / "keywords.json"
 KEYWORDS = {}
 
 def load_keywords():

@@ -128,7 +128,9 @@ const AgencyDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <MapPin size={18} className="text-cyan-300" />
-              <h2 className="font-semibold">{view === 'live' ? 'Live Map' : 'Predictive Risk Hotspots'}</h2>
+              <h2 className="font-semibold">
+                {view === 'live' ? 'Live Map' : 'Predictive Risk Hotspots'}
+              </h2>
               <div className="flex bg-slate-900 rounded-lg p-1 ml-4 border border-slate-700">
                 <button
                   className={`px-3 py-1 text-xs rounded-md transition-all ${view === 'live' ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
