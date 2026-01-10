@@ -25,10 +25,16 @@ interface Props {
   historyMode?: boolean;
 }
 
+type HeatmapPoint = {
+  lat: number;
+  lng: number;
+  weight?: number;
+};
+
 const IncidentMap: React.FC<Props> = ({ historyMode }) => {
   const [incidents, setIncidents] = useState<IncidentPoint[]>([]);
   const [clusters, setClusters] = useState<ClusterPoint[]>([]);
-  const [heatmapPoints, setHeatmapPoints] = useState<any[]>([]);
+  const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const map = useMap();
 
   useEffect(() => {
@@ -39,16 +45,16 @@ const IncidentMap: React.FC<Props> = ({ historyMode }) => {
       });
     } else {
       api.get('/gis/incidents').then((res) => {
-        const data = res.data || [];
+        const data = (res.data || []) as (IncidentPoint & { lon: number })[];
         // Map lon to lng for consistency
-        setIncidents(data.map((i: any) => ({ ...i, lng: i.lon })));
+        setIncidents(data.map((i) => ({ ...i, lng: i.lon })));
       });
     }
   }, [historyMode]);
 
   useEffect(() => {
     if (historyMode && heatmapPoints.length > 0) {
-      // @ts-ignore
+      // @ts-expect-error - L.heatLayer might not be in the typings
       const heat = L.heatLayer(
         heatmapPoints.map((p) => [p.lat, p.lng, p.weight ?? 1]),
         { radius: 25, blur: 15, maxZoom: 17 },
@@ -70,8 +76,9 @@ const IncidentMap: React.FC<Props> = ({ historyMode }) => {
             position={[i.lat, i.lng]}
             icon={L.divIcon({
               className: 'custom-marker',
-              html: `<div style="background:${(i.severityScore || 0) >= 4 ? '#ef4444' : '#3b82f6'
-                }; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>`,
+              html: `<div style="background:${
+                (i.severityScore || 0) >= 4 ? '#ef4444' : '#3b82f6'
+              }; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>`,
             })}
           >
             <Popup>
@@ -116,4 +123,3 @@ const MapWrapper: React.FC<Props> = (props) => (
 );
 
 export default MapWrapper;
-

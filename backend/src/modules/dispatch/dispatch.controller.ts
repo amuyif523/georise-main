@@ -88,7 +88,7 @@ export const autoAssignIncident = async (req: Request, res: Response) => {
         note: JSON.stringify({
           agencyId: top.agencyId,
           unitId: top.unitId ?? null,
-          score: top.score ?? null,
+          score: top.totalScore ?? null,
         } satisfies Record<string, Prisma.JsonValue>),
       },
     });

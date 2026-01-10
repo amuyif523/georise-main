@@ -42,10 +42,13 @@ router.get(
 
     if (level === 'agency') {
       if (staff) {
-        const agency = await prisma.agency.findUnique({
-          where: { id: staff.agencyId },
-          select: { id: true, name: true, type: true, boundary: true },
-        });
+        const rows = await prisma.$queryRawUnsafe<any[]>(`
+          SELECT id, name, type, ST_AsGeoJSON(boundary) AS boundary
+          FROM "Agency"
+          WHERE id = ${staff.agencyId}
+          LIMIT 1
+        `);
+        const agency = rows[0];
         if (!agency) return res.status(404).json({ message: 'Agency not found' });
         return res.json(
           agency.boundary
@@ -54,7 +57,7 @@ router.get(
                   id: agency.id,
                   name: agency.name,
                   type: agency.type,
-                  geometry: JSON.parse(agency.boundary as any),
+                  geometry: JSON.parse(agency.boundary),
                 },
               ]
             : [],

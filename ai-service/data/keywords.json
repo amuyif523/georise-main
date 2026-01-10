@@ -1,5 +1,18 @@
 {
-  "fire": ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ", "የእሳት አደጋ"],
+  "fire": [
+    "fire",
+    "smoke",
+    "flame",
+    "burn",
+    "ሙቀት",
+    "እሳት",
+    "ጭስ",
+    "የእሳት አደጋ",
+    "ibidda",
+    "aara",
+    "dab",
+    "qiiq"
+  ],
   "medical": [
     "medical",
     "injury",
@@ -14,7 +27,13 @@
     "ጉዳት",
     "ወድቆ",
     "ህመም",
-    "አምቡላንስ"
+    "አምቡላንስ",
+    "yaala",
+    "dhiiga",
+    "madaa",
+    "caafimaad",
+    "dhiig",
+    "dhaawac"
   ],
   "infrastructure": [
     "road",
@@ -29,7 +48,11 @@
     "ድልድይ",
     "ፈራረሰ",
     "ቀዳዳ",
-    "የመብራት ምሰሶ"
+    "የመብራት ምሰሶ",
+    "karaa",
+    "riqicha",
+    "jidka",
+    "buundada"
   ],
   "security": [
     "gun",
@@ -44,6 +67,14 @@
     "ተኩስ",
     "ፀብ",
     "ሌባ",
-    "ፖሊስ"
+    "ፖሊስ",
+    "rasaasa",
+    "lolli",
+    "hattuu",
+    "poolisii",
+    "qori",
+    "dagaal",
+    "tuug",
+    "boolis"
   ]
 }
