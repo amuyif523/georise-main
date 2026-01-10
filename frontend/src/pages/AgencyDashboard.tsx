@@ -14,11 +14,13 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
   <div className="cyber-card flex items-center gap-3">
     <div className="p-3 rounded-full bg-cyan-500/10 text-cyan-300">{icon}</div>
     <div>
-      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-xs text-slate-300">{label}</p>
       <p className="text-2xl font-bold text-cyan-100">{value}</p>
     </div>
   </div>
 );
+
+import { getSocket } from '../lib/socket';
 
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
@@ -56,6 +58,36 @@ const AgencyDashboard: React.FC = () => {
       }
     };
     load();
+
+    // Socket Listeners
+    const socket = getSocket();
+    if (socket) {
+      const handleCreated = (newIncident: IncidentListItem) => {
+        setRecent((prev) => [newIncident, ...prev].slice(0, 5));
+        setStats((s) => ({
+          ...s,
+          active: s.active + 1,
+          highSeverity: (newIncident.severityScore ?? 0) >= 4 ? s.highSeverity + 1 : s.highSeverity,
+        }));
+      };
+
+      const handleUpdated = (updated: IncidentListItem) => {
+        setRecent((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+        // Stats update is complex without full list, but we can approximate or re-fetch active/resolved logic if needed.
+        // For now, assume optimistic update is enough for the list.
+        if (updated.status === 'RESOLVED') {
+          setStats((s) => ({ ...s, active: Math.max(0, s.active - 1), resolved: s.resolved + 1 }));
+        }
+      };
+
+      socket.on('incident:created', handleCreated);
+      socket.on('incident:updated', handleUpdated);
+
+      return () => {
+        socket.off('incident:created', handleCreated);
+        socket.off('incident:updated', handleUpdated);
+      };
+    }
   }, []);
 
   const acceptSuggestion = async () => {
@@ -122,13 +154,13 @@ const AgencyDashboard: React.FC = () => {
                     <p className="font-semibold">{i.title}</p>
                     <span className="badge badge-sm">{i.status}</span>
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-300">
                     Severity: {i.severityScore ?? '?'} • {new Date(i.createdAt).toLocaleString()}
                   </p>
                 </div>
               ))}
               {!recent.length && (
-                <p className="text-sm text-slate-400">No incidents in the last 48h.</p>
+                <p className="text-sm text-slate-300">No incidents in the last 48h.</p>
               )}
             </div>
           </div>
