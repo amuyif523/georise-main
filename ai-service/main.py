@@ -77,6 +77,15 @@ load_keywords()
 
 def heuristic_category(text: str) -> str:
     t = text.lower()
+    
+    # Negation / Safety Check (Highest Priority for OTHER)
+    negations = [
+        "no incident", "no danger", "no fire", "false alarm", "test only",
+        "አደጋ የለም", "ምንም እሳት የለም", "በስህተት", "ምንም አይጠበቅም", "የለም"
+    ]
+    if any(n in t for n in negations):
+        return "OTHER"
+
     # Dynamic keyword lookup
     for category, words in KEYWORDS.items():
         if any(w in t for w in words):
@@ -84,7 +93,7 @@ def heuristic_category(text: str) -> str:
     
     # Fallback to hardcoded if JSON missing or empty (Safety Net)
     if not KEYWORDS:
-        if any(w in t for w in ["fire", "smoke", "flame", "burn", "ሙቀት", "እሳት", "ጭስ"]):
+        if any(w in t for w in ["fire", "smoke", "flame", "burn", "እሳት", "ጭስ"]):
             return "FIRE"
         if any(w in t for w in ["medical", "injury", "blood", "ambulance", "ሕክምና"]):
             return "MEDICAL"

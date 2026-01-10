@@ -50,10 +50,6 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Generate Prisma client
-        working-directory: backend
-        run: npx prisma generate
-
       - name: Write backend test env
         run: |
           cat <<'EOF' > backend/.env.test
@@ -67,6 +63,12 @@ jobs:
           CLIENT_ORIGIN=http://localhost:5173
           AI_ENDPOINT=http://localhost:9999/classify
           EOF
+
+      - name: Generate Prisma client
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+        run: npx prisma generate
 
       - name: Backend lint
         working-directory: backend
