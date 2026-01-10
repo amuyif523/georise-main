@@ -4,6 +4,7 @@ import app from './app';
 import { initSocketServer } from './socket';
 import { initSLAJob } from './jobs/sla.job';
 import { stopResponderSimulation } from './jobs/responderSimulation.job';
+import './jobs/aiWorker'; // Start the worker
 
 const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
