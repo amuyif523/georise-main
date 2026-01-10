@@ -4,19 +4,20 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enTranslation from './locales/en/translation.json';
 import amTranslation from './locales/am/translation.json';
+import omTranslation from './locales/om/translation.json';
+import soTranslation from './locales/so/translation.json';
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      en: {
-        translation: enTranslation,
-      },
-      am: {
-        translation: amTranslation,
-      },
+      en: { translation: enTranslation },
+      am: { translation: amTranslation },
+      om: { translation: omTranslation },
+      so: { translation: soTranslation },
     },
+
     fallbackLng: ['en'],
     debug: true,
     saveMissing: true,

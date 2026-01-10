@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "GEORISE",
+    "subtitle": "Sirna Deebii Ariifachiisaa Walitti Hidhame",
+    "description": "Lammilee ogeeyyii deebii ariifachiisaa waliin yeroo dhayyaa walitti hidhuu."
+  },
+  "auth": {
+    "login": "Seeni",
+    "register": "Galmaa'i",
+    "logout": "Ba'i",
+    "email": "Iimeelii",
+    "password": "Iggitaa",
+    "phone": "Lakkofsa Bilbilaa",
+    "full_name": "Maqaa Guutuu"
+  },
+  "common": {
+    "language": "Qooqadha",
+    "amharic": "Amaariffa",
+    "english": "Ingiliffa",
+    "oromo": "Afaan Oromoo",
+    "somali": "Afaan Somaalee"
+  }
+}

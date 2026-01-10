@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "GEORISE",
+    "subtitle": "Nidaamka Jawaubta Degdegga ah ee Isku-dhafan",
+    "description": "Isku xirka muwaadiniinta iyo jawaab-bixiyaasha degdegga ah wakhtiga dhabta ah."
+  },
+  "auth": {
+    "login": "Soo gal",
+    "register": "Isdiiwaangeli",
+    "logout": "Ka bax",
+    "email": "Iimayl",
+    "password": "Erayga sirta ah",
+    "phone": "Lambarka taleefanka",
+    "full_name": "Magaca oo buuxa"
+  },
+  "common": {
+    "language": "Luqadda",
+    "amharic": "Amsaari",
+    "english": "Ingiriis",
+    "oromo": "Oromoo",
+    "somali": "Soomaali"
+  }
+}
