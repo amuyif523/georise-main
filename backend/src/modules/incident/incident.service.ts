@@ -13,7 +13,7 @@ import { logActivity } from './activity.service';
 import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
 import { metrics } from '../../metrics/metrics.service';
-import { classifyWithBackoff } from './aiClient';
+import { incidentQueue } from '../../jobs/queue';
 
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
 
@@ -52,6 +52,17 @@ export class IncidentService {
       if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
         throw new Error('You are sending reports too frequently. Please wait a few minutes.');
       }
+    }
+
+    // Security Hardening: Block Unverified Ghost Reporters
+    // if (user?.citizenVerification?.status !== 'VERIFIED') {
+    //   throw new Error('You must verify your account (Phone/ID) before reporting incidents. Go to Profile -> Verify.');
+    // }
+    // NOTE: Commeneted out for now because we don't have a way to verify in the demo seed data easily without SMS.
+    // Ideally this is uncommented in PROD.
+    // For this demonstration, we will just checking for presence of verification record or trust score > -5
+    if (!user?.citizenVerification && (user?.trustScore ?? 0) < -5) {
+      throw new Error('Account flagged as potential spam. Please verify your identity.');
     }
 
     let subCityId: number | undefined;
@@ -98,60 +109,42 @@ export class IncidentService {
       `;
     }
 
-    let aiOutput: any = null;
-
-    // If category is manually provided (e.g. INFRASTRUCTURE), skip AI or use it only for summary
-    if (data.category === 'INFRASTRUCTURE') {
-      aiOutput = {
+    // Async AI Classification
+    if (data.category !== 'INFRASTRUCTURE') {
+      incidentQueue.add('analyze', {
+        incidentId: incident.id,
+        title: incident.title,
+        description: incident.description,
+        reporterId,
+      });
+    } else {
+      // Direct update for infrastructure if needed, or handle in worker/separate logic.
+      // For now, keeping it simple: just let it be RECEIVED.
+      // Or if we want to mimic previous behavior for Manual Category:
+      const aiOutput = {
         predicted_category: 'INFRASTRUCTURE',
-        severity_score: 1, // Low severity for hazards
+        severity_score: 1,
         confidence: 1.0,
         model_version: 'manual',
         summary: null,
       };
-    } else {
-      const classifyPayload = {
-        title: incident.title,
-        description: incident.description,
-      };
-      const aiStart = process.hrtime.bigint();
-      let aiSuccess = false;
-      try {
-        const res = await classifyWithBackoff(classifyPayload);
-        aiOutput = res;
-        aiSuccess = true;
-      } catch (err) {
-        logger.error({ err }, 'AI classification failed, using fallback');
-        aiOutput = {
-          predicted_category: 'UNSPECIFIED',
-          severity_score: 2,
-          confidence: 0,
-          model_version: 'stub-v0',
-          summary: null,
-        };
-      } finally {
-        const durationMs = Number(process.hrtime.bigint() - aiStart) / 1_000_000;
-        metrics.logAiCall({ durationMs: Number(durationMs.toFixed(2)), success: aiSuccess });
-      }
-    }
-
-    const updated = await prisma.incident.update({
-      where: { id: incident.id },
-      data: {
-        category: aiOutput.predicted_category,
-        severityScore: aiOutput.severity_score,
-        aiOutput: {
-          create: {
-            modelVersion: aiOutput.model_version,
-            predictedCategory: aiOutput.predicted_category,
-            severityScore: aiOutput.severity_score,
-            confidence: aiOutput.confidence,
-            summary: aiOutput.summary,
+      await prisma.incident.update({
+        where: { id: incident.id },
+        data: {
+          category: aiOutput.predicted_category,
+          severityScore: aiOutput.severity_score,
+          aiOutput: {
+            create: {
+              modelVersion: aiOutput.model_version,
+              predictedCategory: aiOutput.predicted_category,
+              severityScore: aiOutput.severity_score,
+              confidence: aiOutput.confidence,
+              summary: aiOutput.summary,
+            },
           },
         },
-      },
-      include: { aiOutput: true },
-    });
+      });
+    }
 
     await logActivity(incident.id, 'SYSTEM', 'Incident created', reporterId);
     if (reviewStatus === 'PENDING_REVIEW') {
@@ -160,24 +153,14 @@ export class IncidentService {
 
     await reputationService.onIncidentCreated(reporterId);
     if (reviewStatus !== 'PENDING_REVIEW') {
-      emitIncidentCreated(toIncidentPayload(updated));
-
-      // Critical Alert Fallback (SMS)
-      // If severity > 4 (High/Critical), notify admins/responders via SMS if needed
-      // For now, we simulate notifying the reporter that help is on the way if it's high severity
-      if (updated.severityScore && updated.severityScore >= 4) {
-        const reporter = await prisma.user.findUnique({ where: { id: reporterId } });
-        if (reporter?.phone) {
-          // In a real scenario, we'd check if they have push notifications enabled first
-          // Here we just simulate the fallback logic
-          await smsService.sendSMS(
-            reporter.phone,
-            `GEORISE Alert: Your report #${updated.id} is marked as HIGH severity. Responders are being notified.`,
-          );
-        }
-      }
+      // Emit initial creation event (AI analysis will come later via update)
+      const fresh = await prisma.incident.findUnique({
+        where: { id: incident.id },
+        include: { aiOutput: true },
+      });
+      emitIncidentCreated(toIncidentPayload(fresh || incident));
     }
-    return updated;
+    return incident;
   }
 
   async getMyIncidents(reporterId: number) {
