@@ -10,7 +10,7 @@ const password = process.env.LOAD_PASSWORD || 'loadpass123';
 async function run() {
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: adminEmail },
     update: { passwordHash, role: Role.ADMIN, isActive: true },
     create: {
@@ -22,18 +22,27 @@ async function run() {
     },
   });
 
-  const agency = await prisma.agency.upsert({
+  let agency = await prisma.agency.findFirst({
     where: { name: 'Load Test Agency' },
-    update: { isActive: true, isApproved: true },
-    create: {
-      name: 'Load Test Agency',
-      type: 'POLICE',
-      city: 'Addis Ababa',
-      description: 'Seeded for load testing',
-      isActive: true,
-      isApproved: true,
-    },
   });
+
+  if (!agency) {
+    agency = await prisma.agency.create({
+      data: {
+        name: 'Load Test Agency',
+        type: 'POLICE',
+        city: 'Addis Ababa',
+        description: 'Seeded for load testing',
+        isActive: true,
+        isApproved: true,
+      },
+    });
+  } else {
+    agency = await prisma.agency.update({
+      where: { id: agency.id },
+      data: { isActive: true, isApproved: true },
+    });
+  }
 
   const staff = await prisma.user.upsert({
     where: { email: agencyEmail },

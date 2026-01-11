@@ -15,7 +15,7 @@ async function runTest() {
       password: 'Password123!',
     });
     token = loginRes.data.token;
-  } catch (err) {
+  } catch (_err) {
     console.error(
       'Failed to login for test. Make sure backend is running and seed data is present.',
     );
@@ -47,7 +47,7 @@ async function runTest() {
         if (completed % 500 === 0) {
           console.log(`✅ Progress: ${completed}/${TOTAL_REPORTS}`);
         }
-      } catch (err) {
+      } catch (_err) {
         failed++;
       }
     }

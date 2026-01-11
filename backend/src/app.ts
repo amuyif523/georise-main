@@ -106,7 +106,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/system', systemRoutes);
 
 // Error handler
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: any, req: any, res: express.Response, _next: express.NextFunction) => {
   const log = req?.log || logger;
   log.error({ err, stack: err?.stack }, 'Unhandled error');

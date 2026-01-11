@@ -11,9 +11,9 @@ import { getIO } from '../../socket';
 import { gisService } from '../gis/gis.service';
 import { reputationService } from '../reputation/reputation.service';
 import { logActivity } from './activity.service';
-import { smsService } from '../sms/sms.service';
+// import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
-import { metrics } from '../../metrics/metrics.service';
+// import { metrics } from '../../metrics/metrics.service';
 import { incidentQueue } from '../../jobs/queue';
 
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];

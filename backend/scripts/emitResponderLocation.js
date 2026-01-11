@@ -14,7 +14,7 @@
  *   RESPONDER_TOKEN=eyJ... node scripts/emitResponderLocation.js 8.99 38.79 8.991 38.791 8.992 38.792
  */
 
-const { io } = require('socket.io-client');
+import { io } from 'socket.io-client';
 
 const WS_URL = process.env.WS_URL || 'http://localhost:4000';
 const TOKEN = process.env.RESPONDER_TOKEN;

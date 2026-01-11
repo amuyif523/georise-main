@@ -23,7 +23,7 @@ export const getSystemHealth = async (req: Request, res: Response) => {
     await prisma.$queryRaw`SELECT 1`;
     health.services.database.status = 'up';
     health.services.database.latency = Date.now() - dbStart;
-  } catch (err) {
+  } catch (_err) {
     health.services.database.status = 'down';
     health.status = 'degraded';
   }
@@ -34,7 +34,7 @@ export const getSystemHealth = async (req: Request, res: Response) => {
     await redis.ping();
     health.services.redis.status = 'up';
     health.services.redis.latency = Date.now() - redisStart;
-  } catch (err) {
+  } catch (_err) {
     health.services.redis.status = 'down';
     health.status = 'degraded';
   }
@@ -50,7 +50,7 @@ export const getSystemHealth = async (req: Request, res: Response) => {
     health.services.ai.latency = Date.now() - aiStart;
     health.services.ai.model = docs.data?.model ?? meta?.model;
     health.services.ai.metadata = meta?.metadata ?? docs.data?.metadata ?? {};
-  } catch (err) {
+  } catch (_err) {
     health.services.ai.status = 'down';
     health.status = 'degraded';
   }

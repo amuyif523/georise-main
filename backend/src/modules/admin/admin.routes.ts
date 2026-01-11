@@ -85,10 +85,10 @@ async function assertAgencyCanDeactivate(agencyId: number) {
     }),
   ]);
   if (activeIncidents > 0 || activeResponders > 0) {
-    const reason = {
-      activeIncidents,
-      activeResponders,
-    };
+    // const reason = {
+    //   activeIncidents,
+    //   activeResponders,
+    // };
     throw new Error(
       `Agency has active assignments (incidents: ${activeIncidents}, responders: ${activeResponders}). Deactivate or reassign before proceeding.`,
     );
@@ -669,7 +669,7 @@ router.post(
       });
       await auditUser(req.user!.id, 'FORCE_RESET_PASSWORD', user.id);
       res.json({ userId: user.id, tempPassword });
-    } catch (err: any) {
+    } catch (_err: any) {
       res.status(400).json({ message: 'Failed to reset password' });
     }
   },
@@ -871,7 +871,7 @@ router.post(
       });
       await auditUser(req.user!.id, 'AGENCY_FORCE_RESET_PASSWORD', user.id);
       res.json({ userId: user.id, tempPassword });
-    } catch (err: any) {
+    } catch (_err: any) {
       res.status(400).json({ message: 'Failed to reset password' });
     }
   },

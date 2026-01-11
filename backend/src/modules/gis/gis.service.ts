@@ -15,7 +15,7 @@ export class GisService {
           // fall through on parse error
         }
       }
-    } catch (err) {
+    } catch (_err) {
       // Cache unavailable, continue with DB lookup
     }
 

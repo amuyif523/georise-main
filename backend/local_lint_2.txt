@@ -1,0 +1,30 @@
+
+> backend@1.0.0 lint
+> eslint .
+
+
+C:\Users\Amanuel\Desktop\georise-main\backend\scripts\chaos_test.ts
+  18:12  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+  50:16  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\app.ts
+  109:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unused-vars')
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\jobs\aiWorker.ts
+  11:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unused-vars')
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\admin\admin.routes.ts
+  672:14  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+  874:14  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\gis\gis.service.ts
+  18:14  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\system\health.controller.ts
+  26:12  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+  37:12  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+  53:12  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 10 problems (8 errors, 2 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+

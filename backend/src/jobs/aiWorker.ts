@@ -8,10 +8,6 @@ import { dispatchService } from '../modules/dispatch/dispatch.service';
 import logger from '../logger';
 import { metrics } from '../metrics/metrics.service';
 
-const connection = {
-  url: REDIS_URL,
-};
-
 export const aiWorker = new Worker(
   'incident-ai',
   async (job: Job) => {

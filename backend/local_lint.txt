@@ -1,0 +1,226 @@
+
+> backend@1.0.0 lint
+> eslint .
+
+
+C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts
+  196:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:86  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:93  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  392:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  393:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  394:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  395:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  396:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  397:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  398:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  539:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  557:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  574:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  589:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  618:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  633:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\scripts\chaos_test.ts
+  18:12  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+  50:16  error  '_err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\app.ts
+   50:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\events\incidentEvents.ts
+  18:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\jobs\aiWorker.ts
+  11:1   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unused-vars')
+  20:19  warning  Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\admin\admin.routes.ts
+   129:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   243:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   350:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   394:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   444:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   511:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   550:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   592:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   600:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   617:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   648:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   672:14  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+   672:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   698:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   709:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   756:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   788:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   800:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   814:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   821:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   833:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   852:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   874:14  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+   874:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   997:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1040:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1078:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\analytics\analytics.routes.ts
+    9:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   10:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\analytics\analytics.service.ts
+   21:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   27:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\auth\auth.controller.ts
+  10:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\auth\auth.routes.ts
+  47:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\auth\refresh.routes.ts
+  31:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\demo\demo.routes.ts
+  18:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\demo\demo.service.ts
+  191:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  246:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\dispatch\dispatch.controller.ts
+  13:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  97:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\dispatch\dispatch.service.ts
+   62:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   90:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\gis\gis.routes.ts
+   22:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\gis\gis.service.ts
+  18:14  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+  23:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\incident\aiClient.ts
+  14:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\incident\incident.controller.ts
+   24:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\incident\incident.service.ts
+   86:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  270:95  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\notifications\notification.service.ts
+   13:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\responders\responder.routes.ts
+   24:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\system\health.controller.ts
+  10:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:12  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+  37:12  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+  53:12  error    '_err' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\modules\verification\verification.routes.ts
+  30:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\socket.ts
+   37:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\backend\test\gis.test.ts
+  73:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 166 problems (8 errors, 158 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

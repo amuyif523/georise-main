@@ -2,9 +2,9 @@ import { Queue } from 'bullmq';
 import { REDIS_URL } from '../config/env';
 import logger from '../logger';
 
-const connection = {
-  url: REDIS_URL,
-};
+// const connection = {
+//   url: REDIS_URL,
+// };
 
 export const incidentQueue = new Queue('incident-ai', {
   connection: {
