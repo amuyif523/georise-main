@@ -267,6 +267,10 @@ export class AuthService {
         email: true,
         phone: true,
         role: true,
+        trustScore: true,
+        totalReports: true,
+        validReports: true,
+        rejectedReports: true,
         createdAt: true,
       },
     });
