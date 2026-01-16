@@ -34,9 +34,8 @@ const StepPill: React.FC<{ active: boolean; label: string; icon: React.ReactNode
   icon,
 }) => (
   <div
-    className={`flex items-center gap-2 px-4 py-2 rounded-full border ${
-      active ? 'border-cyan-400 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 text-slate-400'
-    }`}
+    className={`flex items-center gap-2 px-4 py-2 rounded-full border ${active ? 'border-cyan-400 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 text-slate-400'
+      }`}
   >
     <span className="w-5 h-5 text-cyan-300">{icon}</span>
     <span className="text-sm font-medium">{label}</span>
@@ -115,9 +114,8 @@ const Step1Describe: React.FC<{
       <div className="flex justify-between items-center pt-4">
         <Link
           to={crisisMode ? '#' : '/citizen/report-hazard'}
-          className={`text-sm flex items-center gap-2 transition-colors ${
-            crisisMode ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-warning'
-          }`}
+          className={`text-sm flex items-center gap-2 transition-colors ${crisisMode ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-warning'
+            }`}
           onClick={(e) => {
             if (crisisMode) e.preventDefault();
           }}
@@ -277,6 +275,14 @@ const ReportIncidentWizard: React.FC = () => {
       setError(t('validation.provide_title_description'));
       return;
     }
+    if (form.title.length < 5) {
+      setError('Title must be at least 5 characters');
+      return;
+    }
+    if (form.description.length < 10) {
+      setError('Description must be at least 10 characters');
+      return;
+    }
     setError(null);
     setStep(2);
   };
@@ -317,7 +323,10 @@ const ReportIncidentWizard: React.FC = () => {
       setSubmitting(true);
       setError(null);
       const payload = {
-        ...form,
+        title: form.title,
+        description: form.description,
+        latitude: form.latitude,
+        longitude: form.longitude,
         isReporterAtScene: !form.notAtScene,
       };
       if (online) {
@@ -356,9 +365,8 @@ const ReportIncidentWizard: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12 ${
-        isMobile ? 'fixed inset-0 overflow-y-auto z-30 bg-[#0A0F1A]/95' : ''
-      }`}
+      className={`min-h-screen bg-[#0A0F1A] text-slate-100 pt-16 pb-12 ${isMobile ? 'fixed inset-0 overflow-y-auto z-30 bg-[#0A0F1A]/95' : ''
+        }`}
     >
       {!navigator.onLine && (
         <div className="w-full bg-warning text-black text-center text-xs py-2">

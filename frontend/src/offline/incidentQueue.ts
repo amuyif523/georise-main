@@ -49,8 +49,13 @@ export async function syncIncidentQueue() {
       const res = await api.post('/incidents', item.payload);
       results.push({ tempId: item.tempId, success: true, serverId: res.data.id });
       await clearIncidentFromQueue(item.tempId);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to sync incident:', item.tempId, err);
+      // If validation error (400), remove from queue to prevent infinite loop
+      if (err.response && err.response.status === 400) {
+        console.warn('Discarding invalid incident from queue:', item.tempId);
+        await clearIncidentFromQueue(item.tempId);
+      }
       results.push({ tempId: item.tempId, success: false });
     }
   }
