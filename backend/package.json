@@ -5,7 +5,7 @@
   "main": "src/server.ts",
   "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",
@@ -13,14 +13,14 @@
     "test:watch": "dotenv -e .env.test -- vitest",
     "test:coverage": "dotenv -e .env.test -- vitest run --coverage",
     "test:db:migrate": "dotenv -e .env.test -- prisma migrate deploy",
-    "test:db:seed": "dotenv -e .env.test -- ts-node prisma/seed.test.ts",
+    "test:db:seed": "dotenv -e .env.test -- tsx prisma/seed.test.ts",
     "test:db:reset": "npm run test:db:migrate && npm run test:db:seed",
     "seed": "npm run prisma-seed",
-    "prisma-seed": "ts-node prisma/seed.ts",
+    "prisma-seed": "tsx prisma/seed.ts",
     "simulate:responder": "node scripts/emitResponderLocation.js"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -73,6 +73,7 @@
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",
     "vitest": "^2.1.9"

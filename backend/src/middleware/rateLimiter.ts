@@ -40,23 +40,23 @@ const buildLimiter = ({ windowMs, limit, message, skipInDev }: LimiterOptions) =
 // General API limiter (keep light in dev)
 export const apiLimiter = buildLimiter({
   windowMs: 15 * 60 * 1000,
-  limit: NODE_ENV === 'development' ? 1000 : 200,
+  limit: NODE_ENV === 'development' ? 5000 : 200,
   message: 'Too many requests, please try again later.',
-  skipInDev: false,
+  skipInDev: true,
 });
 
 // Strict login/OTP/password-reset limiter (protect credentials)
 export const loginLimiter = buildLimiter({
   windowMs: 60 * 60 * 1000,
-  limit: NODE_ENV === 'development' ? 100 : 10,
+  limit: NODE_ENV === 'development' ? 1000 : 10,
   message: 'Too many login attempts, please try again later.',
-  skipInDev: false,
+  skipInDev: true,
 });
 
 // Session reads like /auth/me (more relaxed)
 export const sessionLimiter = buildLimiter({
   windowMs: 5 * 60 * 1000,
-  limit: NODE_ENV === 'development' ? 500 : 120,
+  limit: NODE_ENV === 'development' ? 2000 : 120,
   message: 'Too many session checks, please slow down.',
-  skipInDev: false,
+  skipInDev: true,
 });

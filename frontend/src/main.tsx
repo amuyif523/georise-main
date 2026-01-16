@@ -118,7 +118,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
             <Route
               path="/agency"
               element={
-                <ProtectedRoute allowedRoles={['AGENCY_STAFF']}>
+                <ProtectedRoute allowedRoles={['AGENCY_STAFF', 'ADMIN']}>
                   <AgencyDashboard />
                 </ProtectedRoute>
               }
@@ -126,7 +126,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
             <Route
               path="/agency/map"
               element={
-                <ProtectedRoute allowedRoles={['AGENCY_STAFF']}>
+                <ProtectedRoute allowedRoles={['AGENCY_STAFF', 'ADMIN']}>
                   <Suspense fallback={<div className="p-4 text-slate-200">Loading map…</div>}>
                     <AgencyMap />
                   </Suspense>
@@ -136,7 +136,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
             <Route
               path="/agency/analytics"
               element={
-                <ProtectedRoute allowedRoles={['AGENCY_STAFF']}>
+                <ProtectedRoute allowedRoles={['AGENCY_STAFF', 'ADMIN']}>
                   <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
                     <AgencyAnalyticsPage />
                   </Suspense>

@@ -27,6 +27,9 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex gap-2 mb-4">
+          <Link to="/agency" className="btn btn-warning btn-sm">
+            Incident Console (Live)
+          </Link>
           <Link to="/admin/agencies" className="btn btn-primary btn-sm">
             Manage agencies
           </Link>

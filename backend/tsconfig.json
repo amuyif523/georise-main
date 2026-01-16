@@ -2,24 +2,35 @@
   "compilerOptions": {
     /* Language and Environment */
     "target": "ES2020",
-    "lib": ["ES2020"],
+    "lib": [
+      "ES2020"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
-
     /* TypeScript Strictness */
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-
     /* Build Output */
     "outDir": "dist",
     "rootDir": "src",
     "noEmit": true, // because we run directly with ts-node-dev
-
     /* Type Checking Performance */
     "skipLibCheck": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": [
+      "./src/types",
+      "./node_modules/@types"
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "ts-node": {
+    "esm": true
+  }
 }
