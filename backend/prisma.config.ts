@@ -10,7 +10,7 @@ if (!DATABASE_URL) {
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
-    seed: 'ts-node prisma/seed.ts',
+    seed: 'tsx prisma/seed.ts',
   },
   datasource: {
     url: DATABASE_URL,

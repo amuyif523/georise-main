@@ -53,6 +53,7 @@ export async function syncIncidentQueue() {
       console.error('Failed to sync incident:', item.tempId, err);
       // If validation error (400), remove from queue to prevent infinite loop
       if (err.response && err.response.status === 400) {
+        console.error('SERVER VALIDATION ERROR:', JSON.stringify(err.response.data, null, 2));
         console.warn('Discarding invalid incident from queue:', item.tempId);
         await clearIncidentFromQueue(item.tempId);
       }

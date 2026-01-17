@@ -22,8 +22,16 @@ export const createIncident = async (req: Request, res: Response) => {
     const incident = await incidentService.createIncident(sanitizedBody, req.user.id);
     return res.status(201).json({ incident });
   } catch (err: any) {
+    console.log('Create Incident Failed. Request Body:', JSON.stringify(req.body, null, 2));
+    if (err.issues) {
+      console.log('Zod Validation Errors:', JSON.stringify(err.issues, null, 2));
+    } else {
+      console.log('Error Details:', err);
+    }
     logger.error({ err }, 'Create incident error');
-    return res.status(400).json({ message: err?.message || 'Failed to create incident' });
+    // Extract Zod error messages if available
+    const msg = err.issues ? JSON.stringify(err.issues) : (err?.message || 'Failed to create incident');
+    return res.status(400).json({ message: msg });
   }
 };
 

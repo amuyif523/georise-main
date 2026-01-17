@@ -1,13 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { MapPin, Shield, Sparkles } from 'lucide-react';
+import {
+  MapPin,
+  Shield,
+  Sparkles,
+  Clock,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 import api from '../lib/api';
-import { severityBadgeClass, severityLabel } from '../utils/severity';
 import { getSocket } from '../lib/socket';
 import AppLayout from '../layouts/AppLayout';
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
 
 type ActivityLog = {
   id: string;
-  type: 'STATUS_CHANGE' | 'COMMENT' | 'DISPATCH' | 'ASSIGNMENT' | 'SYSTEM';
+  type: string;
   message: string;
   createdAt: string;
 };
@@ -24,192 +33,188 @@ type Incident = {
   createdAt: string;
   timeline?: ActivityLog[];
   aiOutput?: {
-    predictedCategory: string;
-    severityScore: number;
-    confidence: number;
     summary?: string | null;
   } | null;
 };
 
-const statusColor = (status: string) => {
-  switch (status) {
-    case 'RECEIVED':
-      return 'badge badge-info';
-    case 'UNDER_REVIEW':
-      return 'badge badge-warning';
-    case 'ASSIGNED':
-    case 'RESPONDING':
-      return 'badge badge-primary';
-    case 'RESOLVED':
-      return 'badge badge-success';
-    case 'CANCELLED':
-      return 'badge badge-neutral';
-    default:
-      return 'badge badge-ghost';
-  }
-};
-
-const formatDate = (iso: string) => new Date(iso).toLocaleString();
-
 const MyReportsPage: React.FC = () => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<number | null>(null);
-  const [loadingTimeline, setLoadingTimeline] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetch = async () => {
       try {
         const res = await api.get('/incidents/my');
         setIncidents(res.data.incidents || []);
-      } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message;
-        setError(msg || 'Failed to load incidents');
-      } finally {
-        setLoading(false);
-      }
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
     };
-    fetchData();
+    fetch();
 
     const socket = getSocket();
     if (socket) {
-      const handler = (inc: Incident) => {
-        setIncidents((prev) =>
-          prev.map((r) =>
-            r.id === inc.id
-              ? {
-                  ...r,
-                  status: inc.status,
-                  severityScore: inc.severityScore,
-                  category: inc.category,
-                }
-              : r,
-          ),
-        );
-      };
-      socket.on('incident:updated', handler);
-      return () => {
-        socket.off('incident:updated', handler);
-      };
+      socket.on('incident:updated', (inc: Incident) => {
+        setIncidents(prev => prev.map(p => p.id === inc.id ? { ...p, ...inc } : p));
+      });
+      return () => { socket.off('incident:updated'); };
     }
   }, []);
 
-  const loadTimeline = async (incidentId: number) => {
-    setLoadingTimeline(incidentId);
-    try {
-      const res = await api.get(`/incidents/${incidentId}/timeline`);
-      const logs: ActivityLog[] = res.data.logs || [];
-      setIncidents((prev) =>
-        prev.map((i) => (i.id === incidentId ? { ...i, timeline: logs.reverse() } : i)),
-      );
-      setOpenId(incidentId);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg || 'Failed to load timeline');
-    } finally {
-      setLoadingTimeline(null);
+  const toggleExpand = async (id: number) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
     }
+    setExpandedId(id);
+    // Fetch timeline if needed
+    try {
+      const res = await api.get(`/incidents/${id}/timeline`);
+      setIncidents(prev => prev.map(i => i.id === id ? { ...i, timeline: res.data.logs || [] } : i));
+    } catch (e) { console.error(e); }
+  };
+
+  const getStatusStep = (status: string) => {
+    // const flow = ['RECEIVED', 'UNDER_REVIEW', 'DISPATCHED', 'RESOLVED']; (Removed unused)
+    const map: Record<string, number> = {
+      'RECEIVED': 0, 'PENDING_REVIEW': 0,
+      'ASSIGNED': 1, 'UNDER_REVIEW': 1,
+      'DISPATCHED': 2, 'RESPONDING': 2, 'ON_SCENE': 2,
+      'RESOLVED': 3, 'CLOSED': 3
+    };
+    return map[status] ?? 0;
   };
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-8 bg-base-100/50 backdrop-blur p-6 rounded-2xl border border-base-content/5">
         <div>
-          <p className="text-sm text-slate-500">Citizen workspace</p>
-          <h1 className="text-3xl font-bold text-slate-900">My Reports</h1>
-          <p className="text-slate-500 text-sm">Track the status of your submitted incidents.</p>
-        </div>
-        <div className="flex items-center gap-2 text-blue-600">
-          <Sparkles size={18} />
-          <span className="text-sm">AI-assisted categories</span>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+            Mission Log
+          </h1>
+          <p className="text-sm text-base-content/60 mt-1 font-mono tracking-wide">
+            OPERATIONAL HISTORY • {incidents.length} RECORDS
+          </p>
         </div>
       </div>
 
-      {error && <div className="alert alert-error text-sm">{error}</div>}
-
       {loading ? (
-        <div className="flex justify-center py-12 text-slate-500">Loading…</div>
+        <div className="flex justify-center p-12"><span className="loading loading-bars text-primary"></span></div>
       ) : incidents.length === 0 ? (
-        <div className="p-8 border border-dashed border-slate-300 rounded-lg text-center text-slate-500 bg-white">
-          No incidents yet. Start by submitting one from the wizard.
+        <div className="text-center p-12 border-2 border-dashed border-base-content/10 rounded-xl opacity-50">
+          <Shield className="w-12 h-12 mx-auto mb-4" />
+          <p>No missions on record.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {incidents.map((incident) => (
-            <div
-              key={incident.id}
-              className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{incident.title}</h3>
-                  <p className="text-slate-500 text-sm">
-                    {new Date(incident.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={statusColor(incident.status)}>{incident.status}</span>
-                  <span className={severityBadgeClass(incident.severityScore)}>
-                    Sev {severityLabel(incident.severityScore)}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-3 text-sm text-slate-800 line-clamp-3">{incident.description}</div>
-              <div className="mt-3 flex items-center gap-2 text-slate-700 text-sm">
-                <MapPin size={16} className="text-blue-500" />
-                {incident.latitude && incident.longitude
-                  ? `${incident.latitude.toFixed(3)}, ${incident.longitude.toFixed(3)}`
-                  : 'No location set'}
-              </div>
-              <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                <Shield size={16} className="text-amber-500" />
-                <span>
-                  Category: {incident.category ?? 'Pending'} • AI severity:{' '}
-                  {severityLabel(incident.severityScore)}
-                </span>
-              </div>
-              {incident.aiOutput?.summary && (
-                <div className="mt-2 text-xs text-slate-500">
-                  AI summary: {incident.aiOutput.summary}
-                </div>
-              )}
-              <div className="mt-2 text-xs text-slate-500">
-                ID: {incident.id} • Created: {formatDate(incident.createdAt)}
-              </div>
-
-              <div className="mt-3">
-                <button
-                  className={`btn btn-xs btn-outline ${loadingTimeline === incident.id ? 'loading' : ''}`}
-                  onClick={() => loadTimeline(incident.id)}
-                >
-                  {openId === incident.id ? 'Refresh timeline' : 'View updates'}
-                </button>
-              </div>
-
-              {openId === incident.id && (
-                <div className="mt-3 space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50">
-                  <p className="text-xs uppercase text-slate-500">Timeline</p>
-                  {incident.timeline && incident.timeline.length > 0 ? (
-                    incident.timeline.map((log) => (
-                      <div
-                        key={log.id}
-                        className="text-sm p-2 rounded-md bg-white border border-slate-200"
-                      >
-                        <p className="text-slate-900">{log.message}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {new Date(log.createdAt).toLocaleString()}
-                        </p>
+        <div className="space-y-4">
+          <AnimatePresence>
+            {incidents.map((incident, idx) => (
+              <motion.div
+                key={incident.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className={`card bg-base-100 shadow-lg border-l-4 overflow-hidden relative group transition-all duration-300 ${expandedId === incident.id ? 'ring-2 ring-base-content/5' : ''
+                  }`}
+                style={{
+                  borderLeftColor: (incident.severityScore || 0) >= 4 ? '#ef4444' :
+                    (incident.severityScore || 0) >= 3 ? '#eab308' : '#3b82f6'
+                }}
+              >
+                <div className="card-body p-0">
+                  {/* Main Row */}
+                  <div
+                    className="p-6 cursor-pointer hover:bg-base-200/50 transition-colors flex flex-col md:flex-row gap-6 items-start md:items-center"
+                    onClick={() => toggleExpand(incident.id)}
+                  >
+                    {/* Icon & Sev */}
+                    <div className="flex flex-col items-center gap-2 min-w-[60px]">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-md ${(incident.severityScore || 0) >= 4 ? 'bg-error' :
+                        (incident.severityScore || 0) >= 3 ? 'bg-warning' : 'bg-info'
+                        }`}>
+                        {incident.severityScore ?? '?'}
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">No updates yet.</p>
-                  )}
+                      <span className="text-[10px] font-mono font-bold uppercase opacity-50">SEV LEVEL</span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-lg font-bold text-base-content">{incident.title}</h3>
+                        <span className="badge badge-ghost badge-sm font-mono">{incident.status}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-base-content/60">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatDistanceToNow(new Date(incident.createdAt))} ago</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> Lat: {incident.latitude?.toFixed(3)}</span>
+                        <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-secondary" /> AI Cat: {incident.category}</span>
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div className="text-secondary">
+                      {expandedId === incident.id ? <ChevronUp /> : <ChevronDown />}
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  <AnimatePresence>
+                    {expandedId === incident.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-base-200/50 border-t border-base-content/5"
+                      >
+                        <div className="p-6 grid md:grid-cols-2 gap-8">
+                          <div>
+                            <h4 className="text-xs font-bold uppercase text-base-content/40 mb-3 tracking-widest">Operation Status</h4>
+                            {/* Stepper */}
+                            <ul className="steps w-full text-xs">
+                              <li className={`step ${getStatusStep(incident.status) >= 0 ? 'step-primary' : ''}`}>Reported</li>
+                              <li className={`step ${getStatusStep(incident.status) >= 1 ? 'step-primary' : ''}`}>Reviewed</li>
+                              <li className={`step ${getStatusStep(incident.status) >= 2 ? 'step-primary' : ''}`}>Dispatched</li>
+                              <li className={`step ${getStatusStep(incident.status) >= 3 ? 'step-primary' : ''}`}>Resolved</li>
+                            </ul>
+
+                            <div className="mt-6 p-4 bg-base-100 rounded-lg border border-base-content/5">
+                              <p className="text-sm leading-relaxed">{incident.description}</p>
+                              {incident.aiOutput?.summary && (
+                                <div className="mt-3 pt-3 border-t border-base-content/10 flex gap-2">
+                                  <Sparkles className="w-4 h-4 text-secondary shrink-0 mt-1" />
+                                  <p className="text-xs text-base-content/70 italic">"{incident.aiOutput.summary}"</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-xs font-bold uppercase text-base-content/40 mb-3 tracking-widest">Comm Log</h4>
+                            <div className="h-48 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+                              {incident.timeline?.map((log, i) => (
+                                <div key={i} className="flex gap-3 text-sm group">
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-2 h-2 rounded-full bg-primary/50 mt-1.5 peer-hover:bg-primary transition-colors"></div>
+                                    <div className="w-px h-full bg-base-content/5 my-1"></div>
+                                  </div>
+                                  <div className="pb-2">
+                                    <p className="text-base-content/80">{log.message}</p>
+                                    <p className="text-[10px] text-base-content/40 font-mono">{formatDistanceToNow(new Date(log.createdAt))} ago</p>
+                                  </div>
+                                </div>
+                              ))}
+                              {!incident.timeline?.length && (
+                                <div className="text-center text-xs opacity-50 py-8">No transmission data.</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              )}
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </AppLayout>

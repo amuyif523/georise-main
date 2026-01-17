@@ -6,6 +6,7 @@ export const createIncidentSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   isReporterAtScene: z.boolean().optional(),
+  category: z.string().optional(),
 });
 
 export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;

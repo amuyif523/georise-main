@@ -191,7 +191,22 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
       role: Role.CITIZEN,
       phone: '+251911000000',
       isActive: true,
-      trustScore: 5
+      trustScore: 100 // High trust for testing
+    }
+  });
+
+  // Verify the citizen separately
+  await prisma.citizenVerification.upsert({
+    where: { userId: citizen.id },
+    create: {
+      userId: citizen.id,
+      status: VerificationStatus.VERIFIED,
+      nationalId: '123456789',
+      phone: '+251911000000',
+    },
+    update: {
+      status: VerificationStatus.VERIFIED,
+      nationalId: '123456789',
     }
   });
 
@@ -367,4 +382,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
     await pool.end();
+    process.exit(0);
   });

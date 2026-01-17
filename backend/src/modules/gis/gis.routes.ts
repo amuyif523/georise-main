@@ -54,13 +54,13 @@ router.get(
         return res.json(
           agency.boundary
             ? [
-                {
-                  id: agency.id,
-                  name: agency.name,
-                  type: agency.type,
-                  geometry: JSON.parse(agency.boundary),
-                },
-              ]
+              {
+                id: agency.id,
+                name: agency.name,
+                type: agency.type,
+                geometry: JSON.parse(agency.boundary),
+              },
+            ]
             : [],
         );
       }
@@ -159,7 +159,7 @@ router.get(
 router.get(
   '/incidents',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.ADMIN, Role.CITIZEN]),
   async (req: any, res) => {
     const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`
