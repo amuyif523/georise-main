@@ -1,42 +1,51 @@
-import { PrismaClient } from '@prisma/client';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import dotenv from 'dotenv';
+import pg from 'pg';
 
-const prisma = new PrismaClient();
+const { Client } = pg;
+
+// Manually load .env from backend root
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+});
 
 async function main() {
-    const staff = await prisma.user.findUnique({
-        where: { email: 'staff1@example.com' },
-        include: {
-            agencyStaff: {
-                include: {
-                    agency: {
-                        include: {
-                            jurisdictions: {
-                                include: {
-                                    subCity: true,
-                                    woreda: true
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
+    await client.connect();
 
-    if (!staff || !staff.agencyStaff) {
-        console.log('Staff1 not found or not linked to agency');
-        return;
+    console.log('Querying Staff Info (via pg)...');
+
+    const query = `
+    SELECT 
+        u.email, 
+        u."fullName",
+        a.name as "agencyName", 
+        a.type as "agencyType", 
+        a.city,
+        sc.name as "primarySubCity",
+        w.name as "primaryWoreda"
+    FROM "User" u
+    JOIN "AgencyStaff" ast ON u.id = ast."userId"
+    JOIN "Agency" a ON ast."agencyId" = a.id
+    LEFT JOIN "SubCity" sc ON a."subCityId" = sc.id
+    LEFT JOIN "Woreda" w ON a."woredaId" = w.id
+    WHERE u.email = $1
+  `;
+
+    // Check for police@georise.com by default
+    const email = 'police@georise.com';
+    const res = await client.query(query, [email]);
+
+    if (res.rows.length === 0) {
+        console.log(`No staff found for email: ${email}`);
+    } else {
+        console.log('Staff Details:', res.rows[0]);
     }
 
-    const agency = staff.agencyStaff.agency;
-    console.log('Staff1 Agency:', {
-        name: agency.name,
-        type: agency.type,
-        city: agency.city,
-        jurisdictions: agency.jurisdictions.map(j => j.subCity?.name || j.woreda?.name + ' (Woreda)')
-    });
+    await client.end();
 }
 
-main()
-    .catch(console.error)
-    .finally(() => prisma.$disconnect());
+main().catch(console.error);
