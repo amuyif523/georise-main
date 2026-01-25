@@ -213,7 +213,7 @@ model CitizenVerification {
 
 model Incident {
   id               Int            @id @default(autoincrement())
-  reporterId       Int
+  reporterId       Int?
   assignedAgencyId Int?
   assignedResponderId Int?
   title            String
@@ -241,7 +241,7 @@ model Incident {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  reporter       User                 @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
+  reporter       User?                @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
   assignedResponder Responder?        @relation("IncidentAssignedResponder", fields: [assignedResponderId], references: [id])
   subCity        SubCity?             @relation(fields: [subCityId], references: [id])
