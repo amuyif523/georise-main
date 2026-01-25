@@ -48,39 +48,34 @@ router.post(
 );
 
 // Citizen Incident Feed (Recent & Relevant)
-router.get(
-  '/feed',
-  requireAuth,
-  requireRole([Role.CITIZEN]),
-  async (req, res) => {
-    try {
-      // Return recent resolved or public safety incidents
-      // For now, just return most recent 50 active incidents for the dashboard feed
-      // In a real app, this would be geo-filtered to user's location
-      const incidents = await prisma.incident.findMany({
-        where: {
-          // Show all active incidents for community awareness, or filter by public visibility
-          status: { not: IncidentStatus.CANCELLED }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          status: true,
-          createdAt: true,
-          severityScore: true,
-          latitude: true,
-          longitude: true
-        }
-      });
-      res.json(incidents);
-    } catch (err) {
-      res.status(400).json({ message: 'Failed to fetch feed' });
-    }
+router.get('/feed', requireAuth, requireRole([Role.CITIZEN]), async (req, res) => {
+  try {
+    // Return recent resolved or public safety incidents
+    // For now, just return most recent 50 active incidents for the dashboard feed
+    // In a real app, this would be geo-filtered to user's location
+    const incidents = await prisma.incident.findMany({
+      where: {
+        // Show all active incidents for community awareness, or filter by public visibility
+        status: { not: IncidentStatus.CANCELLED },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        severityScore: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+    res.json(incidents);
+  } catch (_err) {
+    res.status(400).json({ message: 'Failed to fetch feed' });
   }
-);
+});
 router.get('/my', requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get('/my/:id', requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
 router.get('/duplicates', requireAuth, checkDuplicates);
@@ -203,40 +198,35 @@ router.patch(
 );
 
 // Global Activity Feed (Admin only)
-router.get(
-  '/activity/feed',
-  requireAuth,
-  requireRole([Role.ADMIN]),
-  async (req, res) => {
-    try {
-      const logs = await prisma.activityLog.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        include: {
-          incident: {
-            select: {
-              id: true,
-              title: true,
-              category: true,
-              status: true,
-              severityScore: true // useful for coloring
-            }
+router.get('/activity/feed', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
+  try {
+    const logs = await prisma.activityLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        incident: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            status: true,
+            severityScore: true, // useful for coloring
           },
-          user: {
-            select: {
-              fullName: true,
-              role: true
-            }
-          }
-        }
-      });
-      res.json(logs);
-    } catch (err: unknown) {
-      console.error('Activity feed error:', err);
-      res.status(400).json({ message: errorMessage(err, 'Failed to fetch activity feed') });
-    }
+        },
+        user: {
+          select: {
+            fullName: true,
+            role: true,
+          },
+        },
+      },
+    });
+    res.json(logs);
+  } catch (err: unknown) {
+    console.error('Activity feed error:', err);
+    res.status(400).json({ message: errorMessage(err, 'Failed to fetch activity feed') });
   }
-);
+});
 
 // List/filter for agencies/admins with pagination/search
 router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async (req, res) => {
@@ -260,8 +250,8 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
     const createdAtFilter =
       hours && Number(hours)
         ? {
-          gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
-        }
+            gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
+          }
         : undefined;
     if (createdAtFilter) {
       conditions.createdAt = createdAtFilter;
@@ -376,9 +366,10 @@ router.get(
             ${radiusNum}
           )
           AND (
-            ${req.user?.role === Role.ADMIN
-          ? 'TRUE'
-          : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
+            ${
+              req.user?.role === Role.ADMIN
+                ? 'TRUE'
+                : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
               SELECT 1 FROM "AgencyJurisdiction" aj
               JOIN "SubCity" s ON aj."boundaryId" = s.id AND aj."boundaryType"='SUBCITY'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
@@ -387,7 +378,7 @@ router.get(
               JOIN "Woreda" w ON aj."boundaryId" = w.id AND aj."boundaryType"='WOREDA'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.boundary, i.location)
             )`
-        }
+            }
           )
         ORDER BY "severityScore" DESC NULLS LAST, "createdAt" DESC
       `;

@@ -24,11 +24,6 @@ const prisma = new PrismaClient({
 const SEED_PASSWORD = 'password123';
 
 // Helper for geometries
-const createPoint = (lat: number, lng: number) => {
-  return prisma.$executeRaw`
-        SELECT ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
-    `;
-};
 
 async function createGeometries() {
   console.log('Seeding Geometries...');
@@ -65,7 +60,7 @@ async function createGeometries() {
       const w = await prisma.woreda.upsert({
         where: { subCityId_name: { subCityId: sc.id, name: wName } },
         update: {},
-        create: { name: wName, subCityId: sc.id, code: `${sc.code}-W${i}` }
+        create: { name: wName, subCityId: sc.id, code: `${sc.code}-W${i}` },
       });
 
       // Offset slightly for center
@@ -86,8 +81,8 @@ async function createGeometries() {
 
 async function createDeterministicAgencies(subCities: any[]) {
   console.log('Seeding Agencies...');
-  const bole = subCities.find(s => s.name === 'Bole') || subCities[0];
-  const arada = subCities.find(s => s.name === 'Arada') || subCities[0];
+  const bole = subCities.find((s) => s.name === 'Bole') || subCities[0];
+  const arada = subCities.find((s) => s.name === 'Arada') || subCities[0];
 
   const agenciesData = [
     {
@@ -96,7 +91,7 @@ async function createDeterministicAgencies(subCities: any[]) {
       city: 'Addis Ababa',
       subCityId: arada.id,
       lat: arada.lat,
-      lng: arada.lng
+      lng: arada.lng,
     },
     {
       name: 'Addis Fire & Rescue',
@@ -104,7 +99,7 @@ async function createDeterministicAgencies(subCities: any[]) {
       city: 'Addis Ababa',
       subCityId: bole.id,
       lat: bole.lat,
-      lng: bole.lng
+      lng: bole.lng,
     },
     {
       name: 'Tikur Anbessa Ambulance',
@@ -112,7 +107,7 @@ async function createDeterministicAgencies(subCities: any[]) {
       city: 'Addis Ababa',
       subCityId: arada.id,
       lat: arada.lat - 0.005,
-      lng: arada.lng + 0.005
+      lng: arada.lng + 0.005,
     },
     {
       name: 'Traffic Management Center',
@@ -120,8 +115,8 @@ async function createDeterministicAgencies(subCities: any[]) {
       city: 'Addis Ababa',
       subCityId: bole.id,
       lat: bole.lat + 0.005,
-      lng: bole.lng - 0.005
-    }
+      lng: bole.lng - 0.005,
+    },
   ];
 
   const dbAgencies = [];
@@ -134,8 +129,8 @@ async function createDeterministicAgencies(subCities: any[]) {
         city: a.city,
         subCityId: a.subCityId,
         isApproved: true,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     // Set location
@@ -154,8 +149,8 @@ async function createDeterministicAgencies(subCities: any[]) {
         data: {
           agencyId: agency.id,
           boundaryType: 'SUBCITY',
-          boundaryId: sc.id
-        }
+          boundaryId: sc.id,
+        },
       });
     }
 
@@ -176,8 +171,8 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
       email: 'admin@example.com',
       passwordHash,
       role: Role.ADMIN,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   // 2. Citizen
@@ -191,8 +186,8 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
       role: Role.CITIZEN,
       phone: '+251911000000',
       isActive: true,
-      trustScore: 100 // High trust for testing
-    }
+      trustScore: 100, // High trust for testing
+    },
   });
 
   // Verify the citizen separately
@@ -207,7 +202,7 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
     update: {
       status: VerificationStatus.VERIFIED,
       nationalId: '123456789',
-    }
+    },
   });
 
   // 3. Agency Staff
@@ -215,14 +210,49 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
   const findAgency = (type: AgencyType) => agencies.find((a: any) => a.type === type);
 
   const staffAccounts = [
-    { email: 'police@georise.com', name: 'Police Dispatcher', type: AgencyType.POLICE, role: StaffRole.DISPATCHER },
-    { email: 'fire@georise.com', name: 'Fire Dispatcher', type: AgencyType.FIRE, role: StaffRole.DISPATCHER },
-    { email: 'medic@georise.com', name: 'Ambulance Dispatcher', type: AgencyType.MEDICAL, role: StaffRole.DISPATCHER },
-    { email: 'traffic@georise.com', name: 'Traffic Officer', type: AgencyType.TRAFFIC, role: StaffRole.DISPATCHER },
+    {
+      email: 'police@georise.com',
+      name: 'Police Dispatcher',
+      type: AgencyType.POLICE,
+      role: StaffRole.DISPATCHER,
+    },
+    {
+      email: 'fire@georise.com',
+      name: 'Fire Dispatcher',
+      type: AgencyType.FIRE,
+      role: StaffRole.DISPATCHER,
+    },
+    {
+      email: 'medic@georise.com',
+      name: 'Ambulance Dispatcher',
+      type: AgencyType.MEDICAL,
+      role: StaffRole.DISPATCHER,
+    },
+    {
+      email: 'traffic@georise.com',
+      name: 'Traffic Officer',
+      type: AgencyType.TRAFFIC,
+      role: StaffRole.DISPATCHER,
+    },
     // Responders
-    { email: 'police_unit@georise.com', name: 'Patrol Unit 1', type: AgencyType.POLICE, role: StaffRole.RESPONDER },
-    { email: 'fire_unit@georise.com', name: 'Engine 1', type: AgencyType.FIRE, role: StaffRole.RESPONDER },
-    { email: 'medic_unit@georise.com', name: 'Ambulance 1', type: AgencyType.MEDICAL, role: StaffRole.RESPONDER },
+    {
+      email: 'police_unit@georise.com',
+      name: 'Patrol Unit 1',
+      type: AgencyType.POLICE,
+      role: StaffRole.RESPONDER,
+    },
+    {
+      email: 'fire_unit@georise.com',
+      name: 'Engine 1',
+      type: AgencyType.FIRE,
+      role: StaffRole.RESPONDER,
+    },
+    {
+      email: 'medic_unit@georise.com',
+      name: 'Ambulance 1',
+      type: AgencyType.MEDICAL,
+      role: StaffRole.RESPONDER,
+    },
   ];
 
   for (const acc of staffAccounts) {
@@ -238,14 +268,14 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
         passwordHash,
         role: Role.AGENCY_STAFF,
         isActive: true,
-        phone: `+2519${Math.floor(Math.random() * 100000000)}`
-      }
+        phone: `+2519${Math.floor(Math.random() * 100000000)}`,
+      },
     });
 
     await prisma.agencyStaff.upsert({
       where: { userId: user.id },
       update: { agencyId: agency.id, staffRole: acc.role },
-      create: { userId: user.id, agencyId: agency.id, staffRole: acc.role }
+      create: { userId: user.id, agencyId: agency.id, staffRole: acc.role },
     });
 
     // Create Responder profile if needed
@@ -262,8 +292,8 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
             // Place them near agency center
             latitude: 9.03,
             longitude: 38.74,
-            lastSeenAt: new Date()
-          }
+            lastSeenAt: new Date(),
+          },
         });
       }
     }
@@ -274,7 +304,7 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
 
 async function createSampleIncidents(citizen: any, subCities: any[]) {
   console.log('Seeding Sample Incidents...');
-  const bole = subCities.find(s => s.name === 'Bole');
+  const bole = subCities.find((s) => s.name === 'Bole');
 
   const incidentsData = [
     {
@@ -283,7 +313,7 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
       category: 'FIRE',
       severity: 4,
       lat: bole.lat + 0.002,
-      lng: bole.lng + 0.002
+      lng: bole.lng + 0.002,
     },
     {
       title: 'Car Accident at Junction',
@@ -291,7 +321,7 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
       category: 'TRAFFIC',
       severity: 2,
       lat: bole.lat - 0.002,
-      lng: bole.lng - 0.002
+      lng: bole.lng - 0.002,
     },
     {
       title: 'Heart Attack Suspected',
@@ -299,8 +329,8 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
       category: 'MEDICAL',
       severity: 5,
       lat: bole.lat,
-      lng: bole.lng
-    }
+      lng: bole.lng,
+    },
   ];
 
   for (const inc of incidentsData) {
@@ -315,8 +345,8 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
         subCityId: bole.id,
         latitude: inc.lat,
         longitude: inc.lng,
-        reviewStatus: ReviewStatus.NOT_REQUIRED // Auto-validate for demo
-      }
+        reviewStatus: ReviewStatus.NOT_REQUIRED, // Auto-validate for demo
+      },
     });
 
     await prisma.$executeRaw`
@@ -333,8 +363,8 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
         predictedCategory: inc.category,
         severityScore: inc.severity,
         confidence: 0.95,
-        summary: 'Auto-generated seed summary'
-      }
+        summary: 'Auto-generated seed summary',
+      },
     });
   }
 }
@@ -357,7 +387,7 @@ async function createDispatchRules() {
 async function main() {
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
 
-  const { subCities, woredas } = await createGeometries();
+  const { subCities } = await createGeometries();
   const agencies = await createDeterministicAgencies(subCities);
   await createDispatchRules();
 
