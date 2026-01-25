@@ -30,7 +30,9 @@ export const createIncident = async (req: Request, res: Response) => {
     }
     logger.error({ err }, 'Create incident error');
     // Extract Zod error messages if available
-    const msg = err.issues ? JSON.stringify(err.issues) : (err?.message || 'Failed to create incident');
+    const msg = err.issues
+      ? JSON.stringify(err.issues)
+      : err?.message || 'Failed to create incident';
     return res.status(400).json({ message: msg });
   }
 };

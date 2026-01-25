@@ -54,13 +54,13 @@ router.get(
         return res.json(
           agency.boundary
             ? [
-              {
-                id: agency.id,
-                name: agency.name,
-                type: agency.type,
-                geometry: JSON.parse(agency.boundary),
-              },
-            ]
+                {
+                  id: agency.id,
+                  name: agency.name,
+                  type: agency.type,
+                  geometry: JSON.parse(agency.boundary),
+                },
+              ]
             : [],
         );
       }

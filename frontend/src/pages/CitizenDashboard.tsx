@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Activity,
-  Navigation
+  Navigation,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TrustBadge from '../components/user/TrustBadge';
@@ -48,7 +48,7 @@ const CitizenDashboard: React.FC = () => {
     fetchIncidents();
   }, []);
 
-  const activeIncidentsCount = incidents.filter(i => i.status !== 'RESOLVED').length;
+  const activeIncidentsCount = incidents.filter((i) => i.status !== 'RESOLVED').length;
 
   return (
     <AppLayout>
@@ -60,7 +60,8 @@ const CitizenDashboard: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-base-content flex items-center gap-2">
-              Command Center <span className="badge badge-accent badge-sm font-mono text-white">LIVE</span>
+              Command Center{' '}
+              <span className="badge badge-accent badge-sm font-mono text-white">LIVE</span>
             </h1>
             <p className="text-xs text-base-content/60 font-mono tracking-wider uppercase">
               Sector: Addis Ababa • Network: Secure
@@ -85,7 +86,6 @@ const CitizenDashboard: React.FC = () => {
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
-
         {/* Left Col: Actions & Stats (3 cols) */}
         <div className="lg:col-span-3 flex flex-col gap-4">
           {/* Emergency Button */}
@@ -101,7 +101,9 @@ const CitizenDashboard: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="card bg-base-100 shadow-lg border border-base-content/5 flex-1 p-4">
-            <h3 className="text-xs font-bold uppercase text-base-content/40 tracking-widest mb-4">Quick Actions</h3>
+            <h3 className="text-xs font-bold uppercase text-base-content/40 tracking-widest mb-4">
+              Quick Actions
+            </h3>
             <div className="grid gap-3">
               <button
                 onClick={() => navigate('/citizen/report')}
@@ -167,35 +169,51 @@ const CitizenDashboard: React.FC = () => {
                 <p className="text-sm">No recent activity.</p>
               </div>
             ) : (
-              incidents.map(incident => (
-                <div key={incident.id} className="p-3 rounded-lg hover:bg-base-200 transition-colors cursor-pointer border border-transparent hover:border-base-content/5 group" onClick={() => navigate('/citizen/my-reports')}>
+              incidents.map((incident) => (
+                <div
+                  key={incident.id}
+                  className="p-3 rounded-lg hover:bg-base-200 transition-colors cursor-pointer border border-transparent hover:border-base-content/5 group"
+                  onClick={() => navigate('/citizen/my-reports')}
+                >
                   <div className="flex justify-between items-start mb-1">
-                    <span className={`badge badge-xs font-mono mb-1 ${incident.severityScore >= 4 ? 'badge-error' :
-                        incident.severityScore >= 3 ? 'badge-warning' : 'badge-info'
-                      }`}>
+                    <span
+                      className={`badge badge-xs font-mono mb-1 ${
+                        incident.severityScore >= 4
+                          ? 'badge-error'
+                          : incident.severityScore >= 3
+                            ? 'badge-warning'
+                            : 'badge-info'
+                      }`}
+                    >
                       SEV-{incident.severityScore}
                     </span>
                     <span className="text-[10px] text-base-content/40 font-mono">
                       {formatDistanceToNow(new Date(incident.createdAt))} ago
                     </span>
                   </div>
-                  <h4 className="font-bold text-sm text-base-content mb-1 group-hover:text-primary transition-colors line-clamp-1">{incident.title}</h4>
+                  <h4 className="font-bold text-sm text-base-content mb-1 group-hover:text-primary transition-colors line-clamp-1">
+                    {incident.title}
+                  </h4>
                   <div className="flex items-center gap-2 text-xs text-base-content/60">
                     <span className="uppercase tracking-wider">{incident.category}</span>
                     <span>•</span>
-                    <span className="capitalize">{incident.status.replace('_', ' ').toLowerCase()}</span>
+                    <span className="capitalize">
+                      {incident.status.replace('_', ' ').toLowerCase()}
+                    </span>
                   </div>
                 </div>
               ))
             )}
           </div>
           <div className="p-3 border-t border-base-content/5 bg-base-50 text-center">
-            <Link to="/citizen/my-reports" className="text-xs font-bold text-primary hover:underline">
+            <Link
+              to="/citizen/my-reports"
+              className="text-xs font-bold text-primary hover:underline"
+            >
               View Full History
             </Link>
           </div>
         </div>
-
       </div>
     </AppLayout>
   );

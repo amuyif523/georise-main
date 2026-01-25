@@ -9,7 +9,10 @@ console.log('Loading .env from:', envPath);
 const result = dotenv.config({ path: envPath });
 
 if (result.error) {
-    console.error('Dotenv Error:', result.error);
+  console.error('Dotenv Error:', result.error);
 }
 
-console.log('DATABASE_URL length:', process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 'UNDEFINED');
+console.log(
+  'DATABASE_URL length:',
+  process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 'UNDEFINED',
+);

@@ -20,8 +20,11 @@ const WizardFlow: React.FC = () => {
           <X />
         </button>
         <div className="flex gap-2">
-          {[1, 2, 3, 4].map(s => (
-            <div key={s} className={`h-1 w-8 rounded-full transition-colors ${s <= step ? 'bg-primary' : 'bg-base-content/10'}`} />
+          {[1, 2, 3, 4].map((s) => (
+            <div
+              key={s}
+              className={`h-1 w-8 rounded-full transition-colors ${s <= step ? 'bg-primary' : 'bg-base-content/10'}`}
+            />
           ))}
         </div>
         <div className="w-10"></div>
@@ -30,8 +33,12 @@ const WizardFlow: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center p-4 pt-20">
         <AnimatePresence mode="wait">
           {step === 1 && <CategoryStep key="step1" onNext={() => setStep(2)} />}
-          {step === 2 && <LocationStep key="step2" onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-          {step === 3 && <DetailsStep key="step3" onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+          {step === 2 && (
+            <LocationStep key="step2" onNext={() => setStep(3)} onBack={() => setStep(1)} />
+          )}
+          {step === 3 && (
+            <DetailsStep key="step3" onNext={() => setStep(4)} onBack={() => setStep(2)} />
+          )}
           {step === 4 && <ReviewStep key="step4" onBack={() => setStep(3)} />}
         </AnimatePresence>
       </div>

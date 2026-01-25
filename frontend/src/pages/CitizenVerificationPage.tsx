@@ -11,7 +11,7 @@ import {
   Lock,
   CreditCard,
   QrCode,
-  Activity
+  Activity,
 } from 'lucide-react';
 
 const CitizenVerificationPage: React.FC = () => {
@@ -37,14 +37,18 @@ const CitizenVerificationPage: React.FC = () => {
 
   const handleIdSubmit = () => {
     if (!nationalId || !phone) {
-      setMessage("Identity documents required.");
+      setMessage('Identity documents required.');
       return;
     }
     setLoading(true);
     simulateScan(async () => {
       try {
         const res = await api.post('/verification/request', { nationalId, phone });
-        setMessage(res.data.otpCodeDemo ? `SECURE CHANNEL OPEN: ${res.data.otpCodeDemo}` : 'OTP sent via encrypted SMS.');
+        setMessage(
+          res.data.otpCodeDemo
+            ? `SECURE CHANNEL OPEN: ${res.data.otpCodeDemo}`
+            : 'OTP sent via encrypted SMS.',
+        );
         setStep('OTP_LINK');
       } catch (err: any) {
         setMessage(err?.response?.data?.message || 'Verification Protocol Failed');
@@ -69,7 +73,6 @@ const CitizenVerificationPage: React.FC = () => {
   return (
     <AppLayout>
       <div className="flex flex-col items-center justify-center min-h-[600px] max-w-4xl mx-auto">
-
         {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center justify-center gap-3">
@@ -82,7 +85,6 @@ const CitizenVerificationPage: React.FC = () => {
         </div>
 
         <div className="card w-full max-w-2xl bg-base-100 shadow-2xl border border-base-content/10 overflow-hidden relative">
-
           {/* Scanning Overlay */}
           <AnimatePresence>
             {isScanning && (
@@ -95,7 +97,7 @@ const CitizenVerificationPage: React.FC = () => {
                 <div className="relative w-64 h-40 border-2 border-primary/50 rounded-lg overflow-hidden bg-primary/5">
                   <motion.div
                     animate={{ top: ['0%', '100%', '0%'] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                     className="absolute left-0 right-0 h-1 bg-primary shadow-[0_0_20px_rgba(37,99,235,1)]"
                   />
                   <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 gap-1 opacity-20">
@@ -112,11 +114,14 @@ const CitizenVerificationPage: React.FC = () => {
           </AnimatePresence>
 
           <div className="card-body p-8 lg:p-12">
-
             {/* Progress Steps */}
             <div className="flex items-center justify-center mb-10 w-full">
-              <div className={`flex flex-col items-center ${step === 'ID_SCAN' ? 'text-primary' : 'text-success'} transition-colors`}>
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'ID_SCAN' ? 'border-primary bg-primary/10' : 'border-success bg-success/10'}`}>
+              <div
+                className={`flex flex-col items-center ${step === 'ID_SCAN' ? 'text-primary' : 'text-success'} transition-colors`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'ID_SCAN' ? 'border-primary bg-primary/10' : 'border-success bg-success/10'}`}
+                >
                   1
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider">Credentials</span>
@@ -128,8 +133,12 @@ const CitizenVerificationPage: React.FC = () => {
                   animate={{ width: step === 'ID_SCAN' ? '0%' : '100%' }}
                 />
               </div>
-              <div className={`flex flex-col items-center ${step === 'OTP_LINK' ? 'text-primary' : step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}>
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'OTP_LINK' ? 'border-primary bg-primary/10' : step === 'VERIFIED' ? 'border-success bg-success' : 'border-base-content/10'}`}>
+              <div
+                className={`flex flex-col items-center ${step === 'OTP_LINK' ? 'text-primary' : step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'OTP_LINK' ? 'border-primary bg-primary/10' : step === 'VERIFIED' ? 'border-success bg-success' : 'border-base-content/10'}`}
+                >
                   2
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider">Link</span>
@@ -141,8 +150,12 @@ const CitizenVerificationPage: React.FC = () => {
                   animate={{ width: step === 'VERIFIED' ? '100%' : '0%' }}
                 />
               </div>
-              <div className={`flex flex-col items-center ${step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}>
-                <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'VERIFIED' ? 'border-success bg-success text-white shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'border-base-content/10'}`}>
+              <div
+                className={`flex flex-col items-center ${step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'VERIFIED' ? 'border-success bg-success text-white shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'border-base-content/10'}`}
+                >
                   <CheckCircle className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider">Authorized</span>
@@ -151,7 +164,11 @@ const CitizenVerificationPage: React.FC = () => {
 
             <AnimatePresence mode="wait">
               {message && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="alert alert-info shadow-sm mb-6 font-mono text-xs">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="alert alert-info shadow-sm mb-6 font-mono text-xs"
+                >
                   <Activity className="w-4 h-4" /> {message}
                 </motion.div>
               )}
@@ -202,7 +219,13 @@ const CitizenVerificationPage: React.FC = () => {
                   onClick={handleIdSubmit}
                   disabled={loading}
                 >
-                  {loading ? 'Processing...' : <span className="flex items-center gap-2">Initiate Scan <ScanLine className="w-4 h-4" /></span>}
+                  {loading ? (
+                    'Processing...'
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Initiate Scan <ScanLine className="w-4 h-4" />
+                    </span>
+                  )}
                 </button>
               </motion.div>
             )}
@@ -219,7 +242,9 @@ const CitizenVerificationPage: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold">Two-Factor Authorization</h3>
-                <p className="text-sm opacity-60">Enter the cryptographic token sent to your device.</p>
+                <p className="text-sm opacity-60">
+                  Enter the cryptographic token sent to your device.
+                </p>
 
                 <div className="flex justify-center my-6">
                   <input
@@ -283,16 +308,20 @@ const CitizenVerificationPage: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="btn btn-outline w-full" onClick={() => window.location.href = '/citizen/dashboard'}>
+                <button
+                  className="btn btn-outline w-full"
+                  onClick={() => (window.location.href = '/citizen/dashboard')}
+                >
                   Return to Command Center
                 </button>
               </motion.div>
             )}
-
           </div>
           {/* Security Footer */}
           <div className="bg-base-200/50 p-4 border-t border-base-content/5 flex justify-between items-center text-[10px] text-base-content/40 font-mono uppercase">
-            <span className="flex items-center gap-1"><QrCode className="w-3 h-3" /> Secure Protocol v2.4</span>
+            <span className="flex items-center gap-1">
+              <QrCode className="w-3 h-3" /> Secure Protocol v2.4
+            </span>
             <span>Encrypted E2E</span>
           </div>
         </div>

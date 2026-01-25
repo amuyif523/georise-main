@@ -6,7 +6,16 @@ import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Smartphone, ArrowRight, ShieldCheck, Activity } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Smartphone,
+  ArrowRight,
+  ShieldCheck,
+  Activity,
+} from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -134,12 +143,16 @@ const LoginPage: React.FC = () => {
           <div className="mb-6 p-4 bg-primary/20 backdrop-blur-sm rounded-full inline-block border border-primary/40 shadow-[0_0_30px_rgba(37,99,235,0.3)]">
             <ShieldCheck className="w-16 h-16 text-primary animate-pulse" />
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">GEORISE</h1>
+          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
+            GEORISE
+          </h1>
           <p className="text-blue-100 text-xl font-light mb-8">
             Next-Gen Resilience & Incident Response Platform.
           </p>
           <div className="flex gap-4 text-xs font-mono text-blue-300/60 uppercase tracking-widest">
-            <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> System Operational</span>
+            <span className="flex items-center gap-1">
+              <Activity className="w-3 h-3" /> System Operational
+            </span>
             <span>•</span>
             <span>Secure Access</span>
           </div>
@@ -150,16 +163,21 @@ const LoginPage: React.FC = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[url('/assets/grid_bg.svg')] bg-repeat opacity-95">
         <div className="card w-full max-w-md bg-base-100/50 backdrop-blur-xl border border-white/10 shadow-2xl">
           <div className="card-body p-8 lg:p-10">
-
             <div className="mb-8 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-base-content mb-2">{t('auth.sign_in_to_account')}</h2>
-              <p className="text-base-content/60 text-sm">Create, track, and manage critical incidents.</p>
+              <h2 className="text-3xl font-bold text-base-content mb-2">
+                {t('auth.sign_in_to_account')}
+              </h2>
+              <p className="text-base-content/60 text-sm">
+                Create, track, and manage critical incidents.
+              </p>
             </div>
 
             {/* Custom Tabs */}
             <div className="flex p-1 bg-base-200/50 rounded-xl mb-8 relative">
-              <div className="absolute inset-y-1 w-1/2 bg-white/10 shadow-sm rounded-lg transition-all duration-300 ease-in-out"
-                style={{ transform: mode === 'EMAIL' ? 'translateX(0)' : 'translateX(100%)' }}></div>
+              <div
+                className="absolute inset-y-1 w-1/2 bg-white/10 shadow-sm rounded-lg transition-all duration-300 ease-in-out"
+                style={{ transform: mode === 'EMAIL' ? 'translateX(0)' : 'translateX(100%)' }}
+              ></div>
               <button
                 onClick={() => setMode('EMAIL')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium relative z-10 transition-colors ${mode === 'EMAIL' ? 'text-primary' : 'text-base-content/60'}`}
@@ -177,17 +195,32 @@ const LoginPage: React.FC = () => {
             {/* Alerts */}
             <AnimatePresence mode="wait">
               {success && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="alert alert-success shadow-lg mb-4 text-sm font-medium rounded-lg">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="alert alert-success shadow-lg mb-4 text-sm font-medium rounded-lg"
+                >
                   <span>{success}</span>
                 </motion.div>
               )}
               {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="alert alert-error shadow-lg mb-4 text-sm font-medium rounded-lg text-white">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="alert alert-error shadow-lg mb-4 text-sm font-medium rounded-lg text-white"
+                >
                   <span>{error}</span>
                 </motion.div>
               )}
               {isRateLimited && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="alert alert-warning shadow-lg mb-4 text-sm font-medium rounded-lg">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="alert alert-warning shadow-lg mb-4 text-sm font-medium rounded-lg"
+                >
                   <span>{rateLimitMessage}</span>
                 </motion.div>
               )}
@@ -227,22 +260,33 @@ const LoginPage: React.FC = () => {
                       <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 m-0 p-0">
                         {t('auth.password')}
                       </label>
-                      <Link to="/forgot-password" className="text-xs text-primary hover:text-primary-focus transition-colors">
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs text-primary hover:text-primary-focus transition-colors"
+                      >
                         Forgot?
                       </Link>
                     </div>
                     <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-primary/50 transition-all border-none h-12">
                       <Lock className="w-5 h-5 text-base-content/40" />
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-primary transition-colors">
-                        {showPassword ? <EyeOff className="w-5 h-5 text-base-content/40" /> : <Eye className="w-5 h-5 text-base-content/40" />}
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5 text-base-content/40" />
+                        ) : (
+                          <Eye className="w-5 h-5 text-base-content/40" />
+                        )}
                       </button>
                     </label>
                   </div>
@@ -252,7 +296,13 @@ const LoginPage: React.FC = () => {
                     type="submit"
                     disabled={loading || isRateLimited}
                   >
-                    {loading ? <span className="loading loading-spinner"></span> : <span className="flex items-center gap-2">{t('auth.login')} <ArrowRight className="w-5 h-5" /></span>}
+                    {loading ? (
+                      <span className="loading loading-spinner"></span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        {t('auth.login')} <ArrowRight className="w-5 h-5" />
+                      </span>
+                    )}
                   </button>
                 </motion.form>
               ) : (
@@ -293,14 +343,19 @@ const LoginPage: React.FC = () => {
                     <form onSubmit={handleOtpLogin} className="space-y-6">
                       <div className="form-control text-center">
                         <label className="label justify-center mb-2">
-                          <span className="label-text text-base-content/70">Enter code sent to <span className="font-mono font-bold text-primary">{phone}</span></span>
+                          <span className="label-text text-base-content/70">
+                            Enter code sent to{' '}
+                            <span className="font-mono font-bold text-primary">{phone}</span>
+                          </span>
                         </label>
                         <div className="flex justify-center">
                           <input
                             type="text"
                             className="input input-bordered w-full h-14 text-center text-2xl font-mono tracking-[0.5em] bg-base-200/50 focus:ring-2 ring-primary/50 border-none max-w-[200px]"
                             value={otpCode}
-                            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            onChange={(e) =>
+                              setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                            }
                             placeholder="••••••"
                             autoFocus
                           />
@@ -311,7 +366,11 @@ const LoginPage: React.FC = () => {
                         type="submit"
                         disabled={loading || isRateLimited || otpCode.length < 4}
                       >
-                        {loading ? <span className="loading loading-spinner"></span> : 'Verify Engine'}
+                        {loading ? (
+                          <span className="loading loading-spinner"></span>
+                        ) : (
+                          'Verify Engine'
+                        )}
                       </button>
                       <button
                         type="button"
@@ -328,13 +387,15 @@ const LoginPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t border-base-content/10 text-center">
               <p className="text-sm text-base-content/60">
-                New to GEORISE? {' '}
-                <Link to="/register" className="text-primary font-semibold hover:underline decoration-2 underline-offset-4">
+                New to GEORISE?{' '}
+                <Link
+                  to="/register"
+                  className="text-primary font-semibold hover:underline decoration-2 underline-offset-4"
+                >
                   Initialize Protocol
                 </Link>
               </p>
             </div>
-
           </div>
         </div>
       </div>

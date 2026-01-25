@@ -3,7 +3,17 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Smartphone, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Activity } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Smartphone,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  Activity,
+} from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,19 +51,18 @@ const RegisterPage: React.FC = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0 }
+    visible: { opacity: 1, x: 0 },
   };
 
   return (
     <div className="min-h-screen flex bg-base-200 font-sans">
-
       {/* Left Side: Hero Visual (Reused for consistency) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-neutral overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-t from-neutral to-transparent z-10 opacity-90"></div>
@@ -71,12 +80,16 @@ const RegisterPage: React.FC = () => {
           >
             <ShieldCheck className="w-16 h-16 text-secondary animate-pulse" />
           </motion.div>
-          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">JOIN THE NETWORK</h1>
+          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
+            JOIN THE NETWORK
+          </h1>
           <p className="text-base-content/70 text-xl font-light mb-8">
             Become a verified responder and secure your community.
           </p>
           <div className="flex gap-4 text-xs font-mono text-secondary/60 uppercase tracking-widest">
-            <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> Registration Open</span>
+            <span className="flex items-center gap-1">
+              <Activity className="w-3 h-3" /> Registration Open
+            </span>
             <span>•</span>
             <span>Encrypted Channel</span>
           </div>
@@ -90,7 +103,6 @@ const RegisterPage: React.FC = () => {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-secondary to-transparent"></div>
 
           <div className="card-body p-8 lg:p-10">
-
             <div className="mb-6 text-center lg:text-left">
               <h2 className="text-3xl font-bold text-base-content mb-2">Initialize Profile</h2>
               <p className="text-base-content/60 text-sm">Create your secure access identity.</p>
@@ -174,7 +186,7 @@ const RegisterPage: React.FC = () => {
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Lock className="w-5 h-5 text-base-content/40" />
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                     placeholder="Create a strong password"
                     value={password}
@@ -182,8 +194,16 @@ const RegisterPage: React.FC = () => {
                     required
                     minLength={6}
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-secondary transition-colors">
-                    {showPassword ? <EyeOff className="w-5 h-5 text-base-content/40" /> : <Eye className="w-5 h-5 text-base-content/40" />}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="hover:text-secondary transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5 text-base-content/40" />
+                    ) : (
+                      <Eye className="w-5 h-5 text-base-content/40" />
+                    )}
                   </button>
                 </label>
               </motion.div>
@@ -194,7 +214,13 @@ const RegisterPage: React.FC = () => {
                   type="submit"
                   disabled={loading}
                 >
-                  {loading ? <span className="loading loading-spinner"></span> : <span className="flex items-center gap-2">Authorize Protocol <ArrowRight className="w-5 h-5" /></span>}
+                  {loading ? (
+                    <span className="loading loading-spinner"></span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Authorize Protocol <ArrowRight className="w-5 h-5" />
+                    </span>
+                  )}
                 </button>
               </motion.div>
             </motion.form>
@@ -202,12 +228,14 @@ const RegisterPage: React.FC = () => {
             <div className="mt-8 pt-6 border-t border-base-content/10 text-center">
               <p className="text-sm text-base-content/60">
                 Already have credentials?{' '}
-                <Link to="/login" className="text-secondary font-semibold hover:underline decoration-2 underline-offset-4">
+                <Link
+                  to="/login"
+                  className="text-secondary font-semibold hover:underline decoration-2 underline-offset-4"
+                >
                   Access Terminal
                 </Link>
               </p>
             </div>
-
           </div>
         </div>
       </div>

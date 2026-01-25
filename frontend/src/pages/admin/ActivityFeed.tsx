@@ -4,7 +4,15 @@ import AppLayout from '../../layouts/AppLayout';
 import { getSocket } from '../../lib/socket';
 import api from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Radio, AlertTriangle, CheckCircle, MapPin, MessageSquare, Clock } from 'lucide-react';
+import {
+  Activity,
+  Radio,
+  AlertTriangle,
+  CheckCircle,
+  MapPin,
+  MessageSquare,
+  Clock,
+} from 'lucide-react';
 
 type ActivityItem = {
   id: string;
@@ -58,7 +66,7 @@ const ActivityFeed: React.FC = () => {
             title: incident.title,
             category: incident.category,
             status: incident.status,
-            severityScore: incident.severityScore
+            severityScore: incident.severityScore,
           },
           createdAt: new Date().toISOString(),
         },
@@ -80,26 +88,41 @@ const ActivityFeed: React.FC = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'CREATED': return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
-      case 'UPDATED': return 'text-blue-400 border-blue-500/30 bg-blue-500/10';
-      case 'STATUS_CHANGE': return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
-      case 'DISPATCH': return 'text-red-400 border-red-500/30 bg-red-500/10';
-      case 'ASSIGNMENT': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
-      case 'RESOLVED': return 'text-green-400 border-green-500/30 bg-green-500/10';
-      default: return 'text-slate-400 border-slate-700 bg-slate-800/50';
+      case 'CREATED':
+        return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+      case 'UPDATED':
+        return 'text-blue-400 border-blue-500/30 bg-blue-500/10';
+      case 'STATUS_CHANGE':
+        return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
+      case 'DISPATCH':
+        return 'text-red-400 border-red-500/30 bg-red-500/10';
+      case 'ASSIGNMENT':
+        return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+      case 'RESOLVED':
+        return 'text-green-400 border-green-500/30 bg-green-500/10';
+      default:
+        return 'text-slate-400 border-slate-700 bg-slate-800/50';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'CREATED': return <Radio className="w-4 h-4" />;
-      case 'UPDATED': return <Activity className="w-4 h-4" />;
-      case 'STATUS_CHANGE': return <Clock className="w-4 h-4" />;
-      case 'DISPATCH': return <MapPin className="w-4 h-4" />;
-      case 'ASSIGNMENT': return <AlertTriangle className="w-4 h-4" />;
-      case 'RESOLVED': return <CheckCircle className="w-4 h-4" />;
-      case 'COMMENT': return <MessageSquare className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+      case 'CREATED':
+        return <Radio className="w-4 h-4" />;
+      case 'UPDATED':
+        return <Activity className="w-4 h-4" />;
+      case 'STATUS_CHANGE':
+        return <Clock className="w-4 h-4" />;
+      case 'DISPATCH':
+        return <MapPin className="w-4 h-4" />;
+      case 'ASSIGNMENT':
+        return <AlertTriangle className="w-4 h-4" />;
+      case 'RESOLVED':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'COMMENT':
+        return <MessageSquare className="w-4 h-4" />;
+      default:
+        return <Activity className="w-4 h-4" />;
     }
   };
 
@@ -111,7 +134,9 @@ const ActivityFeed: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
-              <p className="text-xs font-mono text-cyan-400 uppercase tracking-widest">System Monitor</p>
+              <p className="text-xs font-mono text-cyan-400 uppercase tracking-widest">
+                System Monitor
+              </p>
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight glitch-text">
               Network Activity Feed
@@ -158,18 +183,22 @@ const ActivityFeed: React.FC = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="group relative"
                     >
-                      <div className={`
+                      <div
+                        className={`
                         relative flex items-start gap-4 p-4 mx-2 rounded-lg border transition-all duration-300
                         hover:bg-slate-800/50 hover:border-slate-600 hover:shadow-lg
                         ${getTypeColor(e.type).split(' ')[2]} 
                         border-slate-800/50 bg-[#0F1623]
-                      `}>
+                      `}
+                      >
                         {/* Time Column */}
                         <div className="flex flex-col items-center gap-1 min-w-[80px]">
                           <span className="text-xs font-mono text-slate-400 group-hover:text-cyan-400 transition-colors">
                             {new Date(e.createdAt).toLocaleTimeString([], { hour12: false })}
                           </span>
-                          <div className={`p-2 rounded-full border ${getTypeColor(e.type).split(' ')[1]} ${getTypeColor(e.type).split(' ')[0]} bg-slate-900`}>
+                          <div
+                            className={`p-2 rounded-full border ${getTypeColor(e.type).split(' ')[1]} ${getTypeColor(e.type).split(' ')[0]} bg-slate-900`}
+                          >
                             {getTypeIcon(e.type)}
                           </div>
                           <div className="h-full w-px bg-slate-800 group-last:hidden mt-2" />
@@ -178,7 +207,9 @@ const ActivityFeed: React.FC = () => {
                         {/* Content Column */}
                         <div className="flex-1 min-w-0 pt-1">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className={`text-sm font-bold uppercase tracking-wide ${getTypeColor(e.type).split(' ')[0]}`}>
+                            <h3
+                              className={`text-sm font-bold uppercase tracking-wide ${getTypeColor(e.type).split(' ')[0]}`}
+                            >
                               {e.type.replace('_', ' ')}
                             </h3>
                             {e.incident?.status && (
@@ -191,7 +222,8 @@ const ActivityFeed: React.FC = () => {
                           <p className="text-slate-300 text-sm leading-relaxed mb-1">
                             {e.message || (
                               <>
-                                Activity on Incident <span className="font-mono text-cyan-400">#{e.incidentId}</span>
+                                Activity on Incident{' '}
+                                <span className="font-mono text-cyan-400">#{e.incidentId}</span>
                                 {e.incident?.title && ` - ${e.incident.title}`}
                               </>
                             )}
@@ -206,7 +238,8 @@ const ActivityFeed: React.FC = () => {
                             )}
                             {e.user && (
                               <span className="flex items-center gap-1 text-slate-400">
-                                BY: {e.user.fullName} <span className="opacity-50">[{e.user.role}]</span>
+                                BY: {e.user.fullName}{' '}
+                                <span className="opacity-50">[{e.user.role}]</span>
                               </span>
                             )}
                           </div>

@@ -10,15 +10,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const client = new Client({
-    connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
 });
 
 async function main() {
-    await client.connect();
+  await client.connect();
 
-    console.log('Querying Staff Info (via pg)...');
+  console.log('Querying Staff Info (via pg)...');
 
-    const query = `
+  const query = `
     SELECT 
         u.email, 
         u."fullName",
@@ -35,17 +35,17 @@ async function main() {
     WHERE u.email = $1
   `;
 
-    // Check for police@georise.com by default
-    const email = 'police@georise.com';
-    const res = await client.query(query, [email]);
+  // Check for police@georise.com by default
+  const email = 'police@georise.com';
+  const res = await client.query(query, [email]);
 
-    if (res.rows.length === 0) {
-        console.log(`No staff found for email: ${email}`);
-    } else {
-        console.log('Staff Details:', res.rows[0]);
-    }
+  if (res.rows.length === 0) {
+    console.log(`No staff found for email: ${email}`);
+  } else {
+    console.log('Staff Details:', res.rows[0]);
+  }
 
-    await client.end();
+  await client.end();
 }
 
 main().catch(console.error);
