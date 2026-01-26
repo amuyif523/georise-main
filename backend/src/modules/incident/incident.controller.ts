@@ -8,8 +8,6 @@ import { Role } from '@prisma/client';
 
 export const createIncident = async (req: Request, res: Response) => {
   try {
-    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-
     const sanitizedBody = {
       ...req.body,
       title: typeof req.body.title === 'string' ? sanitizeHtml(req.body.title) : req.body.title,
@@ -19,7 +17,11 @@ export const createIncident = async (req: Request, res: Response) => {
           : req.body.description,
     };
 
-    const incident = await incidentService.createIncident(sanitizedBody, req.user.id);
+    const incident = await incidentService.createIncident(
+      sanitizedBody,
+      req.user?.id,
+      req.ip || req.socket.remoteAddress,
+    );
     return res.status(201).json({ incident });
   } catch (err: any) {
     console.log('Create Incident Failed. Request Body:', JSON.stringify(req.body, null, 2));

@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { IncidentStatus } from '@prisma/client';
 import prisma from '../../prisma';
+import redis from '../../redis';
 import { CreateIncidentRequest } from './incident.types';
 import {
   emitIncidentCreated,
@@ -19,7 +20,7 @@ import { incidentQueue } from '../../jobs/queue';
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
 
 export class IncidentService {
-  async createIncident(data: CreateIncidentRequest, reporterId: number) {
+  async createIncident(data: CreateIncidentRequest, reporterId?: number, ipAddress?: string) {
     const crisisConfig = await prisma.systemConfig.findUnique({ where: { key: 'CRISIS_MODE' } });
     const crisisMode = crisisConfig?.value === 'true';
     const category = data.category?.toUpperCase();
@@ -28,51 +29,69 @@ export class IncidentService {
       throw new Error('Crisis Mode active: low-priority reports are temporarily disabled.');
     }
 
-    // Anti-spam: limit burst submissions
-    const recentCount = await prisma.incident.count({
-      where: {
-        reporterId,
-        createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
-      },
-    });
-    if (recentCount > 5) {
-      throw new Error('Too many incident reports in a short time. Please wait a few minutes.');
-    }
+    let user: any = null;
 
-    const user = await prisma.user.findUnique({
-      where: { id: reporterId },
-      select: {
-        trustScore: true,
-        lastReportAt: true,
-        isShadowBanned: true,
-        citizenVerification: { select: { status: true } },
-      },
-    });
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (user?.lastReportAt) {
-      const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
-      if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
-        throw new Error('You are sending reports too frequently. Please wait a few minutes.');
-      }
-    }
-
-    // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
-    if (user?.citizenVerification?.status !== 'VERIFIED' && (user?.trustScore ?? 0) < 50) {
-      logger.warn(
-        {
-          userId: reporterId,
-          trustScore: user?.trustScore,
-          verificationStatus: user?.citizenVerification?.status,
+    if (reporterId) {
+      // Anti-spam: limit burst submissions for users
+      const recentCount = await prisma.incident.count({
+        where: {
+          reporterId,
+          createdAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
         },
-        'Security blocks report: Unverified ghost reporter',
-      );
-      throw new Error(
-        'Account Verification Required: You must verify your account (National ID/Phone) before reporting incidents to ensure system integrity.',
-      );
+      });
+      if (recentCount > 5) {
+        throw new Error('Too many incident reports in a short time. Please wait a few minutes.');
+      }
+
+      user = await prisma.user.findUnique({
+        where: { id: reporterId },
+        select: {
+          trustScore: true,
+          lastReportAt: true,
+          isShadowBanned: true,
+          citizenVerification: { select: { status: true } },
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user?.lastReportAt) {
+        const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
+        if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
+          throw new Error('You are sending reports too frequently. Please wait a few minutes.');
+        }
+      }
+
+      // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
+      if (user?.citizenVerification?.status !== 'VERIFIED' && (user?.trustScore ?? 0) < 50) {
+        logger.warn(
+          {
+            userId: reporterId,
+            trustScore: user?.trustScore,
+            verificationStatus: user?.citizenVerification?.status,
+          },
+          'Security blocks report: Unverified ghost reporter',
+        );
+        throw new Error(
+          'Account Verification Required: You must verify your account (National ID/Phone) before reporting incidents to ensure system integrity.',
+        );
+      }
+    } else {
+      // Guest Logic
+      if (!ipAddress) {
+        throw new Error('IP address required for guest submission');
+      }
+
+      const key = `rate_limit:guest_incident:${ipAddress}`;
+      const current = await redis.incr(key);
+      if (current === 1) {
+        await redis.expire(key, 3600); // 1 hour
+      }
+      if (current > 5) {
+        throw new Error('Too many guest submissions. Please try again later.');
+      }
     }
 
     let subCityId: number | undefined;
@@ -85,14 +104,19 @@ export class IncidentService {
 
     let reviewStatus: any = 'NOT_REQUIRED';
 
-    if (user?.isShadowBanned) {
-      reviewStatus = 'REJECTED';
-    } else {
-      const tier = await reputationService.getTier(reporterId);
-      // Tier 0 (Unverified) always requires review
-      if (tier === 0) {
-        reviewStatus = 'PENDING_REVIEW';
+    if (reporterId && user) {
+      if (user.isShadowBanned) {
+        reviewStatus = 'REJECTED';
+      } else {
+        const tier = await reputationService.getTier(reporterId);
+        // Tier 0 (Unverified) always requires review
+        if (tier === 0) {
+          reviewStatus = 'PENDING_REVIEW';
+        }
       }
+    } else {
+      // Guest submissions always require review
+      reviewStatus = 'PENDING_REVIEW';
     }
 
     const incident = await prisma.incident.create({
@@ -100,14 +124,15 @@ export class IncidentService {
         title: data.title,
         description: data.description,
         reporterId,
-        latitude: data.latitude ?? null,
-        longitude: data.longitude ?? null,
+        latitude: data.latitude,
+        longitude: data.longitude,
         subCityId,
         woredaId,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
         isReporterAtScene: data.isReporterAtScene ?? true,
-      },
+        severityScore: reporterId ? undefined : 1, // Default low severity for guests
+      } as any,
     });
 
     // Populate geography column when coordinates are provided
@@ -125,12 +150,9 @@ export class IncidentService {
         incidentId: incident.id,
         title: incident.title,
         description: incident.description,
-        reporterId,
+        reporterId: reporterId || 0, // Pass 0 or handle null in worker if acceptable, but worker might expect number
       });
     } else {
-      // Direct update for infrastructure if needed, or handle in worker/separate logic.
-      // For now, keeping it simple: just let it be RECEIVED.
-      // Or if we want to mimic previous behavior for Manual Category:
       const aiOutput = {
         predicted_category: 'INFRASTRUCTURE',
         severity_score: 1,
@@ -156,14 +178,21 @@ export class IncidentService {
       });
     }
 
-    await logActivity(incident.id, 'SYSTEM', 'Incident created', reporterId);
-    if (reviewStatus === 'PENDING_REVIEW') {
-      await logActivity(incident.id, 'STATUS_CHANGE', 'Incident marked for review', reporterId);
+    if (reporterId) {
+      await logActivity(incident.id, 'SYSTEM', 'Incident created', reporterId as number);
+      if (reviewStatus === 'PENDING_REVIEW') {
+        await logActivity(
+          incident.id,
+          'STATUS_CHANGE',
+          'Incident marked for review',
+          reporterId as number,
+        );
+      }
+      await reputationService.onIncidentCreated(reporterId as number);
     }
 
-    await reputationService.onIncidentCreated(reporterId);
     if (reviewStatus !== 'PENDING_REVIEW') {
-      // Emit initial creation event (AI analysis will come later via update)
+      // Emit initial creation event
       const fresh = await prisma.incident.findUnique({
         where: { id: incident.id },
         include: { aiOutput: true },
