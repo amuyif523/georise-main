@@ -34,6 +34,34 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = authService.verifyToken(token);
+
+    const isRevoked = await redis.get(`revoked:user:${payload.userId}`);
+    if (isRevoked) {
+      return res.status(401).json({ message: 'Session revoked. Please contact administration.' });
+    }
+
+    req.user = {
+      id: payload.userId,
+      role: payload.role,
+      agencyId: payload.agencyId,
+    };
+
+    return next();
+  } catch (err) {
+    logger.error({ err }, 'Optional Auth error');
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+};
+
 export const requireRole = (roles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
