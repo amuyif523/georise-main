@@ -17,6 +17,7 @@ export const ReportWizardProvider: React.FC<{ children: ReactNode }> = ({ childr
   return <ReportWizardContext.Provider value={draftLogic}>{children}</ReportWizardContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useReportContext = () => {
   const ctx = useContext(ReportWizardContext);
   if (!ctx) throw new Error('useReportContext must be used within ReportWizardProvider');

@@ -49,10 +49,14 @@ export async function syncIncidentQueue() {
       const res = await api.post('/incidents', item.payload);
       results.push({ tempId: item.tempId, success: true, serverId: res.data.id });
       await clearIncidentFromQueue(item.tempId);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to sync incident:', item.tempId, err);
       // If validation error (400), remove from queue to prevent infinite loop
-      if (err.response && err.response.status === 400) {
+      // @ts-expect-error Accessing response on unknown type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (err?.response?.status === 400) {
+        // @ts-expect-error Accessing response on unknown type
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         console.error('SERVER VALIDATION ERROR:', JSON.stringify(err.response.data, null, 2));
         console.warn('Discarding invalid incident from queue:', item.tempId);
         await clearIncidentFromQueue(item.tempId);
