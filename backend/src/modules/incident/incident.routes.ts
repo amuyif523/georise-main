@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { IncidentStatus, Role, Prisma, ReviewStatus } from '@prisma/client';
-import { requireAuth, requireRole } from '../../middleware/auth';
+import { requireAuth, requireRole, optionalAuth } from '../../middleware/auth';
 import prisma from '../../prisma';
 import {
   createIncident,
@@ -38,14 +38,7 @@ const incidentLimiter = rateLimit({
 });
 
 // Citizen routes
-router.post(
-  '/',
-  incidentLimiter,
-  requireAuth,
-  requireRole([Role.CITIZEN]),
-  validateBody(createIncidentSchema),
-  createIncident,
-);
+router.post('/', incidentLimiter, optionalAuth, validateBody(createIncidentSchema), createIncident);
 
 // Citizen Incident Feed (Recent & Relevant)
 router.get('/feed', requireAuth, requireRole([Role.CITIZEN]), async (req, res) => {
@@ -185,11 +178,13 @@ router.patch(
       });
       await logActivity(incidentId, 'STATUS_CHANGE', `Status set to ${status}`, req.user!.id);
       emitIncidentUpdated(toIncidentPayload(updated));
-      await pushService.sendToUsers([updated.reporterId], {
-        title: 'Incident update',
-        body: `Your report #${updated.id} is now ${updated.status}.`,
-        data: { incidentId: updated.id, url: '/citizen/my-reports' },
-      });
+      if (updated.reporterId) {
+        await pushService.sendToUsers([updated.reporterId], {
+          title: 'Incident update',
+          body: `Your report #${updated.id} is now ${updated.status}.`,
+          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+        });
+      }
       res.json({ incident: updated });
     } catch (err: unknown) {
       res.status(400).json({ message: errorMessage(err, 'Failed to update status') });
@@ -421,11 +416,13 @@ router.patch(
         );
       }
       emitIncidentUpdated(toIncidentPayload(updated));
-      await pushService.sendToUsers([updated.reporterId], {
-        title: 'Incident assigned',
-        body: `Responders have been assigned to report #${updated.id}.`,
-        data: { incidentId: updated.id, url: '/citizen/my-reports' },
-      });
+      if (updated.reporterId) {
+        await pushService.sendToUsers([updated.reporterId], {
+          title: 'Incident assigned',
+          body: `Responders have been assigned to report #${updated.id}.`,
+          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+        });
+      }
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,
@@ -459,11 +456,13 @@ router.patch(
 
       await logActivity(updated.id, 'STATUS_CHANGE', 'Status set to RESPONDING', req.user!.id);
       emitIncidentUpdated(toIncidentPayload(updated));
-      await pushService.sendToUsers([updated.reporterId], {
-        title: 'Responder en route',
-        body: `Responders are en route for report #${updated.id}.`,
-        data: { incidentId: updated.id, url: '/citizen/my-reports' },
-      });
+      if (updated.reporterId) {
+        await pushService.sendToUsers([updated.reporterId], {
+          title: 'Responder en route',
+          body: `Responders are en route for report #${updated.id}.`,
+          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+        });
+      }
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,
@@ -497,11 +496,13 @@ router.patch(
 
       await logActivity(updated.id, 'STATUS_CHANGE', 'Status set to RESOLVED', req.user!.id);
       emitIncidentUpdated(toIncidentPayload(updated));
-      await pushService.sendToUsers([updated.reporterId], {
-        title: 'Incident resolved',
-        body: `Your report #${updated.id} has been resolved.`,
-        data: { incidentId: updated.id, url: '/citizen/my-reports' },
-      });
+      if (updated.reporterId) {
+        await pushService.sendToUsers([updated.reporterId], {
+          title: 'Incident resolved',
+          body: `Your report #${updated.id} has been resolved.`,
+          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+        });
+      }
       await prisma.auditLog.create({
         data: {
           actorId: req.user!.id,
