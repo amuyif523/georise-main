@@ -6,12 +6,16 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../lib/api';
 import { addToIncidentQueue } from '../../../offline/incidentQueue';
 
+import { useAuth } from '../../../context/AuthContext';
+
 export const ReviewStep: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { draft, clearDraft } = useReportContext();
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async () => {
+    // ... existing logic ...
     setSubmitting(true);
     try {
       // Construct clean payload (remove image/File object and internal flags)
@@ -41,7 +45,12 @@ export const ReviewStep: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         await addToIncidentQueue(payload);
       }
       clearDraft();
-      navigate('/citizen/my-reports');
+      if (user) {
+        navigate('/citizen/my-reports');
+      } else {
+        alert('Report submitted successfully. Thank you.'); // Simple feedback for guest
+        navigate('/');
+      }
     } catch (e) {
       console.error(e);
       alert('Submission failed. Please try again.');

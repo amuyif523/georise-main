@@ -37,6 +37,7 @@ const CitizenVerificationPage = React.lazy(() => import('./pages/CitizenVerifica
 const ReviewQueuePage = React.lazy(() => import('./pages/admin/ReviewQueuePage'));
 const VerificationPage = React.lazy(() => import('./pages/admin/VerificationPage'));
 const SystemStatusPage = React.lazy(() => import('./pages/admin/SystemStatusPage'));
+import LandingPage from './pages/LandingPage';
 
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -60,6 +61,8 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
           <CrisisBanner />
           <BroadcastModal />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/report" element={<ReportIncidentWizard />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

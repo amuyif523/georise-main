@@ -8,15 +8,26 @@ import { LocationStep } from '../features/reporting/steps/LocationStep';
 import { DetailsStep } from '../features/reporting/steps/DetailsStep';
 import { ReviewStep } from '../features/reporting/steps/ReviewStep';
 
+import { useAuth } from '../context/AuthContext';
+
 const WizardFlow: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const { user } = useAuth();
+
+  const handleClose = () => {
+    if (user) {
+      navigate('/citizen/dashboard');
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-base-300 z-[9999] overflow-y-auto">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-base-300/80 backdrop-blur">
-        <button onClick={() => navigate('/citizen/dashboard')} className="btn btn-circle btn-ghost">
+        <button onClick={handleClose} className="btn btn-circle btn-ghost">
           <X />
         </button>
         <div className="flex gap-2">
