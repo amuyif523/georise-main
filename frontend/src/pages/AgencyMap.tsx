@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import L from 'leaflet';
 import 'leaflet.heat';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap, GeoJSON } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import api from '../lib/api';
@@ -111,7 +111,7 @@ const AgencyMap: React.FC = () => {
   const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>('subcity');
   const [responders, setResponders] = useState<any[]>([]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setListLoading(true);
       const [incRes, heatRes, respRes, clusterRes] = await Promise.all([
@@ -150,7 +150,7 @@ const AgencyMap: React.FC = () => {
       setLoading(false);
       setListLoading(false);
     }
-  };
+  }, [hours, minSeverity, selectedSubCity]);
 
   useEffect(() => {
     const loadGeo = async () => {
@@ -215,7 +215,7 @@ const AgencyMap: React.FC = () => {
       };
     }
     return () => clearInterval(interval);
-  }, [hours, minSeverity, lowDataMode]);
+  }, [fetchData, lowDataMode]);
 
   const updateStatus = async (id: number, action: 'assign' | 'respond' | 'resolve') => {
     const confirmMsg =

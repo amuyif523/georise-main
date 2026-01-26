@@ -295,6 +295,7 @@ const LoginPage: React.FC = () => {
                     className="btn btn-primary w-full h-12 text-lg shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none hover:shadow-[0_0_30px_rgba(59,130,246,0.7)] hover:scale-[1.02] transition-all duration-300"
                     type="submit"
                     disabled={loading || isRateLimited}
+                    data-testid="login-submit"
                   >
                     {loading ? (
                       <span className="loading loading-spinner"></span>

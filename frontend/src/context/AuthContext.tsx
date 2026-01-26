@@ -99,27 +99,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [SESSION_MAX_IDLE_MS, fetchMe]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
     const { token, user: userData } = res.data;
     localStorage.setItem('georise_token', token);
     setUser(userData);
     connectSocket(token);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('georise_token');
     setUser(null);
     disconnectSocket();
     resetSocketGuard();
-  };
+  }, []);
 
-  const setAuth = (userData: User, token: string, refreshToken?: string) => {
+  const setAuth = useCallback((userData: User, token: string, refreshToken?: string) => {
     localStorage.setItem('georise_token', token);
     if (refreshToken) localStorage.setItem('georise_refresh_token', refreshToken);
     setUser(userData);
     connectSocket(token);
-  };
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }, 60000);
     return () => clearInterval(timer);
-  }, [user, lastActive, SESSION_MAX_IDLE_MS]);
+  }, [user, lastActive, SESSION_MAX_IDLE_MS, logout]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, setAuth }}>
