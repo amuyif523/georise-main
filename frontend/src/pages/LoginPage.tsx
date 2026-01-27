@@ -237,6 +237,7 @@ const LoginPage: React.FC = () => {
                   transition={{ duration: 0.2 }}
                   onSubmit={handleEmailLogin}
                   className="space-y-5"
+                  data-testid="login-form"
                 >
                   <div className="form-control">
                     <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">

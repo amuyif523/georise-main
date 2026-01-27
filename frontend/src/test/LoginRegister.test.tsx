@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
@@ -59,25 +59,12 @@ describe('Login/Register flows', () => {
       </MemoryRouter>,
     );
 
-    // Submit form directly to bypass potential button click issues in test env
-    // const form = screen.getByRole('form'); // Removed risky call
-    const loginBtn = await screen.findByTestId('login-submit');
-    await user.click(loginBtn);
-    // If click fails, let's verify if handleEmailLogin is called?
-    // The previous error was "submits login" failed.
-    // The expectation is expect(loginMock).toHaveBeenCalledWith...
-    // If it wasn't called, form wasn't submitted.
-    // HTML5 validation might block it.
-    // Email is filled: 'citizen1@example.com'.
-    // Password filled.
-    // It should work.
+    const form = await screen.findByTestId('login-form');
+    fireEvent.submit(form);
 
-    // Let's force submit event on the form element containing the email input
-    const emailInput = screen.getByLabelText(/email/i);
-    const formEl = emailInput.closest('form');
-    if (formEl) formEl.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    expect(loginMock).toHaveBeenCalledWith('citizen1@example.com', 'password123');
+    await vi.waitFor(() => {
+      expect(loginMock).toHaveBeenCalledWith('citizen1@example.com', 'password123');
+    });
   });
 
   it('submits registration payload', async () => {
