@@ -1,3 +1,5 @@
+// ... other imports ...
+
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
@@ -20,6 +22,7 @@ import {
 import { smsService } from '../sms/sms.service';
 import logger from '../../logger';
 import { NODE_ENV } from '../../config/env';
+import redis from '../../redis';
 
 const LOCK_THRESHOLD = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
@@ -177,6 +180,7 @@ export class AuthService {
     }
 
     const valid = await bcrypt.compare(data.password, user.passwordHash);
+
     if (!valid) {
       logger.warn({ userId: user.id, email: data.email }, 'Login failure: password mismatch');
       await this.bumpFailure(user.id, user.failedLoginAttempts ?? 0);
@@ -192,6 +196,7 @@ export class AuthService {
     const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
+    // Audit login success
     // Audit login success
     await prisma.auditLog.create({
       data: {
@@ -388,5 +393,4 @@ export class AuthService {
   }
 }
 
-import redis from '../../redis';
 export const authService = new AuthService();
