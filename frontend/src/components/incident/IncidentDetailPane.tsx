@@ -190,7 +190,7 @@ const IncidentDetailPane: React.FC<Props> = ({
   const handleShare = async () => {
     if (!selectedAgency || !shareReason || !incident) return;
     try {
-      await api.post(`/incidents/${incident.id}/share`, {
+      await api.post(`/incidents/${incident.id}/collaborate`, {
         agencyId: Number(selectedAgency),
         reason: shareReason,
       });
@@ -363,7 +363,7 @@ const IncidentDetailPane: React.FC<Props> = ({
               <button
                 className="btn btn-circle btn-ghost btn-xs text-slate-300"
                 onClick={openShareModal}
-                title="Share Incident"
+                title="Request Assistance"
               >
                 <Share2 size={16} />
               </button>

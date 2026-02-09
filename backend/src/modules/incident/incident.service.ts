@@ -198,6 +198,14 @@ export class IncidentService {
         include: { aiOutput: true },
       });
       emitIncidentCreated(toIncidentPayload(fresh || incident));
+    } else {
+      // Logic Audit Fix: Ensure PENDING items are visible to agencies
+      const fresh = await prisma.incident.findUnique({
+        where: { id: incident.id },
+        include: { aiOutput: true },
+      });
+      const { emitPendingIncidentToAgencies } = await import('../../events/incidentEvents');
+      emitPendingIncidentToAgencies(toIncidentPayload(fresh || incident));
     }
     return incident;
   }
@@ -302,7 +310,20 @@ export class IncidentService {
     return true;
   }
 
-  async shareIncident(incidentId: number, agencyId: number, reason: string) {
+  async shareIncident(incidentId: number, agencyId: number, reason: string, user?: any) {
+    // Validation: Ensure requesting user belongs to the assigned agency
+    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (!incident) throw new Error('Incident not found');
+
+    if (user && user.role !== 'ADMIN') {
+      // Assuming user.agencyId is available (it should be for AGENCY_STAFF)
+      // We need to fetch staff details if not in user object, but typically req.user has it if using proper auth middleware
+      // The express.d.ts says req.user has agencyId?.
+      if (incident.assignedAgencyId !== user.agencyId) {
+        throw new Error('Forbidden: You can only share incidents assigned to your agency.');
+      }
+    }
+
     const existing = await prisma.sharedIncident.findUnique({
       where: {
         incidentId_agencyId: { incidentId, agencyId },
@@ -327,9 +348,9 @@ export class IncidentService {
     );
 
     // Emit update to the target agency
-    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
-    if (incident) {
-      const payload = toIncidentPayload(incident);
+    const updatedIncident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (updatedIncident) {
+      const payload = toIncidentPayload(updatedIncident);
       emitIncidentUpdated(payload);
       getIO().to(`agency:${agencyId}`).emit('incident:shared', payload);
 

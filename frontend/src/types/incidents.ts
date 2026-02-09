@@ -6,4 +6,6 @@ export interface IncidentListItem {
   status: string;
   createdAt: string;
   subCityId?: number | null;
+  assignedAgencyId?: number | null;
+  sharedWith?: { agencyId: number }[];
 }

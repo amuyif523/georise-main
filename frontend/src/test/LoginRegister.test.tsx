@@ -52,7 +52,6 @@ describe('Login/Register flows', () => {
   });
 
   it('submits login with default credentials', async () => {
-    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <LoginPage />

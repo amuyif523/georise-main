@@ -113,6 +113,7 @@ export const shareIncident = async (req: Request, res: Response) => {
       Number(incidentId),
       Number(agencyId),
       reason,
+      req.user,
     );
     return res.json(result);
   } catch (err: any) {

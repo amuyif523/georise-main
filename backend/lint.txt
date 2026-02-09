@@ -1,0 +1,15 @@
+﻿
+> backend@1.0.0 lint
+> eslint .
+
+
+C:\Users\Amanuel\Desktop\georise-main\backend\src\middleware\audit.ts
+  18:37  error  Use the rest parameters instead of 'arguments'                                prefer-rest-params
+  92:14  error  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\Amanuel\Desktop\georise-main\backend\test\audit.test.ts
+  38:37  error  The `Function` type accepts any function-like value.
+Prefer explicitly defining any function parameters and return type  @typescript-eslint/no-unsafe-function-type
+
+Γ£û 3 problems (3 errors, 0 warnings)
+

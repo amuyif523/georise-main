@@ -1,0 +1,45 @@
+﻿
+> frontend@0.0.0 lint
+> eslint .
+
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\coverage\lcov-report\block-navigation.js
+  1:1  warning  Unused eslint-disable directive (no problems were reported)
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\coverage\lcov-report\prettify.js
+  1:1  warning  Unused eslint-disable directive (no problems were reported)
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\coverage\lcov-report\sorter.js
+  1:1  warning  Unused eslint-disable directive (no problems were reported)
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\features\reporting\hooks\useReportDraft.ts
+  32:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  42:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unused-vars')
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\offline\incidentQueue.ts
+  56:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  59:9  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\pages\AgencyAnalyticsPage.tsx
+  109:6  warning  React Hook useEffect has a missing dependency: 'rangeParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\pages\CitizenDashboard.tsx
+  83:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\pages\MyReportsPage.tsx
+  1:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\pages\admin\AgenciesPage.tsx
+  140:6  warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\pages\admin\AnalyticsPage.tsx
+  128:6  warning  React Hook useEffect has a missing dependency: 'rangeParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  144:6  warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array              react-hooks/exhaustive-deps
+  158:6  warning  React Hook useMemo has a missing dependency: 't'. Either include it or remove the dependency array              react-hooks/exhaustive-deps
+
+C:\Users\Amanuel\Desktop\georise-main\frontend\src\test\LoginRegister.test.tsx
+  55:11  error  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 15 problems (2 errors, 13 warnings)
+  0 errors and 8 warnings potentially fixable with the `--fix` option.
+

@@ -36,9 +36,9 @@ export function useLocationTracker() {
     };
 
     watchId.current = navigator.geolocation.watchPosition(success, error, {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 10000,
+      enableHighAccuracy: false, // Better for desktop
+      maximumAge: 10000,
+      timeout: 30000, // 30s timeout
     });
 
     return () => {

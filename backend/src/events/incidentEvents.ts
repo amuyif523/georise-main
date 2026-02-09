@@ -53,3 +53,10 @@ export const emitIncidentUpdated = (incident: IncidentPayload) => {
   }
   io.to('role:ADMIN').emit('incident:updated', incident);
 };
+
+export const emitPendingIncidentToAgencies = (incident: IncidentPayload) => {
+  const io = getIO();
+  // Broadcast to all agency staff so they can see and claim the unassigned/pending incident
+  io.to('role:AGENCY_STAFF').emit('incident:created', incident);
+  io.to('role:ADMIN').emit('incident:created', incident);
+};

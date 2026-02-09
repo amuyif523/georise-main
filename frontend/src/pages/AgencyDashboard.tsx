@@ -171,7 +171,12 @@ const AgencyDashboard: React.FC = () => {
                 <div key={i.id} className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{i.title}</p>
-                    <span className="badge badge-sm">{i.status}</span>
+                    <div className="flex gap-2">
+                      {i.sharedWith && i.sharedWith.length > 0 && (
+                        <span className="badge badge-sm badge-info">Collaborative</span>
+                      )}
+                      <span className="badge badge-sm">{i.status}</span>
+                    </div>
                   </div>
                   <p className="text-xs text-slate-300">
                     Severity: {i.severityScore ?? '?'} • {new Date(i.createdAt).toLocaleString()}

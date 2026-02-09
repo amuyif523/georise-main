@@ -13,6 +13,7 @@ import gisRoutes from './modules/gis/gis.routes';
 import verificationRoutes from './modules/verification/verification.routes';
 import responderRoutes from './modules/responders/responder.routes';
 import dispatchRoutes from './modules/dispatch/dispatch.routes';
+import { auditMiddleware } from './middleware/audit'; // Import audit middleware
 import demoRoutes from './modules/demo/demo.routes';
 import userRoutes from './modules/user/user.routes';
 import systemRoutes from './modules/system/system.routes';
@@ -27,6 +28,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:4173',
   process.env.CLIENT_ORIGIN,
 ].filter(Boolean) as string[];
 
@@ -94,8 +96,8 @@ app.get('/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/incidents', incidentRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/incidents', auditMiddleware, incidentRoutes);
+app.use('/api/admin', auditMiddleware, adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/gis', gisRoutes);
 app.use('/api/verification', verificationRoutes);

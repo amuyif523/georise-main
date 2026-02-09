@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -7,6 +8,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -33,7 +35,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Responder Login</h1>
+          <h1 className="text-2xl font-bold text-white">{t('common.login')}</h1>
           <p className="text-slate-400 text-sm mt-2">
             Enter your credentials to access the dispatch system.
           </p>
@@ -47,7 +49,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              {t('common.email')}
+            </label>
             <input
               type="email"
               value={email}
@@ -59,7 +63,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              {t('common.password')}
+            </label>
             <input
               type="password"
               value={password}
@@ -78,10 +84,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Authenticating...
+                {t('common.loading')}
               </span>
             ) : (
-              'Sign In'
+              t('common.login')
             )}
           </button>
         </form>

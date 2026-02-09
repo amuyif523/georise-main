@@ -91,7 +91,7 @@ router.get(
 );
 
 router.post(
-  '/:incidentId/share',
+  '/:incidentId/collaborate',
   requireAuth,
   requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
   shareIncident,
@@ -280,6 +280,8 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
       subCityId: true,
       reviewStatus: true,
       createdAt: true,
+      assignedAgencyId: true,
+      sharedWith: { select: { agencyId: true } },
     };
 
     if (req.user?.role === Role.ADMIN) {

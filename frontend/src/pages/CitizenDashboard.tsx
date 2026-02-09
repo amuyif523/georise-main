@@ -80,7 +80,7 @@ const CitizenDashboard: React.FC = () => {
               <p className="text-xs font-bold text-base-content">{user?.fullName}</p>
               <p className="text-[10px] text-base-content/60 uppercase">Citizen Responder</p>
             </div>
-            <TrustBadge trustScore={(user as any)?.trustScore ?? 0} />
+            <TrustBadge trustScore={user?.trustScore ?? 0} />
           </div>
         </div>
       </div>
