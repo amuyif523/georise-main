@@ -32,7 +32,7 @@ describe('auditMiddleware', () => {
       ip: '127.0.0.1',
       user: { id: 1, role: 'ADMIN' } as any,
       socket: { remoteAddress: '127.0.0.1' } as any,
-    };
+    } as any;
 
     // Mock response with event emitter capability
     const callbacks: Record<string, (...args: any[]) => void> = {};
@@ -55,7 +55,6 @@ describe('auditMiddleware', () => {
     next = vi.fn();
 
     // Get the mock instance
-    // @ts-expect-error: mocking prisma client constructor
     mockPrisma = new PrismaClient();
   });
 

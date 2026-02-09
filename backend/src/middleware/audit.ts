@@ -36,7 +36,6 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
         query: req.query,
       };
 
-      // @ts-expect-error: Fields exist in schema but client not generated due to DB issue
       await prisma.auditLog.create({
         data: {
           actorId: req.user.id,
@@ -46,7 +45,7 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
           payload: payload as any, // Json
           ipAddress: req.ip || req.socket.remoteAddress,
           note: `Status: ${res.statusCode}`,
-        },
+        } as any,
       });
     } catch (error) {
       console.error('Audit Log Error:', error);
