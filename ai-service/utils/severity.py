@@ -16,6 +16,7 @@ def infer_severity(base_label: str, text: str) -> int:
         "dead",
         "death",
         "killed",
+        "died",
         "ሞት",
         "ተገደለ",
         "ሞተ",
