@@ -18,13 +18,28 @@ vi.mock('../context/SystemContext', () => ({
   useSystem: () => ({ crisisMode: false }),
 }));
 
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 1, name: 'Test User' },
+  }),
+}));
+
 describe('ReportIncidentWizard', () => {
   beforeEach(() => {
     apiGetMock.mockReset();
     apiPostMock.mockReset();
   });
 
-  it('validates required fields before continuing', async () => {
+  // Mock LocationStep to avoid Leaflet issues
+  vi.mock('../features/reporting/steps/LocationStep', () => ({
+    LocationStep: ({ onNext }: { onNext: () => void }) => (
+      <div>
+        <button onClick={onNext}>Confirm Location</button>
+      </div>
+    ),
+  }));
+
+  it('validates required fields in Details step', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -32,11 +47,20 @@ describe('ReportIncidentWizard', () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole('button', { name: /continue to location/i }));
-    expect(screen.getByText(/please provide a title and description/i)).toBeInTheDocument();
+    // Step 1: Category
+    await user.click(screen.getByRole('button', { name: /fire emergency/i }));
+
+    // Step 2: Location (Mocked)
+    await user.click(await screen.findByRole('button', { name: /confirm location/i }));
+
+    // Step 3: Details - Attempt to continue without filling fields
+    const reviewButtons1 = await screen.findAllByRole('button', { name: /review/i });
+    await user.click(reviewButtons1[0]);
+
+    expect(screen.getByText(/title must be at least 5 characters/i)).toBeInTheDocument();
   });
 
-  it('advances to location step when description is present', async () => {
+  it('advances to review step when details are provided', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -44,13 +68,21 @@ describe('ReportIncidentWizard', () => {
       </MemoryRouter>,
     );
 
-    const [titleInput, descriptionInput] = screen.getAllByRole('textbox');
+    // Step 1: Category
+    await user.click(screen.getByRole('button', { name: /fire emergency/i }));
+
+    // Step 2: Location (Mocked)
+    await user.click(await screen.findByRole('button', { name: /confirm location/i }));
+
+    // Step 3: Details
+    const [titleInput, descriptionInput] = await screen.findAllByRole('textbox');
     await user.type(titleInput, 'Fire report');
     await user.type(descriptionInput, 'Smoke seen nearby.');
-    const [continueButton] = screen.getAllByRole('button', { name: /continue to location/i });
-    await user.click(continueButton);
 
-    expect(screen.getByText('incident.location')).toBeInTheDocument();
-    expect(screen.getByTestId('map')).toBeInTheDocument();
+    const reviewButtons2 = await screen.findAllByRole('button', { name: /review/i });
+    await user.click(reviewButtons2[0]);
+
+    // Step 4: Review
+    expect(await screen.findByText(/confirm transmission/i, {}, { timeout: 3000 })).toBeInTheDocument();
   });
 });

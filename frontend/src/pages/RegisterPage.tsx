@@ -127,14 +127,16 @@ const RegisterPage: React.FC = () => {
               animate="visible"
               onSubmit={handleSubmit}
               className="space-y-4"
+              data-testid="register-form"
             >
               <motion.div variants={itemVariants} className="form-control">
-                <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label htmlFor="fullName" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
                   Full Name
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <User className="w-5 h-5 text-base-content/40" />
                   <input
+                    id="fullName"
                     type="text"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                     placeholder="Abebe Bikila"
@@ -147,12 +149,13 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label htmlFor="email" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
                   Email Address
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Mail className="w-5 h-5 text-base-content/40" />
                   <input
+                    id="email"
                     type="email"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                     placeholder="name@georise.com"
@@ -164,12 +167,13 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label htmlFor="phone" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
                   Phone (Optional)
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Smartphone className="w-5 h-5 text-base-content/40" />
                   <input
+                    id="phone"
                     type="tel"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                     placeholder="+251..."
@@ -180,12 +184,13 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label htmlFor="password" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
                   Password
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Lock className="w-5 h-5 text-base-content/40" />
                   <input
+                    id="password"
                     type={showPassword ? 'text' : 'password'}
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
                     placeholder="Create a strong password"

@@ -62,7 +62,7 @@ describe('Login/Register flows', () => {
     fireEvent.submit(form);
 
     await vi.waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith('citizen1@example.com', 'password123');
+      expect(loginMock).toHaveBeenCalledWith('citizen@georise.com', 'password123');
     });
   });
 
@@ -79,7 +79,7 @@ describe('Login/Register flows', () => {
     await user.type(screen.getByLabelText(/phone/i), '+251911000111');
     await user.type(screen.getByLabelText(/password/i), 'password123');
 
-    await user.click(screen.getByRole('button', { name: /sign up/i }));
+    await user.click(screen.getByRole('button', { name: /authorize protocol/i }));
 
     const form = screen.getByTestId('register-form');
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
