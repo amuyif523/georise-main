@@ -40,10 +40,10 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
           action,
           targetType,
           targetId: targetId ? Number(targetId) : null,
-          payload: payload as any, // Json
+          payload: payload as any, // Prisma Json compatibility
           ipAddress: req.ip || req.socket.remoteAddress,
           note: `Status: ${res.statusCode}`,
-        } as any,
+        },
       });
     } catch (error) {
       console.error('Audit Log Error:', error);
