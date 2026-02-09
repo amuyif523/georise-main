@@ -1,0 +1,21 @@
+﻿.\venv\Scripts\python : C:
+\Users\Amanuel\Desktop\geo
+rise-main\ai-service\venv\
+Scripts\python.exe: No 
+module named pytest
+At line:1 char:1
++ .\venv\Scripts\python 
+-m pytest tests/test_prepr
+ocessing.py 2>&1 | Ou ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (C  
+  :\Users\Amanue...le n   
+ amed pytest:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 

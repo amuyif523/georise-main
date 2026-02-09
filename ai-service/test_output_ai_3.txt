@@ -1,0 +1,9 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Amanuel\Desktop\georise-main\ai-service
+plugins: anyio-4.12.0
+collected 5 items
+
+tests\test_preprocessing.py .....                                        [100%]
+
+======================== 5 passed in 73.10s (0:01:13) =========================

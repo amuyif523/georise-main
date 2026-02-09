@@ -1,0 +1,275 @@
+﻿
+> backend@1.0.0 test
+> dotenv -e .env.test -- vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/backend[39m
+
+[90mstdout[2m | test/gis.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+
+{"level":30,"time":1770639013728,"pid":8992,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639013757,"pid":8992,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/gis.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/audit.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+
+{"level":30,"time":1770639017520,"pid":19268,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639017688,"pid":19268,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+node.exe : Sourcemap for "
+C:/Users/Amanuel/Desktop/g
+eorise-main/node_modules/n
+ode-cron/dist/esm/node-cro
+n.js" points to missing 
+source files
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (S  
+  ourcemap for "...ng s   
+ ource files:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+ [31mΓ¥»[39m test/audit.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[33m 2933[2mms[22m[39m
+[31m   [31m├ù[31m auditMiddleware[2m > [22mshould skip non-state-changing methods[90m 10[2mms[22m[31m[39m
+[31m     ΓåÆ default.$executeRawUnsafe is not a function[39m
+[31m   [31m├ù[31m auditMiddleware[2m > [22mshould log valid POST request[90m 1[2mms[22m[31m[39m
+[31m     ΓåÆ default.$executeRawUnsafe is not a function[39m
+[31m   [31m├ù[31m auditMiddleware[2m > [22mshould capture resource ID from route params for PUT/PATCH[90m 1[2mms[22m[31m[39m
+[31m     ΓåÆ default.$executeRawUnsafe is not a function[39m
+[31m   [31m├ù[31m auditMiddleware[2m > [22mshould not log if status >= 400[90m 1[2mms[22m[31m[39m
+[31m     ΓåÆ default.$executeRawUnsafe is not a function[39m
+[90mstdout[2m | test/adminCrud.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+
+{"level":30,"time":1770639021148,"pid":23944,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639021366,"pid":23944,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/adminCrud.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/userRbac.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+
+{"level":30,"time":1770639024541,"pid":19488,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639024570,"pid":19488,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/userRbac.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/incident.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+
+{"level":30,"time":1770639028064,"pid":20748,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639028096,"pid":20748,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/incident.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/auth.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+
+{"level":30,"time":1770639031497,"pid":26272,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639031679,"pid":26272,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/passwordReset.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+
+{"level":30,"time":1770639034868,"pid":23736,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639034897,"pid":23736,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/passwordReset.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/adminMetrics.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+{"level":30,"time":1770639038326,"pid":20132,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639038358,"pid":20132,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/adminMetrics.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/dispatch.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+
+{"level":30,"time":1770639041726,"pid":13388,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770639041752,"pid":13388,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+ [31mΓ¥»[39m test/dispatch.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1
+m[7m Failed Suites 8 [27
+m[22mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m [ 
+test/adminCrud.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Metrics.test.ts[2m [ 
+test/adminMetrics.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/auth.test.ts[2m [ 
+test/auth.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/dispatch.test.ts[2m 
+[ test/dispatch.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m [ 
+test/gis.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/incident.test.ts[2m 
+[ test/incident.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test/passw
+ordReset.test.ts[2m [ tes
+t/passwordReset.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/userRbac.test.ts[2m 
+[ test/userRbac.test.ts 
+][22m
+[31m[1mPrismaClientIniti
+alizationError[22m: 
+`PrismaClient` needs to 
+be constructed with a 
+non-empty, valid 
+`PrismaClientOptions`:
+
+```
+new PrismaClient({
+  ...
+})
+```
+
+or
+
+```
+constructor() {
+  super({ ... });
+}
+```
+          [39m
+[90m [2mΓ¥»[22m new t n
+ode_modules/@prisma/client
+/src/runtime/getPrismaClie
+nt.ts:[2m259:15[22m[39m
+[36m [2mΓ¥»[22m src/mid
+dleware/audit.ts:[2m4:16
+[22m[39m
+    [90m  2| 
+[39m[35mimport[39m { 
+[33mPrismaClient[39m } 
+[35mfrom[39m [32m'@pris
+ma/client'[39m[33m;[39m
+    [90m  3| [39m
+    [90m  4| 
+[39m[35mconst[39m 
+prisma [33m=[39m 
+[35mnew[39m [33mPrismaC
+lient[39m()[33m;[39m
+    [90m   | [39m       
+        [31m^[39m
+    [90m  5| [39m
+    [90m  6| 
+[39m[35mexport[39m 
+[35mconst[39m 
+auditMiddleware 
+[33m=[39m 
+(req[33m:[39m [33mReque
+st[39m[33m,[39m 
+res[33m:[39m [33mRespon
+se[39m[33m,[39m 
+next[33m:[39m 
+[33mNex[39mΓÇª
+[90m [2mΓ¥»[22m src/app
+.ts:[2m16:32[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+[1/12]ΓÄ»[22m[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+[1m[7m Failed Tests 4 [
+27m[22mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/audit.test.ts[2m > 
+[22mauditMiddleware[2m 
+> [22mshould skip 
+non-state-changing methods
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/audit.test.ts[2m > 
+[22mauditMiddleware[2m 
+> [22mshould log valid 
+POST request
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/audit.test.ts[2m > 
+[22mauditMiddleware[2m 
+> [22mshould capture 
+resource ID from route 
+params for PUT/PATCH
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/audit.test.ts[2m > 
+[22mauditMiddleware[2m 
+> [22mshould not log if 
+status >= 400
+[31m[1mTypeError[22m: 
+default.$executeRawUnsafe 
+is not a function[39m
+[36m [2mΓ¥»[22m 
+resetDatabase test/utils/d
+b.ts:[2m28:16[22m[39m
+    [90m 26| 
+[39m[35mexport[39m 
+[35mconst[39m 
+resetDatabase [33m=[39m 
+[35masync[39m () 
+[33m=>[39m {
+    [90m 27| [39m  
+[35mconst[39m quoted 
+[33m=[39m [33mTABLES[3
+9m[33m.[39m[34mmap[39m
+((t) [33m=>[39m [32m`"
+[39m[36m${[39mt[36m}[3
+9m[32m"`[39m)[33m.[39m
+[34mjoin[39m([32m', 
+'[39m)[33m;[39m
+    [90m 28| [39m  
+[35mawait[39m prisma[33
+m.[39m[34m$executeRawUns
+afe[39m([32m`TRUNCATE 
+TABLE [39m[36m${[39mquo
+ted[36m}[39m[32m 
+RESTART IDE[39mΓÇª
+    [90m   | [39m       
+        [31m^[39m
+    [90m 29| [39m  
+[35mawait[39m redis[33m
+.[39m[34mflushall[39m()
+[33m;[39m
+    [90m 30| 
+[39m}[33m;[39m
+[90m [2mΓ¥»[22m test/se
+tup.ts:[2m43:11[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+[2/12]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m9 failed[39m[22m[90m (9)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[90m (4)[39m
+[2m   Start at [22m 15:10:10
+[2m   Duration [22m 32.03s[2m (transform 1.16s, setup 529ms, collect 126ms, tests 2.93s, environment 6ms, prepare 2.31s)[22m
+

@@ -1,0 +1,14 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Amanuel\Desktop\georise-main\ai-service\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Amanuel\Desktop\georise-main\ai-service
+plugins: anyio-4.12.0
+collecting ... collected 5 items
+
+tests/test_preprocessing.py::test_heuristic_category_fire PASSED         [ 20%]
+tests/test_preprocessing.py::test_heuristic_category_medical PASSED      [ 40%]
+tests/test_preprocessing.py::test_heuristic_category_negation PASSED     [ 60%]
+tests/test_preprocessing.py::test_heuristic_category_amharic_fire PASSED [ 80%]
+tests/test_preprocessing.py::test_heuristic_category_amharic_negation PASSED [100%]
+
+============================= 5 passed in 16.22s ==============================

@@ -4,13 +4,24 @@ import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 
 // Mock Prisma
-vi.mock('@prisma/client', () => {
+vi.mock('@prisma/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@prisma/client')>();
   const mockCreate = vi.fn();
   return {
+    ...actual,
     PrismaClient: vi.fn(() => ({
+      $extends: vi.fn(() => ({
+        auditLog: {
+          create: mockCreate,
+        },
+        $disconnect: vi.fn(),
+        $executeRawUnsafe: vi.fn(),
+      })),
       auditLog: {
         create: mockCreate,
       },
+      $disconnect: vi.fn(),
+      $executeRawUnsafe: vi.fn(),
     })),
   };
 });

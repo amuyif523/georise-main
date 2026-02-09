@@ -1,0 +1,286 @@
+﻿
+> backend@1.0.0 test
+> dotenv -e .env.test -- vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/backend[39m
+
+[90mstdout[2m | test/gis.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+
+{"level":50,"time":1770638057999,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638058073,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638058185,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638058337,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638058578,"pid":26028,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638058581,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638058582,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638058836,"pid":26028,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/gis.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/audit.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+
+ [31mΓ¥»[39m test/audit.test.ts [2m([22m[2m4 tests[22m[2m | [22m[33m4 skipped[39m[2m)[22m[90m 90[2mms[22m[39m
+[90mstdout[2m | test/adminCrud.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+{"level":50,"time":1770638059938,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638059991,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638060101,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638060366,"pid":17704,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638060370,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638060371,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638060583,"pid":17704,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/adminCrud.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/userRbac.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+
+{"level":50,"time":1770638061134,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638061192,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638061308,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638061575,"pid":16792,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638061579,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638061579,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/userRbac.test.ts [2m([22m[2m0 test[22m[2m)[22m
+{"level":50,"time":1770638061788,"pid":16792,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+[90mstdout[2m | test/incident.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+
+{"level":50,"time":1770638062351,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638062406,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638062537,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638062747,"pid":25500,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638062750,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638062751,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/incident.test.ts [2m([22m[2m0 test[22m[2m)[22m
+{"level":50,"time":1770638062966,"pid":25500,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+[90mstdout[2m | test/auth.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+{"level":50,"time":1770638063502,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638063573,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638063675,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638063928,"pid":15092,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638063931,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638063931,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m
+{"level":50,"time":1770638064141,"pid":15092,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+[90mstdout[2m | test/passwordReset.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+
+{"level":50,"time":1770638064693,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638064748,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638064852,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638065022,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638065170,"pid":11744,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638065174,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638065240,"pid":11744,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/passwordReset.test.ts [2m([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | test/adminMetrics.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+
+{"level":50,"time":1770638066012,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638066068,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638066187,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638066453,"pid":26340,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638066457,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638066457,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/adminMetrics.test.ts [2m([22m[2m0 test[22m[2m)[22m
+{"level":50,"time":1770638066671,"pid":26340,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+[90mstdout[2m | test/dispatch.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+
+{"level":50,"time":1770638067197,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638067270,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770638067372,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":30,"time":1770638067546,"pid":25552,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+{"level":50,"time":1770638067550,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Incident Queue error"}
+{"level":50,"time":1770638067550,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+ [31mΓ¥»[39m test/dispatch.test.ts [2m([22m[2m0 test[22m[2m)[22m
+{"level":50,"time":1770638067762,"pid":25552,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+
+node.exe : [31mΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1m[
+7m Failed Suites 9 
+[27m[22mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»[39m
+At C:\Program Files\
+nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : 
+NotSpecified: (    
+[31mΓÄ»ΓÄ»ΓÄ»Γ...»ΓÄ
+»    
+ΓÄ»ΓÄ»[39m:String) 
+[    ], 
+RemoteException
+    + 
+FullyQualifiedError 
+   Id : 
+NativeCommandErr    
+or
+ 
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/adminCrud.test.ts[
+2m [ test/adminCrud.
+test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/adminMetrics.test.t
+s[2m [ test/adminMe
+trics.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/auth.test.ts[2m [ 
+test/auth.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/dispatch.test.ts[2
+m [ test/dispatch.te
+st.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/gis.test.ts[2m [ 
+test/gis.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/incident.test.ts[2
+m [ test/incident.te
+st.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/passwordReset.test.
+ts[2m [ test/passwo
+rdReset.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/userRbac.test.ts[2
+m [ test/userRbac.te
+st.ts ][22m
+[31m[1mPrismaClien
+tInitializationError
+[22m: 
+`PrismaClient` 
+needs to be 
+constructed with a 
+non-empty, valid `Pr
+ismaClientOptions`:
+
+```
+new PrismaClient({
+  ...
+})
+```
+
+or
+
+```
+constructor() {
+  super({ ... });
+}
+```
+          [39m
+[90m [2mΓ¥»[22m 
+new t node_modules/@
+prisma/client/src/ru
+ntime/getPrismaClien
+t.ts:[2m259:15[22m
+[39m
+[36m [2mΓ¥»[22m s
+rc/middleware/audit.
+ts:[2m4:16[22m[39
+m
+    [90m  2| [39m
+[35mimport[39m { [
+33mPrismaClient[39m
+ } [35mfrom[39m [
+32m'@prisma/client'
+[39m[33m;[39m
+    [90m  3| [39m
+    [90m  4| [39m
+[35mconst[39m 
+prisma [33m=[39m 
+[35mnew[39m [33mP
+rismaClient[39m()[
+33m;[39m
+    [90m   | [39m 
+              
+[31m^[39m
+    [90m  5| [39m
+    [90m  6| [39m
+[35mexport[39m 
+[35mconst[39m 
+auditMiddleware 
+[33m=[39m 
+(req[33m:[39m [33
+mRequest[39m[33m,
+[39m res[33m:[39m 
+[33mResponse[39m[
+33m,[39m 
+next[33m:[39m 
+[33mNex[39mΓÇª
+[90m [2mΓ¥»[22m s
+rc/app.ts:[2m16:32
+[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/9]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/audit.test.ts[2m 
+[ 
+test/audit.test.ts 
+][22m
+[31m[1mTypeError[
+22m: 
+basePrisma.$extends 
+is not a 
+function[39m
+[36m [2mΓ¥»[22m s
+rc/prisma.ts:[2m15:
+27[22m[39m
+    [90m 13| 
+[39m})[33m;[39m
+    [90m 14| [39m
+    [90m 15| [39m
+[35mconst[39m 
+prisma [33m=[39m b
+asePrisma[33m.[39m
+[34m$extends[39m({
+    [90m   | [39m 
+                    
+     [31m^[39m
+    [90m 16| [39m 
+ query[33m:[39m {
+    [90m 17| [39m 
+   $allModels[33m:
+[39m {
+[90m [2mΓ¥»[22m t
+est/utils/db.ts:[2m
+1:1[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/9]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m9 failed[39m[22m[90m (9)[39m
+[2m      Tests [22m [33m4 skipped[39m[90m (4)[39m
+[2m   Start at [22m 14:54:17
+[2m   Duration [22m 10.33s[2m (transform 429ms, setup 171ms, collect 28ms, tests 90ms, environment 2ms, prepare 756ms)[22m
+

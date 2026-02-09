@@ -1,0 +1,116 @@
+﻿
+> backend@1.0.0 test
+> dotenv -e .env.test -- vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/backend[39m
+
+ [31mΓ¥»[39m test/gis.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/audit.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/adminCrud.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/userRbac.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/incident.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/auth.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/passwordReset.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/adminMetrics.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mΓ¥»[39m test/dispatch.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+node.exe : [31mΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»[1m[7m Failed 
+Suites 9 [27m[22mΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (  
+  [31mΓÄ»ΓÄ»ΓÄ»Γ...»ΓÄ»   
+ ΓÄ»ΓÄ»[39m:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m [ 
+test/adminCrud.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Metrics.test.ts[2m [ 
+test/adminMetrics.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/audit.test.ts[2m [ 
+test/audit.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/auth.test.ts[2m [ 
+test/auth.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/dispatch.test.ts[2m 
+[ test/dispatch.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m [ 
+test/gis.test.ts ][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/incident.test.ts[2m 
+[ test/incident.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m test/passw
+ordReset.test.ts[2m [ tes
+t/passwordReset.test.ts 
+][22m
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/userRbac.test.ts[2m 
+[ test/userRbac.test.ts 
+][22m
+[31m[1mReferenceError[2
+2m: vi is not defined[39m
+[36m [2mΓ¥»[22m test/se
+tup.ts:[2m2:1[22m[39m
+    [90m  1| 
+[39m[35mimport[39m 
+path [35mfrom[39m [32m'
+path'[39m[33m;[39m
+    [90m  2| 
+[39m[35mimport[39m 
+http [35mfrom[39m [32m'
+http'[39m[33m;[39m
+    [90m   | 
+[39m[31m^[39m
+    [90m  3| 
+[39m[35mimport[39m 
+dotenv [35mfrom[39m [32
+m'dotenv'[39m[33m;[39m
+    [90m  4| 
+[39m[35mimport[39m { 
+beforeAll[33m,[39m 
+afterAll[33m,[39m 
+beforeEach } 
+[35mfrom[39m [32m'vites
+t'[39m[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»[1/9]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m9 failed[39m[22m[90m (9)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 15:03:22
+[2m   Duration [22m 6.47s[2m (transform 122ms, setup 0ms, collect 0ms, tests 0ms, environment 5ms, prepare 2.59s)[22m
+

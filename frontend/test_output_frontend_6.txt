@@ -1,0 +1,1172 @@
+﻿
+> frontend@0.0.0 test
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/frontend[39m
+
+ [32mΓ£ô[39m src/test/ForgotReset.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[90m 137[2mms[22m[39m
+ [32mΓ£ô[39m src/test/AdminReviewQueue.test.tsx [2m([22m[2m1 test[22m[2m)[22m[90m 182[2mms[22m[39m
+ [32mΓ£ô[39m src/test/LoginRegister.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1181[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m Login/Register flows[2m > [22msubmits registration payload [33m1112[2mms[22m[39m
+ [31mΓ¥»[39m src/test/ReportIncidentWizard.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1840[2mms[22m[39m
+   [33m[2mΓ£ô[22m[39m ReportIncidentWizard[2m > [22mvalidates required fields in Details step [33m680[2mms[22m[39m
+[31m   [31m├ù[31m ReportIncidentWizard[2m > [22madvances to review step when details are provided[33m 1159[2mms[22m[31m[39m
+[31m     ΓåÆ Unable to find an element with the text: /review report/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"fixed inset-0 bg-base-300 z-[9999] overflow-y-auto"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-base-300/80 backdrop-blur"[31m
+      [36m>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-circle btn-ghost"[31m
+        [36m>[31m
+          [36m<svg[31m
+            [33mclass[31m=[32m"lucide lucide-x"[31m
+            [33mfill[31m=[32m"none"[31m
+            [33mheight[31m=[32m"24"[31m
+            [33mstroke[31m=[32m"currentColor"[31m
+            [33mstroke-linecap[31m=[32m"round"[31m
+            [33mstroke-linejoin[31m=[32m"round"[31m
+            [33mstroke-width[31m=[32m"2"[31m
+            [33mviewBox[31m=[32m"0 0 24 24"[31m
+            [33mwidth[31m=[32m"24"[31m
+            [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+          [36m>[31m
+            [36m<path[31m
+              [33md[31m=[32m"M18 6 6 18"[31m
+            [36m/>[31m
+            [36m<path[31m
+              [33md[31m=[32m"m6 6 12 12"[31m
+            [36m/>[31m
+          [36m</svg>[31m
+        [36m</button>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex gap-2"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-10"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"min-h-screen flex items-center justify-center p-4 pt-20"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-full max-w-lg mx-auto"[31m
+          [33mstyle[31m=[32m"opacity: 1; transform: none;"[31m
+        [36m>[31m
+          [36m<h2[31m
+            [33mclass[31m=[32m"text-2xl font-bold mb-6"[31m
+          [36m>[31m
+            [0mIncident Intel[0m
+          [36m</h2>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"space-y-4"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"form-control"[31m
+            [36m>[31m
+              [36m<label[31m
+                [33mclass[31m=[32m"label font-bold"[31m
+              [36m>[31m
+                [0mBrief Title[0m
+              [36m</label>[31m
+              [36m<input[31m
+                [33mclass[31m=[32m"input input-bordered h-14 bg-base-200"[31m
+                [33mplaceholder[31m=[32m"e.g. Broken hydrants causing flood"[31m
+                [33mvalue[31m=[32m"Fire report"[31m
+              [36m/>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"form-control"[31m
+            [36m>[31m
+              [36m<label[31m
+                [33mclass[31m=[32m"label font-bold"[31m
+              [36m>[31m
+                [0mSituation Report[0m
+              [36m</label>[31m
+              [36m<textarea[31m
+                [33mclass[31m=[32m"textarea textarea-bordered h-32 bg-base-200 text-base"[31m
+                [33mplaceholder[31m=[32m"Describe what you see..."[31m
+              [36m>[31m
+                [0mSmoke seen nearby.[0m
+              [36m</textarea>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"p-4 bg-base-200 rounded-lg flex items-center justify-between"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"flex items-center gap-3"[31m
+              [36m>[31m
+                [36m<svg[31m
+                  [33mclass[31m=[32m"lucide lucide-camera w-5 h-5 opacity-60"[31m
+                  [33mfill[31m=[32m"none"[31m
+                  [33mheight[31m=[32m"24"[31m
+                  [33mstroke[31m=[32m"currentColor"[31m
+                  [33mstroke-linecap[31m=[32m"round"[31m
+                  [33mstroke-linejoin[31m=[32m"round"[31m
+                  [33mstroke-width[31m=[32m"2"[31m
+                  [33mviewBox[31m=[32m"0 0 24 24"[31m
+                  [33mwidth[31m=[32m"24"[31m
+                  [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+                [36m>[31m
+                  [36m<path[31m
+                    [33md[31m=[32m"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"[31m
+                  [36m/>[31m
+                  [36m<circle[31m
+                    [33mcx[31m=[32m"12"[31m
+                    [33mcy[31m=[32m"13"[31m
+                    [33mr[31m=[32m"3"[31m
+                  [36m/>[31m
+                [36m</svg>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"text-sm opacity-80"[31m
+                [36m>[31m
+                  [0mAttach Evidence[0m
+                [36m</span>[31m
+              [36m</div>[31m
+              [36m<input[31m
+                [33maccept[31m=[32m"image/*"[31m
+                [33mclass[31m=[32m"file-input file-input-sm file-input-ghost w-full max-w-xs"[31m
+                [33mtype[31m=[32m"file"[31m
+              [36m/>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"flex justify-between mt-8"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-ghost"[31m
+            [36m>[31m
+              [0mBack[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-primary px-8"[31m
+            [36m>[31m
+              [0mReview [0m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-arrow-right w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M5 12h14"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m12 5 7 7-7 7"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"fixed inset-0 bg-base-300 z-[9999] overflow-y-auto"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-base-300/80 backdrop-blur"[31m
+      [36m>[31m
+        [36m<button[31m
+          [33mclass[31m=[32m"btn btn-circle btn-ghost"[31m
+        [36m>[31m
+          [36m<svg[31m
+            [33mclass[31m=[32m"lucide lucide-x"[31m
+            [33mfill[31m=[32m"none"[31m
+            [33mheight[31m=[32m"24"[31m
+            [33mstroke[31m=[32m"currentColor"[31m
+            [33mstroke-linecap[31m=[32m"round"[31m
+            [33mstroke-linejoin[31m=[32m"round"[31m
+            [33mstroke-width[31m=[32m"2"[31m
+            [33mviewBox[31m=[32m"0 0 24 24"[31m
+            [33mwidth[31m=[32m"24"[31m
+            [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+          [36m>[31m
+            [36m<path[31m
+              [33md[31m=[32m"M18 6 6 18"[31m
+            [36m/>[31m
+            [36m<path[31m
+              [33md[31m=[32m"m6 6 12 12"[31m
+            [36m/>[31m
+          [36m</svg>[31m
+        [36m</button>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"flex gap-2"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-primary"[31m
+          [36m/>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"h-1 w-8 rounded-full transition-colors bg-base-content/10"[31m
+          [36m/>[31m
+        [36m</div>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-10"[31m
+        [36m/>[31m
+      [36m</div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"min-h-screen flex items-center justify-center p-4 pt-20"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-full max-w-lg mx-auto"[31m
+          [33mstyle[31m=[32m"opacity: 1; transform: none;"[31m
+        [36m>[31m
+          [36m<h2[31m
+            [33mclass[31m=[32m"text-2xl font-bold mb-6"[31m
+          [36m>[31m
+            [0mIncident Intel[0m
+          [36m</h2>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"space-y-4"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"form-control"[31m
+            [36m>[31m
+              [36m<label[31m
+                [33mclass[31m=[32m"label font-bold"[31m
+              [36m>[31m
+                [0mBrief Title[0m
+              [36m</label>[31m
+              [36m<input[31m
+                [33mclass[31m=[32m"input input-bordered h-14 bg-base-200"[31m
+                [33mplaceholder[31m=[32m"e.g. Broken hydrants causing flood"[31m
+                [33mvalue[31m=[32m""[31m
+              [36m/>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"form-control"[31m
+            [36m>[31m
+              [36m<label[31m
+                [33mclass[31m=[32m"label font-bold"[31m
+              [36m>[31m
+                [0mSituation Report[0m
+              [36m</label>[31m
+              [36m<textarea[31m
+                [33mclass[31m=[32m"textarea textarea-bordered h-32 bg-base-200 text-base"[31m
+                [33mplaceholder[31m=[32m"Describe what you see..."[31m
+              [36m/>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"p-4 bg-base-200 rounded-lg flex items-center justify-between"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"flex items-center gap-3"[31m
+              [36m>[31m
+                [36m<svg[31m
+                  [33mclass[31m=[32m"lucide lucide-camera w-5 h-5 opacity-60"[31m
+                  [33mfill[31m=[32m"none"[31m
+                  [33mheight[31m=[32m"24"[31m
+                  [33mstroke[31m=[32m"currentColor"[31m
+                  [33mstroke-linecap[31m=[32m"round"[31m
+                  [33mstroke-linejoin[31m=[32m"round"[31m
+                  [33mstroke-width[31m=[32m"2"[31m
+                  [33mviewBox[31m=[32m"0 0 24 24"[31m
+                  [33mwidth[31m=[32m"24"[31m
+                  [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+                [36m>[31m
+                  [36m<path[31m
+                    [33md[31m=[32m"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"[31m
+                  [36m/>[31m
+                  [36m<circle[31m
+                    [33mcx[31m=[32m"12"[31m
+                    [33mcy[31m=[32m"13"[31m
+                    [33mr[31m=[32m"3"[31m
+                  [36m/>[31m
+                [36m</svg>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"text-sm opacity-80"[31m
+                [36m>[31m
+                  [0mAttach Evidence[0m
+                [36m</span>[31m
+              [36m</div>[31m
+              [36m<input[31m
+                [33maccept[31m=[32m"image/*"[31m
+                [33mclass[31m=[32m"file-input file-input-sm file-input-ghost w-full max-w-xs"[31m
+                [33mtype[31m=[32m"file"[31m
+              [36m/>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"flex justify-between mt-8"[31m
+          [36m>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-ghost"[31m
+            [36m>[31m
+              [0mBack[0m
+            [36m</button>[31m
+            [36m<button[31m
+              [33mclass[31m=[32m"btn btn-primary px-8"[31m
+            [36m>[31m
+              [0mReview [0m
+              [36m<svg[31m
+                [33mclass[31m=[32m"lucide lucide-arrow-right w-4 h-4"[31m
+                [33mfill[31m=[32m"none"[31m
+                [33mheight[31m=[32m"24"[31m
+                [33mstroke[31m=[32m"currentColor"[31m
+                [33mstroke-linecap[31m=[32m"round"[31m
+                [33mstroke-linejoin[31m=[32m"round"[31m
+                [33mstroke-width[31m=[32m"2"[31m
+                [33mviewBox[31m=[32m"0 0 24 24"[31m
+                [33mwidth[31m=[32m"24"[31m
+                [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+              [36m>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"M5 12h14"[31m
+                [36m/>[31m
+                [36m<path[31m
+                  [33md[31m=[32m"m12 5 7 7-7 7"[31m
+                [36m/>[31m
+              [36m</svg>[31m
+            [36m</button>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+
+node.exe : [31mΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»[1m[7m 
+Failed Tests 1 [27m[22mΓ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (  
+  [31mΓÄ»ΓÄ»ΓÄ»Γ...»ΓÄ»   
+ ΓÄ»ΓÄ»[39m:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+[31m[1m[7m FAIL 
+[27m[22m[39m src/test/R
+eportIncidentWizard.test.t
+sx[2m > [22mReportIncide
+ntWizard[2m > 
+[22madvances to review 
+step when details are 
+provided
+[31m[1mTestingLibraryEle
+mentError[22m[39m: 
+Unable to find an element 
+with the text: /review 
+report/i. This could be 
+because the text is 
+broken up by multiple 
+elements. In this case, 
+you can provide a 
+function for your text 
+matcher to make your 
+matcher more flexible.
+
+Ignored nodes: comments, 
+script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32
+m"fixed inset-0 
+bg-base-300 z-[9999] 
+overflow-y-auto"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[
+32m"absolute top-0 left-0 
+right-0 p-4 flex 
+justify-between 
+items-center z-50 
+bg-base-300/80 
+backdrop-blur"[39m
+      [36m>[39m
+        [36m<button[39m
+          
+[33mclass[39m=[32m"btn 
+btn-circle btn-ghost"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39
+m=[32m"lucide 
+lucide-x"[39m
+            [33mfill[39m
+=[32m"none"[39m
+            [33mheight[3
+9m=[32m"24"[39m
+            [33mstroke[3
+9m=[32m"currentColor"[39
+m
+            [33mstroke-li
+necap[39m=[32m"round"[3
+9m
+            [33mstroke-li
+nejoin[39m=[32m"round"[
+39m
+            [33mstroke-wi
+dth[39m=[32m"2"[39m
+            
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+            [33mwidth[39
+m=[32m"24"[39m
+            [33mxmlns[39
+m=[32m"http://www.w3.org/
+2000/svg"[39m
+          [36m>[39m
+            
+[36m<path[39m
+              
+[33md[39m=[32m"M18 6 6 
+18"[39m
+            [36m/>[39m
+            
+[36m<path[39m
+              
+[33md[39m=[32m"m6 6 12 
+12"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+        
+[36m</button>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"w-10"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[
+32m"min-h-screen flex 
+items-center 
+justify-center p-4 
+pt-20"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"w-full max-w-lg 
+mx-auto"[39m
+          [33mstyle[39m=
+[32m"opacity: 1; 
+transform: none;"[39m
+        [36m>[39m
+          [36m<h2[39m
+            [33mclass[39
+m=[32m"text-2xl 
+font-bold mb-6"[39m
+          [36m>[39m
+            [0mIncident 
+Intel[0m
+          [36m</h2>[39m
+          [36m<div[39m
+            [33mclass[39
+m=[32m"space-y-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[
+39m=[32m"form-control"[3
+9m
+            [36m>[39m
+              
+[36m<label[39m
+                [33mclass
+[39m=[32m"label 
+font-bold"[39m
+              [36m>[39m
+                [0mBrief 
+Title[0m
+              
+[36m</label>[39m
+              
+[36m<input[39m
+                [33mclass
+[39m=[32m"input 
+input-bordered h-14 
+bg-base-200"[39m
+                [33mplace
+holder[39m=[32m"e.g. 
+Broken hydrants causing 
+flood"[39m
+                [33mvalue
+[39m=[32m"Fire 
+report"[39m
+              [36m/>[39m
+            
+[36m</div>[39m
+            [36m<div[39m
+              [33mclass[
+39m=[32m"form-control"[3
+9m
+            [36m>[39m
+              
+[36m<label[39m
+                [33mclass
+[39m=[32m"label 
+font-bold"[39m
+              [36m>[39m
+                
+[0mSituation Report[0m
+              
+[36m</label>[39m
+              
+[36m<textarea[39m
+                [33mclass
+[39m=[32m"textarea 
+textarea-bordered h-32 
+bg-base-200 
+text-base"[39m
+                [33mplace
+holder[39m=[32m"Describe
+ what you see..."[39m
+              [36m>[39m
+                [0mSmoke 
+seen nearby.[0m
+              
+[36m</textarea>[39m
+            
+[36m</div>[39m
+            [36m<div[39m
+              
+[33mclass[39m=[32m"p-4 
+bg-base-200 rounded-lg 
+flex items-center 
+justify-between"[39m
+            [36m>[39m
+              
+[36m<div[39m
+                [33mclass
+[39m=[32m"flex 
+items-center gap-3"[39m
+              [36m>[39m
+                
+[36m<svg[39m
+                  [33mcla
+ss[39m=[32m"lucide 
+lucide-camera w-5 h-5 
+opacity-60"[39m
+                  [33mfil
+l[39m=[32m"none"[39m
+                  [33mhei
+ght[39m=[32m"24"[39m
+                  [33mstr
+oke[39m=[32m"currentColo
+r"[39m
+                  [33mstr
+oke-linecap[39m=[32m"rou
+nd"[39m
+                  [33mstr
+oke-linejoin[39m=[32m"ro
+und"[39m
+                  [33mstr
+oke-width[39m=[32m"2"[3
+9m
+                  
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+                  [33mwid
+th[39m=[32m"24"[39m
+                  [33mxml
+ns[39m=[32m"http://www.w
+3.org/2000/svg"[39m
+                
+[36m>[39m
+                  
+[36m<path[39m
+                    
+[33md[39m=[32m"M14.5 
+4h-5L7 7H4a2 2 0 0 0-2 
+2v9a2 2 0 0 0 2 2h16a2 2 
+0 0 0 2-2V9a2 2 0 0 
+0-2-2h-3l-2.5-3z"[39m
+                  
+[36m/>[39m
+                  
+[36m<circle[39m
+                    [33mc
+x[39m=[32m"12"[39m
+                    [33mc
+y[39m=[32m"13"[39m
+                    
+[33mr[39m=[32m"3"[39m
+                  
+[36m/>[39m
+                
+[36m</svg>[39m
+                
+[36m<span[39m
+                  [33mcla
+ss[39m=[32m"text-sm 
+opacity-80"[39m
+                
+[36m>[39m
+                  
+[0mAttach Evidence[0m
+                
+[36m</span>[39m
+              
+[36m</div>[39m
+              
+[36m<input[39m
+                [33maccep
+t[39m=[32m"image/*"[39m
+                [33mclass
+[39m=[32m"file-input 
+file-input-sm 
+file-input-ghost w-full 
+max-w-xs"[39m
+                [33mtype
+[39m=[32m"file"[39m
+              [36m/>[39m
+            
+[36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39
+m=[32m"flex 
+justify-between mt-8"[39m
+          [36m>[39m
+            
+[36m<button[39m
+              
+[33mclass[39m=[32m"btn 
+btn-ghost"[39m
+            [36m>[39m
+              [0mBack[0m
+            
+[36m</button>[39m
+            
+[36m<button[39m
+              
+[33mclass[39m=[32m"btn 
+btn-primary px-8"[39m
+            [36m>[39m
+              [0mReview 
+[0m
+              
+[36m<svg[39m
+                [33mclass
+[39m=[32m"lucide 
+lucide-arrow-right w-4 
+h-4"[39m
+                [33mfill
+[39m=[32m"none"[39m
+                [33mheigh
+t[39m=[32m"24"[39m
+                [33mstrok
+e[39m=[32m"currentColor"
+[39m
+                [33mstrok
+e-linecap[39m=[32m"round
+"[39m
+                [33mstrok
+e-linejoin[39m=[32m"roun
+d"[39m
+                [33mstrok
+e-width[39m=[32m"2"[39m
+                
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+                [33mwidth
+[39m=[32m"24"[39m
+                [33mxmlns
+[39m=[32m"http://www.w3.
+org/2000/svg"[39m
+              [36m>[39m
+                
+[36m<path[39m
+                  
+[33md[39m=[32m"M5 
+12h14"[39m
+                
+[36m/>[39m
+                
+[36m<path[39m
+                  
+[33md[39m=[32m"m12 5 7 
+7-7 7"[39m
+                
+[36m/>[39m
+              
+[36m</svg>[39m
+            
+[36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32
+m"fixed inset-0 
+bg-base-300 z-[9999] 
+overflow-y-auto"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[
+32m"absolute top-0 left-0 
+right-0 p-4 flex 
+justify-between 
+items-center z-50 
+bg-base-300/80 
+backdrop-blur"[39m
+      [36m>[39m
+        [36m<button[39m
+          
+[33mclass[39m=[32m"btn 
+btn-circle btn-ghost"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39
+m=[32m"lucide 
+lucide-x"[39m
+            [33mfill[39m
+=[32m"none"[39m
+            [33mheight[3
+9m=[32m"24"[39m
+            [33mstroke[3
+9m=[32m"currentColor"[39
+m
+            [33mstroke-li
+necap[39m=[32m"round"[3
+9m
+            [33mstroke-li
+nejoin[39m=[32m"round"[
+39m
+            [33mstroke-wi
+dth[39m=[32m"2"[39m
+            
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+            [33mwidth[39
+m=[32m"24"[39m
+            [33mxmlns[39
+m=[32m"http://www.w3.org/
+2000/svg"[39m
+          [36m>[39m
+            
+[36m<path[39m
+              
+[33md[39m=[32m"M18 6 6 
+18"[39m
+            [36m/>[39m
+            
+[36m<path[39m
+              
+[33md[39m=[32m"m6 6 12 
+12"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+        
+[36m</button>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-primary"[39m
+          [36m/>[39m
+          [36m<div[39m
+            
+[33mclass[39m=[32m"h-1 
+w-8 rounded-full 
+transition-colors 
+bg-base-content/10"[39m
+          [36m/>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"w-10"[39m
+        [36m/>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[
+32m"min-h-screen flex 
+items-center 
+justify-center p-4 
+pt-20"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=
+[32m"w-full max-w-lg 
+mx-auto"[39m
+          [33mstyle[39m=
+[32m"opacity: 1; 
+transform: none;"[39m
+        [36m>[39m
+          [36m<h2[39m
+            [33mclass[39
+m=[32m"text-2xl 
+font-bold mb-6"[39m
+          [36m>[39m
+            [0mIncident 
+Intel[0m
+          [36m</h2>[39m
+          [36m<div[39m
+            [33mclass[39
+m=[32m"space-y-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[
+39m=[32m"form-control"[3
+9m
+            [36m>[39m
+              
+[36m<label[39m
+                [33mclass
+[39m=[32m"label 
+font-bold"[39m
+              [36m>[39m
+                [0mBrief 
+Title[0m
+              
+[36m</label>[39m
+              
+[36m<input[39m
+                [33mclass
+[39m=[32m"input 
+input-bordered h-14 
+bg-base-200"[39m
+                [33mplace
+holder[39m=[32m"e.g. 
+Broken hydrants causing 
+flood"[39m
+                [33mvalue
+[39m=[32m""[39m
+              [36m/>[39m
+            
+[36m</div>[39m
+            [36m<div[39m
+              [33mclass[
+39m=[32m"form-control"[3
+9m
+            [36m>[39m
+              
+[36m<label[39m
+                [33mclass
+[39m=[32m"label 
+font-bold"[39m
+              [36m>[39m
+                
+[0mSituation Report[0m
+              
+[36m</label>[39m
+              
+[36m<textarea[39m
+                [33mclass
+[39m=[32m"textarea 
+textarea-bordered h-32 
+bg-base-200 
+text-base"[39m
+                [33mplace
+holder[39m=[32m"Describe
+ what you see..."[39m
+              [36m/>[39m
+            
+[36m</div>[39m
+            [36m<div[39m
+              
+[33mclass[39m=[32m"p-4 
+bg-base-200 rounded-lg 
+flex items-center 
+justify-between"[39m
+            [36m>[39m
+              
+[36m<div[39m
+                [33mclass
+[39m=[32m"flex 
+items-center gap-3"[39m
+              [36m>[39m
+                
+[36m<svg[39m
+                  [33mcla
+ss[39m=[32m"lucide 
+lucide-camera w-5 h-5 
+opacity-60"[39m
+                  [33mfil
+l[39m=[32m"none"[39m
+                  [33mhei
+ght[39m=[32m"24"[39m
+                  [33mstr
+oke[39m=[32m"currentColo
+r"[39m
+                  [33mstr
+oke-linecap[39m=[32m"rou
+nd"[39m
+                  [33mstr
+oke-linejoin[39m=[32m"ro
+und"[39m
+                  [33mstr
+oke-width[39m=[32m"2"[3
+9m
+                  
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+                  [33mwid
+th[39m=[32m"24"[39m
+                  [33mxml
+ns[39m=[32m"http://www.w
+3.org/2000/svg"[39m
+                
+[36m>[39m
+                  
+[36m<path[39m
+                    
+[33md[39m=[32m"M14.5 
+4h-5L7 7H4a2 2 0 0 0-2 
+2v9a2 2 0 0 0 2 2h16a2 2 
+0 0 0 2-2V9a2 2 0 0 
+0-2-2h-3l-2.5-3z"[39m
+                  
+[36m/>[39m
+                  
+[36m<circle[39m
+                    [33mc
+x[39m=[32m"12"[39m
+                    [33mc
+y[39m=[32m"13"[39m
+                    
+[33mr[39m=[32m"3"[39m
+                  
+[36m/>[39m
+                
+[36m</svg>[39m
+                
+[36m<span[39m
+                  [33mcla
+ss[39m=[32m"text-sm 
+opacity-80"[39m
+                
+[36m>[39m
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 15:39:39
+[2m   Duration [22m 3.51s[2m (transform 221ms, setup 440ms, collect 1.42s, tests 3.34s, environment 2.05s, prepare 496ms)[22m
+
+                  
+[0mAttach Evidence[0m
+                
+[36m</span>[39m
+              
+[36m</div>[39m
+              
+[36m<input[39m
+                [33maccep
+t[39m=[32m"image/*"[39m
+                [33mclass
+[39m=[32m"file-input 
+file-input-sm 
+file-input-ghost w-full 
+max-w-xs"[39m
+                [33mtype
+[39m=[32m"file"[39m
+              [36m/>[39m
+            
+[36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39
+m=[32m"flex 
+justify-between mt-8"[39m
+          [36m>[39m
+            
+[36m<button[39m
+              
+[33mclass[39m=[32m"btn 
+btn-ghost"[39m
+            [36m>[39m
+              [0mBack[0m
+            
+[36m</button>[39m
+            
+[36m<button[39m
+              
+[33mclass[39m=[32m"btn 
+btn-primary px-8"[39m
+            [36m>[39m
+              [0mReview 
+[0m
+              
+[36m<svg[39m
+                [33mclass
+[39m=[32m"lucide 
+lucide-arrow-right w-4 
+h-4"[39m
+                [33mfill
+[39m=[32m"none"[39m
+                [33mheigh
+t[39m=[32m"24"[39m
+                [33mstrok
+e[39m=[32m"currentColor"
+[39m
+                [33mstrok
+e-linecap[39m=[32m"round
+"[39m
+                [33mstrok
+e-linejoin[39m=[32m"roun
+d"[39m
+                [33mstrok
+e-width[39m=[32m"2"[39m
+                
+[33mviewBox[39m=[32m"0 
+0 24 24"[39m
+                [33mwidth
+[39m=[32m"24"[39m
+                [33mxmlns
+[39m=[32m"http://www.w3.
+org/2000/svg"[39m
+              [36m>[39m
+                
+[36m<path[39m
+                  
+[33md[39m=[32m"M5 
+12h14"[39m
+                
+[36m/>[39m
+                
+[36m<path[39m
+                  
+[33md[39m=[32m"m12 5 7 
+7-7 7"[39m
+                
+[36m/>[39m
+              
+[36m</svg>[39m
+            
+[36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+[90m [2mΓ¥»[22m 
+Object.getElementError nod
+e_modules/@testing-library
+/dom/dist/config.js:[2m37
+:19[22m[39m
+[90m [2mΓ¥»[22m node_mo
+dules/@testing-library/dom
+/dist/query-helpers.js:[2
+m76:38[22m[39m
+[90m [2mΓ¥»[22m node_mo
+dules/@testing-library/dom
+/dist/query-helpers.js:[2
+m52:17[22m[39m
+[90m [2mΓ¥»[22m node_mo
+dules/@testing-library/dom
+/dist/query-helpers.js:[2
+m95:19[22m[39m
+[36m [2mΓ¥»[22m src/tes
+t/ReportIncidentWizard.tes
+t.tsx:[2m86:19[22m[39m
+    [90m 84| [39m
+    [90m 85| [39m    
+[90m// Step 4: 
+Review[39m
+    [90m 86| [39m    [3
+4mexpect[39m(screen[33m.
+[39m[34mgetByText[39m(
+[36m/review report/i[39m)
+)[33m.[39m[34mtoBeInThe
+Document[39m()[33m;[39m
+    [90m   | [39m       
+           [31m^[39m
+    [90m 87| [39m  
+})[33m;[39m
+    [90m 88| 
+[39m})[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»[1/1]ΓÄ»[22m[39m
+

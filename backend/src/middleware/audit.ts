@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../prisma';
 
 export const auditMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Only audit state-changing methods
