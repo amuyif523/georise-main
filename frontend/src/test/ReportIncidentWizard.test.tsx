@@ -83,6 +83,8 @@ describe('ReportIncidentWizard', () => {
     await user.click(reviewButtons2[0]);
 
     // Step 4: Review
-    expect(await screen.findByText(/confirm transmission/i, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/confirm transmission/i, {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
   });
 });

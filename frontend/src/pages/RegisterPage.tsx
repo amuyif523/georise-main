@@ -130,7 +130,10 @@ const RegisterPage: React.FC = () => {
               data-testid="register-form"
             >
               <motion.div variants={itemVariants} className="form-control">
-                <label htmlFor="fullName" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label
+                  htmlFor="fullName"
+                  className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
+                >
                   Full Name
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
@@ -149,7 +152,10 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label htmlFor="email" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label
+                  htmlFor="email"
+                  className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
+                >
                   Email Address
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
@@ -167,7 +173,10 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label htmlFor="phone" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label
+                  htmlFor="phone"
+                  className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
+                >
                   Phone (Optional)
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
@@ -184,7 +193,10 @@ const RegisterPage: React.FC = () => {
               </motion.div>
 
               <motion.div variants={itemVariants} className="form-control">
-                <label htmlFor="password" className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1">
+                <label
+                  htmlFor="password"
+                  className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
+                >
                   Password
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
