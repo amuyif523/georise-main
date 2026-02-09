@@ -1,9 +1,21 @@
 {
-  "*.{ts,tsx,js,jsx}": [
-    "eslint --fix",
+  "backend/**/*.{ts,tsx,js,jsx}": [
+    "cd backend && npx eslint --fix",
+    "prettier --write"
+  ],
+  "frontend/**/*.{ts,tsx,js,jsx}": [
+    "cd frontend && npx eslint --fix",
+    "prettier --write"
+  ],
+  "responder-app/**/*.{ts,tsx,js,jsx}": [
+    "cd responder-app && npx eslint --fix",
     "prettier --write"
   ],
   "*.{json,md,css,scss,html,yaml,yml}": [
     "prettier --write"
+  ],
+  "*.py": [
+    "ai-service/venv/Scripts/ruff check --fix",
+    "ai-service/venv/Scripts/ruff format"
   ]
 }
