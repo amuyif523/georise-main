@@ -1,0 +1,39 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Amanuel\Desktop\georise-main\ai-service
+plugins: anyio-4.12.0
+collected 10 items
+
+tests\test_logic.py ....F.....                                           [100%]
+
+================================== FAILURES ===================================
+___________ test_infer_severity[MEDICAL-Person died in accident-5] ____________
+
+label = 'MEDICAL', text = 'Person died in accident', expected = 5
+
+    @pytest.mark.parametrize("label,text,expected", [
+        ("FIRE", "This is a fire", 3),  # Base score for FIRE is 3
+        ("CRIME", "Theft reported", 2), # Base score for CRIME is 2
+        ("MEDICAL", "Injury reported", 4), # Base 3 + Medium keyword "injury" (+1) = 4? No, "injury" is medium.
+        # checking logic:
+        # BASE: FIRE=3, CRIME=2, MEDICAL=3
+        # HIGH (+2): dead, death, killed, explosion, bomb...
+        # MEDIUM (+1): injured, injury, burn, serious...
+    
+        # Cases:
+        ("FIRE", "Huge explosion caused fire", 5), # 3 + 2 = 5
+        ("MEDICAL", "Person died in accident", 5), # 3 + 2 = 5
+        ("TRAFFIC", "Car crash, minor injury", 4), # 3 + 1 = 4
+        ("OTHER", "Lost cat", 2), # 2
+        ("CRIME", "Stolen bike", 2), # 2
+        ("CRIME", "Armed robbery, serious threat", 3), # 2 + 1 (serious) = 3
+    ])
+    def test_infer_severity(label, text, expected):
+>       assert infer_severity(label, text) == expected
+E       AssertionError: assert 3 == 5
+E        +  where 3 = infer_severity('MEDICAL', 'Person died in accident')
+
+tests\test_logic.py:22: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_logic.py::test_infer_severity[MEDICAL-Person died in accident-5]
+========================= 1 failed, 9 passed in 0.05s =========================

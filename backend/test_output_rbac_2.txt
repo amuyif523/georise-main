@@ -1,0 +1,182 @@
+﻿
+> backend@1.0.0 test
+> dotenv -e .env.test -- vitest run test/userRbac.test.ts
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/backend[39m
+
+[90mstdout[2m | test/userRbac.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+{"level":30,"time":1770649671682,"pid":9388,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+node.exe : 
+Sourcemap for "C:/Us
+ers/Amanuel/Desktop/
+georise-main/node_mo
+dules/node-cron/dist
+/esm/node-cron.js" 
+points to missing 
+source files
+At C:\Program Files\
+nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : 
+NotSpecified: (S    
+ourcemap for "...ng 
+s    ource 
+files:String) [    
+], RemoteException
+    + 
+FullyQualifiedError 
+   Id : 
+NativeCommandErr    
+or
+ 
+{"level":50,"time":1770649672283,"pid":9388,"hostname":"DESKTOP-3P240QT","err":{"type":"Error","message":"Invalid credentials","stack":"Error: Invalid credentials\n    at AuthService.login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.service.ts:170:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.controller.ts:18:20)"},"msg":"Login error"}
+{"level":50,"time":1770649672311,"pid":9388,"hostname":"DESKTOP-3P240QT","err":{"type":"Error","message":"Invalid credentials","stack":"Error: Invalid credentials\n    at AuthService.login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.service.ts:170:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.controller.ts:18:20)"},"msg":"Login error"}
+{"level":50,"time":1770649672458,"pid":9388,"hostname":"DESKTOP-3P240QT","err":{"type":"Error","message":"Invalid credentials","stack":"Error: Invalid credentials\n    at AuthService.login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.service.ts:170:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at login (C:\\Users\\Amanuel\\Desktop\\georise-main\\backend\\src\\modules\\auth\\auth.controller.ts:18:20)"},"msg":"Login error"}
+ [31mΓ¥»[39m test/userRbac.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 350[2mms[22m[39m
+[31m   [31m├ù[31m User RBAC and deactivation[2m > [22mblocks login and refresh for deactivated users[90m 208[2mms[22m[31m[39m
+[31m     ΓåÆ expected 401 to be 200 // Object.is equality[39m
+[31m   [31m├ù[31m User RBAC and deactivation[2m > [22mprevents agency staff from mutating users in other agencies[90m 133[2mms[22m[31m[39m
+[31m     ΓåÆ expected 401 to be 200 // Object.is equality[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»[1m[7m 
+Failed Tests 2 [27m
+[22mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/userRbac.test.ts[2
+m > [22mUser RBAC 
+and 
+deactivation[2m > 
+[22mblocks login 
+and refresh for 
+deactivated users
+[31m[1mAssertionEr
+ror[22m: expected 
+401 to be 200 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 401[39m
+
+[36m [2mΓ¥»[22m t
+est/userRbac.test.ts
+:[2m64:32[22m[39m
+    [90m 62| [39m 
+   })[33m;[39m
+    [90m 63| [39m 
+   [35mconst[39m 
+activeLogin 
+[33m=[39m 
+[35mawait[39m [34
+mrequest[39m(app)[
+33m.[39m[34mpost[
+39m([32m'/api/auth/
+login'[39m)[33m.[
+39m[34msen[39mΓÇª
+    [90m 64| [39m 
+   [34mexpect[39m(
+activeLogin[33m.[3
+9mstatus)[33m.[39m
+[34mtoBe[39m([34m
+200[39m)[33m;[39m
+    [90m   | [39m 
+                    
+          
+[31m^[39m
+    [90m 65| [39m 
+   [35mconst[39m 
+refreshToken 
+[33m=[39m activeLo
+gin[33m.[39mbody[
+33m.[39mrefreshToke
+n [35mas[39m 
+string[33m;[39m
+    [90m 66| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[1/2]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test
+/userRbac.test.ts[2
+m > [22mUser RBAC 
+and 
+deactivation[2m > 
+[22mprevents 
+agency staff from 
+mutating users in 
+other agencies
+[31m[1mAssertionEr
+ror[22m: expected 
+401 to be 200 // 
+Object.is 
+equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 401[39m
+
+[36m [2mΓ¥»[22m t
+est/userRbac.test.ts
+:[2m93:27[22m[39m
+    [90m 91| [39m 
+     [33m.[39m[34
+mpost[39m([32m'/ap
+i/auth/login'[39m)
+    [90m 92| [39m 
+     [33m.[39m[34
+msend[39m({ 
+email[33m:[39m sta
+ffAEmail[33m,[39m 
+password[33m:[39m 
+[32m'password123'[
+39m })[33m;[39m
+    [90m 93| [39m 
+   [34mexpect[39m(
+loginA[33m.[39msta
+tus)[33m.[39m[34m
+toBe[39m([34m200[
+39m)[33m;[39m
+    [90m   | [39m 
+                    
+     [31m^[39m
+    [90m 94| [39m 
+   [35mconst[39m 
+tokenA [33m=[39m l
+oginA[33m.[39mbody
+[33m.[39mtoken 
+[35mas[39m 
+string[33m;[39m
+    [90m 95| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[2/2]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m   Start at [22m 18:07:49
+[2m   Duration [22m 2.76s[2m (transform 603ms, setup 112ms, collect 1.83s, tests 350ms, environment 0ms, prepare 166ms)[22m
+

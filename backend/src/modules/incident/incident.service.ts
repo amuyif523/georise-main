@@ -310,62 +310,7 @@ export class IncidentService {
     return true;
   }
 
-  async shareIncident(incidentId: number, agencyId: number, reason: string, user?: any) {
-    // Validation: Ensure requesting user belongs to the assigned agency
-    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
-    if (!incident) throw new Error('Incident not found');
 
-    if (user && user.role !== 'ADMIN') {
-      // Assuming user.agencyId is available (it should be for AGENCY_STAFF)
-      // We need to fetch staff details if not in user object, but typically req.user has it if using proper auth middleware
-      // The express.d.ts says req.user has agencyId?.
-      if (incident.assignedAgencyId !== user.agencyId) {
-        throw new Error('Forbidden: You can only share incidents assigned to your agency.');
-      }
-    }
-
-    const existing = await prisma.sharedIncident.findUnique({
-      where: {
-        incidentId_agencyId: { incidentId, agencyId },
-      },
-    });
-
-    if (existing) return existing;
-
-    const shared = await prisma.sharedIncident.create({
-      data: {
-        incidentId,
-        agencyId,
-        reason,
-      },
-      include: { agency: true },
-    });
-
-    await logActivity(
-      incidentId,
-      'SYSTEM',
-      `Incident shared with ${shared.agency.name}: ${reason}`,
-    );
-
-    // Emit update to the target agency
-    const updatedIncident = await prisma.incident.findUnique({ where: { id: incidentId } });
-    if (updatedIncident) {
-      const payload = toIncidentPayload(updatedIncident);
-      emitIncidentUpdated(payload);
-      getIO().to(`agency:${agencyId}`).emit('incident:shared', payload);
-
-      const { notificationService } = await import('../notifications/notification.service');
-      // Notify all admins/staff of that agency (simplification: emit is enough for now, but service call is better)
-      await notificationService.send({
-        agencyId,
-        title: 'Incident Shared',
-        message: `Incident #${incidentId} has been shared with your agency: ${reason}`,
-        type: 'IN_APP',
-      });
-    }
-
-    return shared;
-  }
 
   async getIncidentChat(incidentId: number) {
     return prisma.incidentChat.findMany({
@@ -425,6 +370,62 @@ export class IncidentService {
       where: { incidentId },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async shareIncident(
+    incidentId: number,
+    targetAgencyId: number,
+    sharedByUserId: number,
+    reason?: string,
+    note?: string,
+  ) {
+    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (!incident) throw new Error('Incident not found');
+
+    const agency = await prisma.agency.findUnique({ where: { id: targetAgencyId } });
+    if (!agency) throw new Error('Target agency not found');
+
+    // Check if already shared
+    const existing = await prisma.sharedIncident.findUnique({
+      where: {
+        incidentId_agencyId: {
+          incidentId,
+          agencyId: targetAgencyId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new Error('Incident already shared with this agency');
+    }
+
+    const shared = await prisma.sharedIncident.create({
+      data: {
+        incidentId,
+        agencyId: targetAgencyId,
+        reason,
+      },
+    });
+
+    // Log activity
+    await logActivity(
+      incidentId,
+      'SYSTEM', // or ASSIGNMENT?
+      `Incident shared with ${agency.name}. Reason: ${reason || 'No reason provided'}`,
+      sharedByUserId,
+    );
+
+    // Audit log (state change) is handled by middleware if calls controller, but internal service calls might need explicit audit?
+    // The controller calls this, so middleware catches the route. But specific "shared" audit might be good.
+    // However, middleware handles generic audit.
+
+    // Emit event
+    const payload = toIncidentPayload(incident);
+    // We need to import emitIncidentShared. It was added in incidentEvents.ts
+    const { emitIncidentShared } = await import('../../events/incidentEvents');
+    emitIncidentShared(payload, targetAgencyId);
+
+    return shared;
   }
 }
 

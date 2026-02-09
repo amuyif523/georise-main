@@ -1,0 +1,99 @@
+﻿node.exe : 
+At C:\Program Files\
+nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (:Str   
+ ing) [], Remote    
+Exception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+Oops! Something 
+went wrong! :(
+
+ESLint: 10.0.0
+
+TypeError: scopeMana
+ger.addGlobals is 
+not a function
+    at 
+addDeclaredGlobals (
+C:\Users\Amanuel\App
+Data\Local\npm-cache
+\_npx\515228b7c8d004
+a2\node_modules\esli
+nt\lib\languages\js\
+source-code\source-c
+ode.js:221:15)
+    at 
+SourceCode.finalize 
+(C:\Users\Amanuel\Ap
+pData\Local\npm-cach
+e\_npx\515228b7c8d00
+4a2\node_modules\esl
+int\lib\languages\js
+\source-code\source-
+code.js:1090:3)
+    at #flatVerifyWi
+thoutProcessors (C:\
+Users\Amanuel\AppDat
+a\Local\npm-cache\_n
+px\515228b7c8d004a2\
+node_modules\eslint\
+lib\linter\linter.js
+:1245:24)
+    at Linter._verif
+yWithFlatConfigArray
+AndWithoutProcessors
+ (C:\Users\Amanuel\A
+ppData\Local\npm-cac
+he\_npx\515228b7c8d0
+04a2\node_modules\es
+lint\lib\linter\lint
+er.js:1333:43)
+    at Linter._verif
+yWithFlatConfigArray
+ (C:\Users\Amanuel\A
+ppData\Local\npm-cac
+he\_npx\515228b7c8d0
+04a2\node_modules\es
+lint\lib\linter\lint
+er.js:1400:15)
+    at 
+Linter.verify (C:\Us
+ers\Amanuel\AppData\
+Local\npm-cache\_npx
+\515228b7c8d004a2\no
+de_modules\eslint\li
+b\linter\linter.js:8
+61:9)
+    at 
+Linter.verifyAndFix 
+(C:\Users\Amanuel\Ap
+pData\Local\npm-cach
+e\_npx\515228b7c8d00
+4a2\node_modules\esl
+int\lib\linter\linte
+r.js:1518:20)
+    at verifyText (C
+:\Users\Amanuel\AppD
+ata\Local\npm-cache\
+_npx\515228b7c8d004a
+2\node_modules\eslin
+t\lib\eslint\eslint-
+helpers.js:1179:45)
+    at 
+readAndVerifyFile (C
+:\Users\Amanuel\AppD
+ata\Local\npm-cache\
+_npx\515228b7c8d004a
+2\node_modules\eslin
+t\lib\eslint\eslint-
+helpers.js:1320:10)

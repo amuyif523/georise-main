@@ -245,8 +245,8 @@ router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async
     const createdAtFilter =
       hours && Number(hours)
         ? {
-            gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
-          }
+          gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
+        }
         : undefined;
     if (createdAtFilter) {
       conditions.createdAt = createdAtFilter;
@@ -363,10 +363,9 @@ router.get(
             ${radiusNum}
           )
           AND (
-            ${
-              req.user?.role === Role.ADMIN
-                ? 'TRUE'
-                : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
+            ${req.user?.role === Role.ADMIN
+          ? 'TRUE'
+          : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
               SELECT 1 FROM "AgencyJurisdiction" aj
               JOIN "SubCity" s ON aj."boundaryId" = s.id AND aj."boundaryType"='SUBCITY'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
@@ -375,7 +374,7 @@ router.get(
               JOIN "Woreda" w ON aj."boundaryId" = w.id AND aj."boundaryType"='WOREDA'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.boundary, i.location)
             )`
-            }
+        }
           )
         ORDER BY "severityScore" DESC NULLS LAST, "createdAt" DESC
       `;
@@ -520,6 +519,13 @@ router.patch(
       res.status(400).json({ message: errorMessage(err, 'Failed to resolve incident') });
     }
   },
+);
+
+router.post(
+  '/:id/collaborate',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  shareIncident,
 );
 
 // Review incidents (admin/agency)

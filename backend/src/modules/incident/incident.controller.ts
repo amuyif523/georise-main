@@ -102,20 +102,21 @@ export const mergeIncidents = async (req: Request, res: Response) => {
 
 export const shareIncident = async (req: Request, res: Response) => {
   try {
-    const { incidentId } = req.params;
-    const { agencyId, reason } = req.body;
+    const { id } = req.params;
+    const { targetAgencyId, reason, note } = req.body;
 
-    if (!agencyId || !reason) {
-      return res.status(400).json({ message: 'agencyId and reason required' });
+    if (!targetAgencyId) {
+      return res.status(400).json({ message: 'Target agency ID is required' });
     }
 
-    const result = await incidentService.shareIncident(
-      Number(incidentId),
-      Number(agencyId),
+    const shared = await incidentService.shareIncident(
+      Number(id),
+      Number(targetAgencyId),
+      req.user!.id,
       reason,
-      req.user,
+      note,
     );
-    return res.json(result);
+    return res.status(200).json(shared);
   } catch (err: any) {
     logger.error({ err }, 'Share incident error');
     return res.status(400).json({ message: 'Failed to share incident' });

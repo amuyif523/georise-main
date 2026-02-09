@@ -1,0 +1,452 @@
+﻿
+> backend@1.0.0 test
+> dotenv -e .env.test -- vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Amanuel/Desktop/georise-main/backend[39m
+
+[90mstdout[2m | test/gis.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+
+{"level":30,"time":1770648768882,"pid":12620,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+node.exe : Sourcemap for "
+C:/Users/Amanuel/Desktop/g
+eorise-main/node_modules/n
+ode-cron/dist/esm/node-cro
+n.js" points to missing 
+source files
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo        
+      : NotS    pecified: 
+(Sour    cemap for "...n  
+  g source files:    
+String) [], Rem    
+oteException
+    + FullyQualifie    
+dErrorId : Nati    
+veCommandError
+ 
+ [31mΓ¥»[39m test/gis.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[90m 80[2mms[22m[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22mrejects unauthenticated access to boundaries[90m 60[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22mrejects citizen access to boundaries[90m 3[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22madmin can fetch boundaries[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22magency staff can fetch incidents with geometry[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22magency staff cannot view other agency incident lists[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22magency staff can only fetch their agency boundary incidents[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m GIS access control and spatial endpoints[2m > [22mduplicate check requires auth[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/audit.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+
+{"level":30,"time":1770648769842,"pid":19700,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [32mΓ£ô[39m test/audit.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 407[2mms[22m[39m
+[90mstdout[2m | test/adminCrud.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+{"level":30,"time":1770648770503,"pid":25780,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/adminCrud.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[90m 64[2mms[22m[39m
+[31m   [31m├ù[31m Admin agency CRUD and constraints[2m > [22mlists agencies with filters and pagination metadata[90m 53[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Admin agency CRUD and constraints[2m > [22mblocks deactivating an agency with active incidents[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Admin agency CRUD and constraints[2m > [22mdeactivates an agency when no active assignments[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Admin user constraints[2m > [22mblocks deactivating a responder who is active/on-scene[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/userRbac.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+
+{"level":30,"time":1770648771226,"pid":3744,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/userRbac.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 62[2mms[22m[39m
+[31m   [31m├ù[31m User RBAC and deactivation[2m > [22mblocks login and refresh for deactivated users[90m 56[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m User RBAC and deactivation[2m > [22mprevents agency staff from mutating users in other agencies[90m 3[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/incident.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+
+{"level":30,"time":1770648771959,"pid":15680,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/incident.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 60[2mms[22m[39m
+[31m   [31m├ù[31m Incident flows[2m > [22mcreates an incident as a citizen[90m 54[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Incident flows[2m > [22mallows admin to review and approve an incident[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/auth.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+
+{"level":30,"time":1770648772663,"pid":5256,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/auth.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 65[2mms[22m[39m
+[31m   [31m├ù[31m Auth flows[2m > [22mlogs in with email and password[90m 57[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Auth flows[2m > [22msupports OTP login[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Auth flows[2m > [22mrotates refresh token[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/passwordReset.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+
+{"level":30,"time":1770648773387,"pid":25416,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/passwordReset.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 60[2mms[22m[39m
+[31m   [31m├ù[31m Password reset flow[2m > [22missues a reset token and allows password update[90m 57[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/adminMetrics.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+
+{"level":30,"time":1770648774098,"pid":5472,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/adminMetrics.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 78[2mms[22m[39m
+[31m   [31m├ù[31m Admin metrics authz[2m > [22mrejects unauthenticated access[90m 68[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Admin metrics authz[2m > [22mrejects non-admin users[90m 3[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[31m   [31m├ù[31m Admin metrics authz[2m > [22mallows admin access[90m 2[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+[90mstdout[2m | test/dispatch.test.ts
+[22m[39m[dotenv@17.2.3] injecting env (0) from .env.test -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+
+{"level":30,"time":1770648774880,"pid":22128,"hostname":"DESKTOP-3P240QT","msg":"Incident AI Queue initialized"}
+ [31mΓ¥»[39m test/dispatch.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 60[2mms[22m[39m
+[31m   [31m├ù[31m Dispatch flows[2m > [22massigns an incident to an agency[90m 57[2mms[22m[31m[39m
+[31m     ΓåÆ 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1
+m[7m Failed Tests 23 [27
+m[22mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»[39m
+
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m > 
+[22mAdmin agency CRUD 
+and constraints[2m > 
+[22mlists agencies with 
+filters and pagination 
+metadata
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m > 
+[22mAdmin agency CRUD 
+and constraints[2m > 
+[22mblocks deactivating 
+an agency with active 
+incidents
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m > 
+[22mAdmin agency CRUD 
+and constraints[2m > 
+[22mdeactivates an 
+agency when no active 
+assignments
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Crud.test.ts[2m > 
+[22mAdmin user 
+constraints[2m > 
+[22mblocks deactivating 
+a responder who is 
+active/on-scene
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Metrics.test.ts[2m > 
+[22mAdmin metrics 
+authz[2m > [22mrejects 
+unauthenticated access
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Metrics.test.ts[2m > 
+[22mAdmin metrics 
+authz[2m > [22mrejects 
+non-admin users
+[31m[1m[7m FAIL 
+[27m[22m[39m test/admin
+Metrics.test.ts[2m > 
+[22mAdmin metrics 
+authz[2m > [22mallows 
+admin access
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/auth.test.ts[2m > 
+[22mAuth flows[2m > 
+[22mlogs in with email 
+and password
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/auth.test.ts[2m > 
+[22mAuth flows[2m > 
+[22msupports OTP login
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/auth.test.ts[2m > 
+[22mAuth flows[2m > 
+[22mrotates refresh token
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/dispatch.test.ts[2m 
+> [22mDispatch flows[2m 
+> [22massigns an 
+incident to an agency
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22mrejects 
+unauthenticated access to 
+boundaries
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22mrejects citizen 
+access to boundaries
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22madmin can fetch 
+boundaries
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22magency staff can 
+fetch incidents with 
+geometry
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22magency staff 
+cannot view other agency 
+incident lists
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22magency staff can 
+only fetch their agency 
+boundary incidents
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/gis.test.ts[2m > 
+[22mGIS access control 
+and spatial endpoints[2m 
+> [22mduplicate check 
+requires auth
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/incident.test.ts[2m 
+> [22mIncident flows[2m 
+> [22mcreates an 
+incident as a citizen
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/incident.test.ts[2m 
+> [22mIncident flows[2m 
+> [22mallows admin to 
+review and approve an 
+incident
+[31m[1m[7m FAIL 
+[27m[22m[39m test/passw
+ordReset.test.ts[2m > 
+[22mPassword reset 
+flow[2m > [22missues a 
+reset token and allows 
+password update
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/userRbac.test.ts[2m 
+> [22mUser RBAC and 
+deactivation[2m > 
+[22mblocks login and 
+refresh for deactivated 
+users
+[31m[1m[7m FAIL 
+[27m[22m[39m 
+test/userRbac.test.ts[2m 
+> [22mUser RBAC and 
+deactivation[2m > 
+[22mprevents agency 
+staff from mutating users 
+in other agencies
+[31m[1mPrismaClientKnown
+RequestError[22m: 
+Invalid `prisma.$executeRa
+wUnsafe()` invocation:
+
+
+[39m
+[90m [2mΓ¥»[22m 
+qr.handleRequestError node
+_modules/@prisma/client/sr
+c/runtime/RequestHandler.t
+s:[2m228:13[22m[39m
+[90m [2mΓ¥»[22m qr.hand
+leAndLogRequestError node_
+modules/@prisma/client/src
+/runtime/RequestHandler.ts
+:[2m174:12[22m[39m
+[90m [2mΓ¥»[22m 
+qr.request node_modules/@p
+risma/client/src/runtime/R
+equestHandler.ts:[2m143:1
+2[22m[39m
+[90m [2mΓ¥»[22m a node_
+modules/@prisma/client/src
+/runtime/getPrismaClient.t
+s:[2m805:24[22m[39m
+[36m [2mΓ¥»[22m 
+resetDatabase test/utils/d
+b.ts:[2m28:3[22m[39m
+    [90m 26| 
+[39m[35mexport[39m 
+[35mconst[39m 
+resetDatabase [33m=[39m 
+[35masync[39m () 
+[33m=>[39m {
+    [90m 27| [39m  
+[35mconst[39m quoted 
+[33m=[39m [33mTABLES[3
+9m[33m.[39m[34mmap[39m
+((t) [33m=>[39m [32m`"
+[39m[36m${[39mt[36m}[3
+9m[32m"`[39m)[33m.[39m
+[34mjoin[39m([32m', 
+'[39m)[33m;[39m
+    [90m 28| [39m  
+[35mawait[39m prisma[33
+m.[39m[34m$executeRawUns
+afe[39m([32m`TRUNCATE 
+TABLE [39m[36m${[39mquo
+ted[36m}[39m[32m 
+RESTART IDE[39mΓÇª
+    [90m   | [39m  
+[31m^[39m
+    [90m 29| [39m  
+[35mawait[39m redis[33m
+.[39m[34mflushall[39m()
+[33m;[39m
+    [90m 30| 
+[39m}[33m;[39m
+[90m [2mΓ¥»[22m test/se
+tup.ts:[2m56:5[22m[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+[1/23]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (9)[39m
+[2m      Tests [22m [1m[31m23 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 17:52:47
+[2m   Duration [22m 7.18s[2m (transform 344ms, setup 136ms, collect 4.62s, tests 936ms, environment 1ms, prepare 484ms)[22m
+

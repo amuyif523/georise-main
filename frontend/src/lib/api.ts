@@ -28,4 +28,17 @@ api.interceptors.response.use(
   },
 );
 
+
+
+(api as any).getIncidentChat = (id: number) => api.get(`/incidents/${id}/chat`);
+(api as any).postChatMessage = (id: number, message: string) =>
+  api.post(`/incidents/${id}/chat`, { message });
+(api as any).getAgencies = () => api.get('/agencies'); // Add this line
+(api as any).shareIncident = (
+  id: number,
+  targetAgencyId: number,
+  reason: string,
+  note?: string,
+) => api.post(`/incidents/${id}/collaborate`, { targetAgencyId, reason, note });
+
 export default api;

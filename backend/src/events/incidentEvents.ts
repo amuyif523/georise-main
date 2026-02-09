@@ -60,3 +60,8 @@ export const emitPendingIncidentToAgencies = (incident: IncidentPayload) => {
   io.to('role:AGENCY_STAFF').emit('incident:created', incident);
   io.to('role:ADMIN').emit('incident:created', incident);
 };
+
+export const emitIncidentShared = (incident: IncidentPayload, targetAgencyId: number) => {
+  const io = getIO();
+  io.to(`agency:${targetAgencyId}`).emit('incident:shared', incident);
+};

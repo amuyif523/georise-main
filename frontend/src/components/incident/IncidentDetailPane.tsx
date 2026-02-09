@@ -15,6 +15,7 @@ import { severityBadgeClass, severityLabel } from '../../utils/severity';
 import { useAuth } from '../../context/AuthContext';
 import TrustBadge from '../user/TrustBadge';
 import { getSocket } from '../../lib/socket';
+import AgencySelectionModal from './AgencySelectionModal';
 
 type ActivityLog = {
   id: string;
@@ -51,11 +52,7 @@ type IncidentPhoto = {
   createdAt: string;
 };
 
-type Agency = {
-  id: number;
-  name: string;
-  type: string;
-};
+
 
 type ChatMessage = {
   senderId: number;
@@ -132,10 +129,10 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'timeline' | 'chat'>('timeline');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [agencies, setAgencies] = useState<Agency[]>([]);
-  const [selectedAgency, setSelectedAgency] = useState<string>('');
-  const [shareReason, setShareReason] = useState('');
+
+  // New Sharing State
+  const [isAgencyModalOpen, setIsAgencyModalOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'chat' && incident) {
@@ -177,27 +174,18 @@ const IncidentDetailPane: React.FC<Props> = ({
     }
   };
 
-  const openShareModal = async () => {
-    setShowShareModal(true);
+  const handleShareIncident = async (agencyId: number, reason: string, note: string) => {
+    if (!incident) return;
+    setIsSharing(true);
     try {
-      const res = await api.get('/incidents/resources/agencies');
-      setAgencies(res.data.agencies || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!selectedAgency || !shareReason || !incident) return;
-    try {
-      await api.post(`/incidents/${incident.id}/collaborate`, {
-        agencyId: Number(selectedAgency),
-        reason: shareReason,
-      });
-      setShowShareModal(false);
+      await (api as any).shareIncident(incident.id, agencyId, reason, note);
+      setIsAgencyModalOpen(false);
       alert('Incident shared successfully');
-    } catch {
+    } catch (err) {
+      console.error('Failed to share incident', err);
       alert('Failed to share incident');
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -362,7 +350,7 @@ const IncidentDetailPane: React.FC<Props> = ({
             {user?.role !== 'CITIZEN' && (
               <button
                 className="btn btn-circle btn-ghost btn-xs text-slate-300"
-                onClick={openShareModal}
+                onClick={() => setIsAgencyModalOpen(true)}
                 title="Request Assistance"
               >
                 <Share2 size={16} />
@@ -677,48 +665,13 @@ const IncidentDetailPane: React.FC<Props> = ({
         </div>
       </aside>
 
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-auto">
-          <div className="bg-slate-900 p-6 rounded-lg w-full max-w-md border border-slate-700 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Share Incident</h3>
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text text-slate-300">Select Agency</span>
-              </label>
-              <select
-                className="select select-bordered w-full bg-slate-800 text-white"
-                value={selectedAgency}
-                onChange={(e) => setSelectedAgency(e.target.value)}
-              >
-                <option value="">Select...</option>
-                {agencies.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.type})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text text-slate-300">Reason</span>
-              </label>
-              <textarea
-                className="textarea textarea-bordered w-full bg-slate-800 text-white"
-                value={shareReason}
-                onChange={(e) => setShareReason(e.target.value)}
-                placeholder="Requesting backup..."
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button className="btn btn-ghost" onClick={() => setShowShareModal(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleShare}>
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
+      {isAgencyModalOpen && (
+        <AgencySelectionModal
+          isOpen={isAgencyModalOpen}
+          onClose={() => setIsAgencyModalOpen(false)}
+          onSelect={handleShareIncident}
+          isLoading={isSharing}
+        />
       )}
     </div>
   );
