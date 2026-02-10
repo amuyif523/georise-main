@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AppLayout from '../../layouts/AppLayout';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import api from '../../lib/api';
 import { Users, UserPlus } from 'lucide-react';
 
 interface StaffMember {
@@ -18,7 +17,7 @@ interface StaffMember {
 }
 
 const StaffManagementPage: React.FC = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,7 +58,7 @@ const StaffManagementPage: React.FC = () => {
   };
 
   return (
-    <AppLayout title="Staff Management">
+    <AppLayout>
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
