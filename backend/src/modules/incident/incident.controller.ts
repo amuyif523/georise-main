@@ -197,3 +197,114 @@ export const getIncidentPhotos = async (req: Request, res: Response) => {
     res.status(err?.status || 400).json({ message: err?.message || 'Failed to fetch photos' });
   }
 };
+
+export const getIncidents = async (req: Request, res: Response) => {
+  try {
+    let agencyId: number | null = null;
+    if (req.user?.role === Role.AGENCY_STAFF) {
+      const staff = await prisma.agencyStaff.findUnique({
+        where: { userId: req.user.id },
+        select: { agencyId: true },
+      });
+      if (!staff) return res.status(403).json({ message: 'Forbidden' });
+      agencyId = staff.agencyId;
+    }
+
+    const { status, hours, reviewStatus, search } = req.query;
+    const conditions: any = {}; // Using any to avoid complex Prisma type casting for now, or import Prisma
+
+    // Status Filter
+    if (status && typeof status === 'string') conditions.status = status;
+
+    // Review Status Filter
+    if (reviewStatus && typeof reviewStatus === 'string') {
+      conditions.reviewStatus = reviewStatus;
+    }
+
+    // Time Filter
+    const createdAtFilter =
+      hours && Number(hours)
+        ? {
+            gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
+          }
+        : undefined;
+    if (createdAtFilter) {
+      conditions.createdAt = createdAtFilter;
+    }
+
+    // SubCity Filter
+    if (req.query.subCityId) {
+      conditions.subCityId = Number(req.query.subCityId);
+    }
+
+    // Search Filter
+    if (search && typeof search === 'string') {
+      conditions.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Role-based Isolation
+    if (req.user?.role === Role.ADMIN) {
+      // Admin sees all
+    } else if (agencyId) {
+      // Enforce agency isolation: incidents assigned to OR shared with this agency
+      // Explicitly ensuring top-level OR is handled if search uses OR
+      if (conditions.OR) {
+        conditions.AND = [
+          { OR: conditions.OR },
+          { OR: [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }] },
+        ];
+        delete conditions.OR;
+      } else {
+        conditions.OR = [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }];
+      }
+    } else {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const baseSelect = {
+      id: true,
+      title: true,
+      category: true,
+      severityScore: true,
+      status: true,
+      latitude: true,
+      longitude: true,
+      subCityId: true,
+      reviewStatus: true,
+      createdAt: true,
+      assignedAgencyId: true,
+      sharedWith: { select: { agencyId: true } },
+    };
+
+    const [total, incidents] = await Promise.all([
+      prisma.incident.count({ where: conditions }),
+      prisma.incident.findMany({
+        where: conditions,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select:
+          req.user?.role === Role.ADMIN
+            ? {
+                ...baseSelect,
+                reporter: {
+                  select: { id: true, fullName: true, trustScore: true, email: true, phone: true },
+                },
+              }
+            : baseSelect,
+      }),
+    ]);
+
+    return res.json({ total, page, limit, incidents });
+  } catch (err: any) {
+    console.error('List incidents error:', err);
+    return res.status(400).json({ message: err?.message || 'Failed to fetch incidents' });
+  }
+};

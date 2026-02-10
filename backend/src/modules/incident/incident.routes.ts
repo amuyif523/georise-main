@@ -13,6 +13,7 @@ import {
   postChatMessage,
   uploadIncidentPhoto,
   getIncidentPhotos,
+  getIncidents,
 } from './incident.controller';
 import { validateBody } from '../../middleware/validate';
 import { createIncidentSchema } from './incident.validation';
@@ -224,103 +225,7 @@ router.get('/activity/feed', requireAuth, requireRole([Role.ADMIN]), async (req,
 });
 
 // List/filter for agencies/admins with pagination/search
-router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), async (req, res) => {
-  try {
-    let agencyId: number | null = null;
-    if (req.user?.role === Role.AGENCY_STAFF) {
-      const staff = await prisma.agencyStaff.findUnique({
-        where: { userId: req.user.id },
-        select: { agencyId: true },
-      });
-      if (!staff) return res.status(403).json({ message: 'Forbidden' });
-      agencyId = staff.agencyId;
-    }
-
-    const { status, hours, reviewStatus, search } = req.query;
-    const conditions: Prisma.IncidentWhereInput = {};
-    if (status && typeof status === 'string') conditions.status = status as IncidentStatus;
-    if (reviewStatus && typeof reviewStatus === 'string') {
-      conditions.reviewStatus = reviewStatus as ReviewStatus;
-    }
-    const createdAtFilter =
-      hours && Number(hours)
-        ? {
-          gte: new Date(Date.now() - Number(hours) * 3600 * 1000),
-        }
-        : undefined;
-    if (createdAtFilter) {
-      conditions.createdAt = createdAtFilter;
-    }
-    if (req.query.subCityId) {
-      conditions.subCityId = Number(req.query.subCityId);
-    }
-    if (search && typeof search === 'string') {
-      conditions.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (agencyId) {
-      // Enforce agency isolation: incidents assigned to OR shared with this agency
-      conditions.OR = [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }];
-    }
-
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
-    const skip = (page - 1) * limit;
-
-    const baseSelect = {
-      id: true,
-      title: true,
-      category: true,
-      severityScore: true,
-      status: true,
-      latitude: true,
-      longitude: true,
-      subCityId: true,
-      reviewStatus: true,
-      createdAt: true,
-      assignedAgencyId: true,
-      sharedWith: { select: { agencyId: true } },
-    };
-
-    if (req.user?.role === Role.ADMIN) {
-      const [total, incidents] = await Promise.all([
-        prisma.incident.count({ where: conditions }),
-        prisma.incident.findMany({
-          where: conditions,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-          select: {
-            ...baseSelect,
-            reporter: {
-              select: { id: true, fullName: true, trustScore: true, email: true, phone: true },
-            },
-          },
-        }),
-      ]);
-      return res.json({ total, page, limit, incidents });
-    }
-
-    if (!agencyId) return res.status(403).json({ message: 'Forbidden' });
-
-    const [total, incidents] = await Promise.all([
-      prisma.incident.count({ where: conditions }),
-      prisma.incident.findMany({
-        where: conditions,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        select: baseSelect,
-      }),
-    ]);
-    res.json({ total, page, limit, incidents });
-  } catch (err: unknown) {
-    console.error('List incidents error:', err);
-    res.status(400).json({ message: errorMessage(err, 'Failed to fetch incidents') });
-  }
-});
+router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), getIncidents);
 
 // Nearby search using PostGIS location
 router.get(
@@ -363,9 +268,10 @@ router.get(
             ${radiusNum}
           )
           AND (
-            ${req.user?.role === Role.ADMIN
-          ? 'TRUE'
-          : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
+            ${
+              req.user?.role === Role.ADMIN
+                ? 'TRUE'
+                : `i."assignedAgencyId" = ${agencyId} OR EXISTS (
               SELECT 1 FROM "AgencyJurisdiction" aj
               JOIN "SubCity" s ON aj."boundaryId" = s.id AND aj."boundaryType"='SUBCITY'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(s.jurisdiction, i.location)
@@ -374,7 +280,7 @@ router.get(
               JOIN "Woreda" w ON aj."boundaryId" = w.id AND aj."boundaryType"='WOREDA'
               WHERE aj."agencyId" = ${agencyId} AND ST_Contains(w.boundary, i.location)
             )`
-        }
+            }
           )
         ORDER BY "severityScore" DESC NULLS LAST, "createdAt" DESC
       `;
