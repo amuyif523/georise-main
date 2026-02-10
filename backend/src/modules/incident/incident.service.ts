@@ -49,6 +49,7 @@ export class IncidentService {
           trustScore: true,
           lastReportAt: true,
           isShadowBanned: true,
+          role: true,
           citizenVerification: { select: { status: true } },
         },
       });
@@ -65,7 +66,12 @@ export class IncidentService {
       }
 
       // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
-      if (user?.citizenVerification?.status !== 'VERIFIED' && (user?.trustScore ?? 0) < 50) {
+      const isStaff = user.role === 'AGENCY_STAFF' || user.role === 'ADMIN';
+      if (
+        !isStaff &&
+        user?.citizenVerification?.status !== 'VERIFIED' &&
+        (user?.trustScore ?? 0) < 50
+      ) {
         logger.warn(
           {
             userId: reporterId,

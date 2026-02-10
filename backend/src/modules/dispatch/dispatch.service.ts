@@ -253,6 +253,9 @@ export class DispatchService {
         await import('../../events/incidentEvents');
       emitIncidentUpdated(toIncidentPayload(updatedIncident));
 
+      const { pushService } = await import('../push/push.service');
+      await pushService.notifyAssignment(updatedIncident, top.unitId);
+
       return { incident: updatedIncident, unit };
     }
 

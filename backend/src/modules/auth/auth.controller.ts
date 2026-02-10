@@ -62,6 +62,7 @@ export const me = async (req: Request, res: Response) => {
     }
 
     const user = await authService.getCurrentUser(req.user.id);
+    console.log('Me Endpoint User:', JSON.stringify(user, null, 2));
     return res.status(200).json({ user });
   } catch (err: any) {
     logger.error({ err }, 'Me error');

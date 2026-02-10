@@ -63,6 +63,22 @@ class PushService {
 
     await Promise.all(send);
   }
+
+  async notifyAssignment(incident: any, responderId: number) {
+    try {
+      const payload = {
+        title: 'New Incident Assigned',
+        body: `You have been assigned to: ${incident.title}`,
+        data: {
+          url: `/agency/map?incidentId=${incident.id}`,
+          incidentId: incident.id,
+        },
+      };
+      await this.sendToUsers([responderId], payload);
+    } catch (error) {
+      console.error('Failed to send assignment push:', error);
+    }
+  }
 }
 
 export const pushService = new PushService();

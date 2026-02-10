@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import prisma from '../../prisma';
 import { dispatchService } from './dispatch.service';
+import { pushService } from '../push/push.service';
 import { IncidentStatus } from '@prisma/client';
 import logger from '../../logger';
 import type { Prisma } from '@prisma/client';
@@ -37,6 +38,8 @@ export const assignIncident = async (req: Request, res: Response) => {
         where: { id: unitId },
         data: { status: 'ASSIGNED' },
       });
+      // Notify Responder
+      await pushService.notifyAssignment(incident, unitId);
     }
 
     await prisma.auditLog.create({
@@ -77,6 +80,8 @@ export const autoAssignIncident = async (req: Request, res: Response) => {
         where: { id: top.unitId },
         data: { status: 'ASSIGNED' },
       });
+      // Notify Responder
+      await pushService.notifyAssignment(incident, top.unitId);
     }
 
     await prisma.auditLog.create({
