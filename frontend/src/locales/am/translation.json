@@ -77,7 +77,10 @@
     "kpi_total": "ጠቅላላ ሪፖርቶች",
     "response_time_distribution": "የምላሽ ጊዜ ስርጭት",
     "heatmap_time_of_day": "በቀን ሰዓት ሙቀት ካርታ (ሪፖርት)",
-    "utilization_title": "የምላሽ ቡድን ተጠቃሚነት"
+    "utilization_title": "የምላሽ ቡድን ተጠቃሚነት",
+    "ai_accuracy": "የኤአይ ትክክለኛነት",
+    "mttr": "አማካይ የመፍትሄ ጊዜ",
+    "collaborate": "ተባበር"
   },
   "common": {
     "loading": "በመጫን ላይ...",

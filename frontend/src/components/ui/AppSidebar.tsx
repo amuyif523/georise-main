@@ -34,33 +34,32 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
 
 const AppSidebar: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const role = user?.role;
   const [open, setOpen] = React.useState(false);
 
   const items =
     role === 'ADMIN'
       ? [
-          { to: '/admin', icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
-          { to: '/admin/agencies', icon: <Shield size={16} />, label: 'Agencies' },
-          { to: '/admin/users', icon: <Users size={16} />, label: 'Users' },
-          { to: '/admin/verification', icon: <Shield size={16} />, label: 'Verification' },
-          { to: '/admin/review', icon: <Bell size={16} />, label: 'Review Queue' },
-          { to: '/admin/activity', icon: <Radio size={16} />, label: 'Activity Feed' },
-          { to: '/admin/analytics', icon: <BarChart3 size={16} />, label: 'Analytics' },
-          { to: '/admin/audit', icon: <Shield size={16} />, label: 'Audit' },
-          { to: '/admin/demo', icon: <Activity size={16} />, label: 'Demo Control' },
+          { to: '/admin', icon: <LayoutDashboard size={16} />, label: t('nav.dashboard') },
+          { to: '/admin/agencies', icon: <Shield size={16} />, label: t('nav.agencies') },
+          { to: '/admin/users', icon: <Users size={16} />, label: t('nav.users') },
+          { to: '/admin/verification', icon: <Shield size={16} />, label: t('nav.verification') },
+          { to: '/admin/review', icon: <Bell size={16} />, label: t('nav.review') },
+          { to: '/admin/activity', icon: <Radio size={16} />, label: t('nav.activity') },
+          { to: '/admin/analytics', icon: <BarChart3 size={16} />, label: t('analytics.title') },
         ]
       : role === 'AGENCY_STAFF'
         ? [
-            { to: '/agency', icon: <LayoutDashboard size={16} />, label: 'Dispatch' },
-            { to: '/agency/map', icon: <Map size={16} />, label: 'Live Map' },
-            { to: '/agency/analytics', icon: <BarChart3 size={16} />, label: 'Analytics' },
+            { to: '/agency', icon: <LayoutDashboard size={16} />, label: t('nav.dashboard') },
+            { to: '/agency/map', icon: <Map size={16} />, label: t('nav.map') },
+            { to: '/agency/analytics', icon: <BarChart3 size={16} />, label: t('analytics.title') },
           ]
         : [
-            { to: '/citizen', icon: <Home size={16} />, label: 'Home' },
-            { to: '/citizen/report', icon: <Activity size={16} />, label: 'Report' },
-            { to: '/citizen/my-reports', icon: <Shield size={16} />, label: 'My Reports' },
-            { to: '/citizen/verify', icon: <Shield size={16} />, label: 'Verify' },
+            { to: '/citizen', icon: <Home size={16} />, label: t('nav.home') },
+            { to: '/citizen/report', icon: <Activity size={16} />, label: t('nav.report') },
+            { to: '/citizen/my-reports', icon: <Shield size={16} />, label: t('nav.history') },
+            { to: '/citizen/verify', icon: <Shield size={16} />, label: t('nav.verify') },
           ];
 
   return (
