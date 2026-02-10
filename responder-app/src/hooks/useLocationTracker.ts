@@ -25,6 +25,7 @@ export function useLocationTracker() {
       setCoords({ lat: latitude, lng: longitude });
       const socket = getSocket();
       if (online && socket?.connected) {
+        // Emit location update to backend (FR-06)
         socket.emit('responder:locationUpdate', { lat: latitude, lng: longitude });
       } else {
         addLocationToQueue(latitude, longitude);

@@ -192,7 +192,8 @@ const AgencyMap: React.FC = () => {
       };
       socket.on('incident:created', handlerCreated);
       socket.on('incident:updated', handlerUpdated);
-      socket.on('responder:position', responderPos);
+      // FR-06: Listen for live location updates
+      socket.on('responder:locationUpdate', responderPos);
       socket.on('incident:assignedResponder', responderAssigned);
       socket.on('disconnect', () => {
         // fallback polling every 30s
@@ -208,7 +209,7 @@ const AgencyMap: React.FC = () => {
       return () => {
         socket.off('incident:created', handlerCreated);
         socket.off('incident:updated', handlerUpdated);
-        socket.off('responder:position', responderPos);
+        socket.off('responder:locationUpdate', responderPos);
         socket.off('incident:assignedResponder', responderAssigned);
         socket.off('disconnect');
         socket.off('connect');
