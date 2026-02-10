@@ -17,6 +17,7 @@ import { auditMiddleware } from './middleware/audit'; // Import audit middleware
 import demoRoutes from './modules/demo/demo.routes';
 import userRoutes from './modules/user/user.routes';
 import systemRoutes from './modules/system/system.routes';
+import pushRoutes from './modules/push/push.routes';
 import logger from './logger';
 import { metrics } from './metrics/metrics.service';
 
@@ -106,6 +107,7 @@ app.use('/api/dispatch', dispatchRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/notifications', pushRoutes);
 
 // Error handler
 app.use((err: any, req: any, res: express.Response, _next: express.NextFunction) => {
