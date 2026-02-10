@@ -4,3 +4,10 @@ node_modules
 
 /src/generated/prisma
 coverage/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/

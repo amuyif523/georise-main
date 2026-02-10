@@ -13,6 +13,9 @@ initSLAJob();
 // Ensure simulation is not running on boot; it can be started via /demo endpoints
 stopResponderSimulation();
 
-server.listen(PORT, () => {
+import { ensureTestAgency } from './utils/seed-helper';
+
+server.listen(PORT, async () => {
+  await ensureTestAgency();
   console.log(`Backend API + Socket running on http://localhost:${PORT}`);
 });

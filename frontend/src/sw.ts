@@ -24,6 +24,27 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = (event.notification.data as { url?: string } | undefined)?.url || '/';
-  event.waitUntil(self.clients.openWindow(url));
+  const urlToOpen = (event.notification.data as { url?: string } | undefined)?.url || '/';
+
+  event.waitUntil(
+    self.clients
+      .matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+      .then((windowClients) => {
+        // Check if there is already a window/tab open with the target URL
+        for (const client of windowClients) {
+          // Compare URLs (ignoring query params/hash if needed, but simple check for now)
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // If not, open a new window
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(urlToOpen);
+        }
+        return undefined; // Add explicit return for void/Promise<void> match
+      }),
+  );
 });
