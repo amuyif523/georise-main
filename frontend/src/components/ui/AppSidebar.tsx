@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Map,
   Activity,
@@ -54,6 +55,7 @@ const AppSidebar: React.FC = () => {
             { to: '/agency', icon: <LayoutDashboard size={16} />, label: t('nav.dashboard') },
             { to: '/agency/map', icon: <Map size={16} />, label: t('nav.map') },
             { to: '/agency/analytics', icon: <BarChart3 size={16} />, label: t('analytics.title') },
+            { to: '/agency/staff', icon: <Users size={16} />, label: 'Staff' },
           ]
         : [
             { to: '/citizen', icon: <Home size={16} />, label: t('nav.home') },

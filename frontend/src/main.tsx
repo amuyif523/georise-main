@@ -33,6 +33,7 @@ const AnalyticsPage = React.lazy(() => import('./pages/admin/AnalyticsPage'));
 const ActivityFeed = React.lazy(() => import('./pages/admin/ActivityFeed'));
 const AdminDemoControlPage = React.lazy(() => import('./pages/admin/AdminDemoControlPage'));
 const AgencyAnalyticsPage = React.lazy(() => import('./pages/AgencyAnalyticsPage'));
+const StaffManagementPage = React.lazy(() => import('./pages/agency/StaffManagementPage'));
 const CitizenVerificationPage = React.lazy(() => import('./pages/CitizenVerificationPage'));
 const ReviewQueuePage = React.lazy(() => import('./pages/admin/ReviewQueuePage'));
 const VerificationPage = React.lazy(() => import('./pages/admin/VerificationPage'));
@@ -142,6 +143,18 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
                 <ProtectedRoute allowedRoles={['AGENCY_STAFF', 'ADMIN']}>
                   <Suspense fallback={<div className="p-4 text-slate-200">Loading analytics…</div>}>
                     <AgencyAnalyticsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agency/staff"
+              element={
+                <ProtectedRoute allowedRoles={['AGENCY_STAFF', 'ADMIN']}>
+                  <Suspense
+                    fallback={<div className="p-4 text-slate-200">Loading staff management…</div>}
+                  >
+                    <StaffManagementPage />
                   </Suspense>
                 </ProtectedRoute>
               }
