@@ -593,21 +593,6 @@ router.patch(
       if (body.fullName) updates.fullName = body.fullName;
       if (body.phone !== undefined) updates.phone = body.phone;
       if (body.role) updates.role = body.role;
-      if (body.isActive !== undefined) {
-        if (body.isActive === false) {
-          try {
-            await assertUserCanDeactivate(userId);
-          } catch (err: any) {
-            return res.status(409).json({ message: err.message });
-          }
-        }
-        updates.isActive = body.isActive;
-        updates.deactivatedAt = body.isActive ? null : new Date();
-        if (body.isActive === false) {
-          updates.tokenVersion = { increment: 1 };
-        }
-      }
-
       const user = await prisma.user.update({
         where: { id: userId },
         data: updates,

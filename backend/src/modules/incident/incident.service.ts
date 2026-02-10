@@ -109,8 +109,11 @@ export class IncidentService {
         reviewStatus = 'REJECTED';
       } else {
         const tier = await reputationService.getTier(reporterId);
-        // Tier 0 (Unverified) always requires review
-        if (tier === 0) {
+        // Tier 3 (Gold/Trusted) bypasses review (FR-01)
+        if (tier >= 3) {
+          reviewStatus = 'APPROVED';
+        } else if (tier === 0) {
+          // Tier 0 (Unverified) always requires review
           reviewStatus = 'PENDING_REVIEW';
         }
       }
@@ -309,8 +312,6 @@ export class IncidentService {
 
     return true;
   }
-
-
 
   async getIncidentChat(incidentId: number) {
     return prisma.incidentChat.findMany({
