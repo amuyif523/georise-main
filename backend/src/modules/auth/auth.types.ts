@@ -6,6 +6,7 @@ export interface RegisterRequestBody {
   phone?: string;
   password: string;
   role?: Role;
+  agencyId?: number;
 }
 
 export interface LoginRequestBody {
