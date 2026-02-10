@@ -5,14 +5,7 @@ import api from '../lib/api';
 
 const NotificationManager: React.FC = () => {
   const { user } = useAuth();
-  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
-
-  const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
-  };
+  // vapidKey and conversion logic moved to Context
 
   // Track location
   useEffect(() => {
@@ -38,31 +31,7 @@ const NotificationManager: React.FC = () => {
     }
   }, [user]);
 
-  // Register push notifications
-  useEffect(() => {
-    if (!user || !vapidKey) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-
-    const register = async () => {
-      if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-      if (Notification.permission !== 'granted') return;
-
-      const registration = await navigator.serviceWorker.ready;
-      const existing = await registration.pushManager.getSubscription();
-      const subscription =
-        existing ||
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        }));
-
-      await api.post('/users/push/subscribe', { subscription: subscription.toJSON() });
-    };
-
-    register().catch((err) => console.error('Failed to register push', err));
-  }, [user, vapidKey]);
+  // Subscription logic moved to NotificationContext
 
   // Listen for alerts
   useEffect(() => {
@@ -99,11 +68,7 @@ const NotificationManager: React.FC = () => {
   }, [user]);
 
   // Request notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
+  // Permission request logic moved to NotificationToggle/Context
 
   return null;
 };

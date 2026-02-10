@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../ui/NotificationBell';
+import NotificationToggle from '../ui/NotificationToggle';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 const AppHeader: React.FC = () => {
@@ -29,6 +30,7 @@ const AppHeader: React.FC = () => {
       </div>
       <div className="flex items-center gap-3">
         <LanguageSwitcher />
+        <NotificationToggle />
         <NotificationBell />
         <div className="flex items-center gap-2 text-sm">
           <span className="text-slate-200">{user?.fullName}</span>
