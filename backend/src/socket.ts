@@ -87,7 +87,11 @@ export const initSocketServer = (server: HttpServer) => {
             updatedAt: Date.now(),
           };
 
-          await redis.hset('responder:locations', String(responderId), JSON.stringify(data));
+          try {
+            await redis.hset('responder:locations', String(responderId), JSON.stringify(data));
+          } catch (redisErr) {
+            logger.error({ err: redisErr }, 'Failed to save responder location to Redis');
+          }
 
           // Real-time emit to agency
           if (agencyId) {

@@ -1,0 +1,15 @@
+STARTING SOCKET TEST
+Registering Dispatcher: disp-sock-1770820242590@example.com
+Dispatcher logged in.
+Registering Responder: resp-sock-1770820242741@example.com
+Responder logged in.
+Responder ID: 47
+Connecting Dispatcher Socket...
+Dispatcher Socket Connected.
+Connecting Responder Socket...
+Responder Socket Connected.
+Waiting 1s for server setup...
+Emitting responder:locationUpdate (lat=10.0, status=ASSIGNED)...
+RECEIVED responder:position: {"responderId":47,"lat":10,"lng":40,"status":"ASSIGNED"}
+SUCCESS: Verified responder:position broadcast with correct data.
+Test Passed.

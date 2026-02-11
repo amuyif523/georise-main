@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { IncidentStatus, Role, Prisma, ReviewStatus } from '@prisma/client';
+import { IncidentStatus, Role, Prisma, ReviewStatus, ResponderStatus } from '@prisma/client';
 import { requireAuth, requireRole, optionalAuth } from '../../middleware/auth';
 import prisma from '../../prisma';
 import {
@@ -74,7 +74,6 @@ router.get('/feed', requireAuth, requireRole([Role.CITIZEN]), async (req, res) =
 router.get('/my', requireAuth, requireRole([Role.CITIZEN]), getMyIncidents);
 router.get('/my/:id', requireAuth, requireRole([Role.CITIZEN]), getMyIncidentById);
 router.get('/duplicates', requireAuth, checkDuplicates);
-router.post('/merge', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), mergeIncidents);
 router.post('/:id/photos', requireAuth, incidentUpload.single('photo'), uploadIncidentPhoto);
 router.get('/:id/photos', requireAuth, getIncidentPhotos);
 
@@ -395,20 +394,54 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const updated = await prisma.incident.update({
-        where: { id: Number(id) },
-        data: {
-          status: IncidentStatus.RESOLVED,
-        },
+
+      const result = await prisma.$transaction(async (tx) => {
+        const incident = await tx.incident.findUnique({ where: { id: Number(id) } });
+        if (!incident) throw new Error('Incident not found');
+
+        const updatedIncident = await tx.incident.update({
+          where: { id: incident.id },
+          data: { status: IncidentStatus.RESOLVED },
+        });
+
+        if (incident.assignedResponderId) {
+          await tx.responder.update({
+            where: { id: incident.assignedResponderId },
+            data: { status: ResponderStatus.AVAILABLE },
+          });
+        }
+        return { updatedIncident, responderId: incident.assignedResponderId };
       });
 
-      await logActivity(updated.id, 'STATUS_CHANGE', 'Status set to RESOLVED', req.user!.id);
-      emitIncidentUpdated(toIncidentPayload(updated));
-      if (updated.reporterId) {
-        await pushService.sendToUsers([updated.reporterId], {
+      const { updatedIncident, responderId } = result;
+
+      await logActivity(
+        updatedIncident.id,
+        'STATUS_CHANGE',
+        'Status set to RESOLVED',
+        req.user!.id,
+      );
+      emitIncidentUpdated(toIncidentPayload(updatedIncident));
+
+      if (responderId) {
+        // Emit responder update so map clears the red status
+        const io = getIO();
+        const responder = await prisma.responder.findUnique({ where: { id: responderId } });
+        if (responder && responder.agencyId) {
+          io.to(`agency:${responder.agencyId}`).emit('responder:position', {
+            responderId: responder.id,
+            lat: responder.latitude || 0,
+            lng: responder.longitude || 0,
+            status: 'AVAILABLE',
+          });
+        }
+      }
+
+      if (updatedIncident.reporterId) {
+        await pushService.sendToUsers([updatedIncident.reporterId], {
           title: 'Incident resolved',
-          body: `Your report #${updated.id} has been resolved.`,
-          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+          body: `Your report #${updatedIncident.id} has been resolved.`,
+          data: { incidentId: updatedIncident.id, url: '/citizen/my-reports' },
         });
       }
       await prisma.auditLog.create({
@@ -420,7 +453,7 @@ router.patch(
         },
       });
 
-      res.json({ incident: updated });
+      res.json({ incident: updatedIncident });
     } catch (err: unknown) {
       console.error('Resolve incident error:', err);
       res.status(400).json({ message: errorMessage(err, 'Failed to resolve incident') });

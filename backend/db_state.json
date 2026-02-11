@@ -1,0 +1,315 @@
+{
+  "agencies": [
+    {
+      "id": 2,
+      "name": "Central Police HQ"
+    },
+    {
+      "id": 3,
+      "name": "Addis Fire & Rescue"
+    },
+    {
+      "id": 4,
+      "name": "Tikur Anbessa Ambulance"
+    },
+    {
+      "id": 5,
+      "name": "Traffic Management Center"
+    },
+    {
+      "id": 6,
+      "name": "Central Police HQ"
+    },
+    {
+      "id": 1,
+      "name": "Agency 1769459907147"
+    },
+    {
+      "id": 7,
+      "name": "Addis Fire & Rescue"
+    },
+    {
+      "id": 8,
+      "name": "Tikur Anbessa Ambulance"
+    },
+    {
+      "id": 9,
+      "name": "Traffic Management Center"
+    },
+    {
+      "id": 10,
+      "name": "Central Police HQ"
+    },
+    {
+      "id": 11,
+      "name": "Addis Fire & Rescue"
+    },
+    {
+      "id": 12,
+      "name": "Tikur Anbessa Ambulance"
+    },
+    {
+      "id": 13,
+      "name": "Traffic Management Center"
+    }
+  ],
+  "users": [
+    {
+      "id": 9,
+      "email": "police_unit@georise.com"
+    },
+    {
+      "id": 5,
+      "email": "police@georise.com"
+    }
+  ],
+  "staff": [
+    {
+      "userId": 5,
+      "agencyId": 10,
+      "role": "DISPATCHER"
+    },
+    {
+      "userId": 9,
+      "agencyId": 10,
+      "role": "RESPONDER"
+    }
+  ],
+  "responders": [
+    {
+      "id": 1,
+      "name": "Patrol Unit 1",
+      "agencyId": 2
+    },
+    {
+      "id": 2,
+      "name": "Engine 1",
+      "agencyId": 3
+    },
+    {
+      "id": 31,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 32,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 33,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 34,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 35,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 36,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 37,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 38,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 39,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 40,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 41,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 3,
+      "name": "Ambulance 1",
+      "agencyId": 4
+    },
+    {
+      "id": 4,
+      "name": "Push Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 5,
+      "name": "Push Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 6,
+      "name": "Push Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 7,
+      "name": "Push Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 8,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 9,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 10,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 11,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 12,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 13,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 14,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 15,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 16,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 17,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 18,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 42,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 19,
+      "name": "Atomic Responder",
+      "agencyId": 1
+    },
+    {
+      "id": 20,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 21,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 22,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 23,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 24,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 25,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 26,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 27,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 28,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 29,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 30,
+      "name": "Responder A (Avail)",
+      "agencyId": 1
+    },
+    {
+      "id": 43,
+      "name": "Responder B (Busy)",
+      "agencyId": 1
+    },
+    {
+      "id": 44,
+      "name": "Responder Sock",
+      "agencyId": 1
+    },
+    {
+      "id": 45,
+      "name": "Responder Sock",
+      "agencyId": 1
+    },
+    {
+      "id": 46,
+      "name": "Responder Sock",
+      "agencyId": 1
+    },
+    {
+      "id": 47,
+      "name": "Responder Sock",
+      "agencyId": 1
+    }
+  ]
+}

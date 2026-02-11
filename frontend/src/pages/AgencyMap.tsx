@@ -176,7 +176,12 @@ const AgencyMap: React.FC = () => {
         setResponders((prev) =>
           prev.map((r) =>
             r.id === payload.responderId
-              ? { ...r, latitude: payload.lat, longitude: payload.lng }
+              ? {
+                  ...r,
+                  latitude: payload.lat,
+                  longitude: payload.lng,
+                  status: payload.status || r.status,
+                }
               : r,
           ),
         );
@@ -189,11 +194,15 @@ const AgencyMap: React.FC = () => {
               : i,
           ),
         );
+        // Also update responder status locally if we have them
+        setResponders((prev) =>
+          prev.map((r) => (r.id === payload.responderId ? { ...r, status: 'ASSIGNED' } : r)),
+        );
       };
       socket.on('incident:created', handlerCreated);
       socket.on('incident:updated', handlerUpdated);
-      // FR-06: Listen for live location updates
-      socket.on('responder:locationUpdate', responderPos);
+      // FR-06: Listen for live location updates (Corrected event name)
+      socket.on('responder:position', responderPos);
       socket.on('incident:assignedResponder', responderAssigned);
       socket.on('disconnect', () => {
         // fallback polling every 30s
@@ -209,7 +218,7 @@ const AgencyMap: React.FC = () => {
       return () => {
         socket.off('incident:created', handlerCreated);
         socket.off('incident:updated', handlerUpdated);
-        socket.off('responder:locationUpdate', responderPos);
+        socket.off('responder:position', responderPos);
         socket.off('incident:assignedResponder', responderAssigned);
         socket.off('disconnect');
         socket.off('connect');
@@ -234,6 +243,23 @@ const AgencyMap: React.FC = () => {
       setError(err?.response?.data?.message || 'Failed to update incident');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const getResponderColor = (status: string) => {
+    switch (status) {
+      case 'AVAILABLE':
+        return '#10b981'; // emerald-500
+      case 'ASSIGNED':
+      case 'en_route': // backend might send lowercase or snake_case
+      case 'EN_ROUTE':
+      case 'ON_SCENE':
+      case 'on_scene':
+        return '#ef4444'; // red-500
+      case 'OFFLINE':
+        return '#64748b'; // slate-500
+      default:
+        return '#f59e0b'; // amber-500 (BUSY/unknown)
     }
   };
 
@@ -290,26 +316,31 @@ const AgencyMap: React.FC = () => {
     () =>
       responders
         .filter((r) => r.latitude != null && r.longitude != null)
-        .map((r) => (
-          <Marker
-            key={`resp-${r.id}`}
-            position={[r.latitude as number, r.longitude as number]}
-            icon={L.divIcon({
-              className: 'responder-marker',
-              html: `<div style="background:#22d3ee;width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px #22d3ee80;border:2px solid #0f172a;"></div>`,
-              iconSize: [14, 14],
-              iconAnchor: [7, 7],
-            })}
-          >
-            <Popup>
-              <div className="text-sm space-y-1">
-                <p className="font-semibold">{r.name}</p>
-                <p className="text-xs text-slate-500">{r.type}</p>
-                <p className="text-xs">Status: {r.status}</p>
-              </div>
-            </Popup>
-          </Marker>
-        )),
+        .map((r) => {
+          const color = getResponderColor(r.status);
+          return (
+            <Marker
+              key={`resp-${r.id}`}
+              position={[r.latitude as number, r.longitude as number]}
+              icon={L.divIcon({
+                className: 'responder-marker',
+                html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;"></div>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+              })}
+            >
+              <Popup>
+                <div className="text-sm space-y-1">
+                  <p className="font-semibold">{r.name}</p>
+                  <p className="text-xs text-slate-500">{r.type}</p>
+                  <p className="text-xs">
+                    Status: <span style={{ color }}>{r.status}</span>
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        }),
     [responders],
   );
 

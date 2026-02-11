@@ -329,6 +329,7 @@ export class AuthService {
         validReports: true,
         rejectedReports: true,
         createdAt: true,
+        agencyStaff: { select: { agencyId: true, staffRole: true } },
         responders: { select: { id: true, agencyId: true, type: true } },
       },
     });

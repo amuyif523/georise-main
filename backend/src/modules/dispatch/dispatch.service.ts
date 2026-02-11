@@ -61,7 +61,7 @@ export class DispatchService {
   async recommendForIncident(incidentId: number): Promise<DispatchCandidate[]> {
     const incidentRows: any[] = await prisma.$queryRaw`
       SELECT id,
-             severityScore,
+             "severityScore",
              location,
              latitude,
              longitude,
@@ -102,7 +102,7 @@ export class DispatchService {
                  ${incident.location}
                ) / 1000 AS distance_km
         FROM "Responder" u
-        WHERE u.status = 'AVAILABLE'
+        WHERE u.status::text = 'AVAILABLE'
           AND u.latitude IS NOT NULL 
           AND u.longitude IS NOT NULL;
       `;
@@ -117,7 +117,7 @@ export class DispatchService {
                u.longitude as "lastLon",
                NULL as distance_km
         FROM "Responder" u
-        WHERE u.status = 'AVAILABLE';
+        WHERE u.status::text = 'AVAILABLE';
       `;
     }
 
