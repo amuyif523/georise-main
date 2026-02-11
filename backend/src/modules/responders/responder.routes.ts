@@ -110,12 +110,14 @@ router.patch(
   async (req: any, res) => {
     try {
       const responderId = Number(req.params.id);
-      const { name, type, status, userId } = req.body;
+      const { name, type, status, userId, latitude, longitude } = req.body;
       const data: any = {};
       if (name) data.name = name;
       if (type) data.type = type;
       if (status) data.status = status;
       if (userId !== undefined) data.userId = userId ? Number(userId) : null;
+      if (latitude !== undefined) data.latitude = Number(latitude);
+      if (longitude !== undefined) data.longitude = Number(longitude);
 
       // Enforce agency scoping for staff
       if (req.user!.role === Role.AGENCY_STAFF) {
