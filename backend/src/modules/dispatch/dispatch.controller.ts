@@ -24,33 +24,17 @@ export const assignIncident = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'incidentId and agencyId are required' });
     }
 
-    const incident = await prisma.incident.update({
-      where: { id: incidentId },
-      data: {
-        assignedAgencyId: agencyId,
-        assignedResponderId: unitId || null,
-        status: IncidentStatus.ASSIGNED,
-      },
-    });
+    const { incident } = await dispatchService.assignIncident(
+      incidentId,
+      agencyId,
+      unitId,
+      req.user!.id,
+    );
 
     if (unitId) {
-      await prisma.responder.update({
-        where: { id: unitId },
-        data: { status: 'ASSIGNED' },
-      });
       // Notify Responder
       await pushService.notifyAssignment(incident, unitId);
     }
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: 'DISPATCH_ASSIGN',
-        targetType: 'Incident',
-        targetId: incidentId,
-        note: JSON.stringify({ agencyId, unitId } satisfies Record<string, Prisma.JsonValue>),
-      },
-    });
 
     res.json({ incident });
   } catch (err: any) {

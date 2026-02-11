@@ -58,15 +58,15 @@ export class IncidentService {
         throw new Error('User not found');
       }
 
-      if (user?.lastReportAt) {
+      // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
+      const isStaff = user.role === 'AGENCY_STAFF' || user.role === 'ADMIN';
+
+      if (!isStaff && user?.lastReportAt) {
         const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
         if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
           throw new Error('You are sending reports too frequently. Please wait a few minutes.');
         }
       }
-
-      // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
-      const isStaff = user.role === 'AGENCY_STAFF' || user.role === 'ADMIN';
       if (
         !isStaff &&
         user?.citizenVerification?.status !== 'VERIFIED' &&

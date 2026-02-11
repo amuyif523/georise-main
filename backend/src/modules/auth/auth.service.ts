@@ -102,6 +102,16 @@ export class AuthService {
           isActive: true,
         },
       });
+    } else if (dbRole === 'AGENCY_STAFF' && data.agencyId) {
+      // Create AgencyStaff for regular staff
+      await prisma.agencyStaff.create({
+        data: {
+          userId: user.id,
+          agencyId: data.agencyId,
+          staffRole: 'DISPATCHER',
+          isActive: true,
+        },
+      });
     }
 
     // If phone is provided, automatically trigger OTP for verification

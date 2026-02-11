@@ -261,6 +261,60 @@ export class DispatchService {
 
     return null;
   }
+
+  async assignIncident(
+    incidentId: number,
+    agencyId: number,
+    unitId: number | null,
+    actorId: number,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      // 1. Validation for Responder
+      if (unitId) {
+        const responder = await tx.responder.findUnique({
+          where: { id: unitId },
+        });
+
+        if (!responder) {
+          throw new Error('Responder not found');
+        }
+
+        if (responder.status !== 'AVAILABLE') {
+          throw new Error(`Responder is currently ${responder.status} and cannot be assigned.`);
+        }
+
+        // 2. Lock & Update Responder
+        await tx.responder.update({
+          where: { id: unitId },
+          data: { status: 'ASSIGNED' },
+        });
+      }
+
+      // 3. Update Incident
+      const incident = await tx.incident.update({
+        where: { id: incidentId },
+        data: {
+          assignedAgencyId: agencyId,
+          assignedResponderId: unitId || null,
+          status: 'ASSIGNED',
+          dispatchedAt: new Date(),
+        },
+      });
+
+      // 4. Create Audit Log
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          action: 'DISPATCH_ASSIGN',
+          targetType: 'Incident',
+          targetId: incidentId,
+          note: JSON.stringify({ agencyId, unitId }),
+        },
+      });
+
+      return { incident, unitId };
+    });
+  }
 }
 
 export const dispatchService = new DispatchService();
