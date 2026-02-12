@@ -315,6 +315,94 @@ export class DispatchService {
       return { incident, unitId };
     });
   }
+
+  async acknowledgeAssignment(incidentId: number, responderId: number, actorUserId: number) {
+    const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
+    if (!incident) throw new Error('Incident not found');
+    if (incident.assignedResponderId !== responderId)
+      throw new Error('Not assigned to this responder');
+    if (incident.acknowledgedAt) throw new Error('Already acknowledged');
+
+    const updated = await prisma.incident.update({
+      where: { id: incidentId },
+      data: { acknowledgedAt: new Date() },
+    });
+
+    const { logActivity } = await import('../incident/activity.service');
+    await logActivity(incidentId, 'STATUS_CHANGE', 'Assignment Acknowledged', actorUserId);
+
+    const { emitIncidentUpdated, toIncidentPayload } = await import('../../events/incidentEvents');
+    emitIncidentUpdated(toIncidentPayload(updated));
+
+    return updated;
+  }
+
+  async declineAssignment(
+    incidentId: number,
+    responderId: number,
+    reason: string,
+    actorUserId: number,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const incident = await tx.incident.findUnique({ where: { id: incidentId } });
+      if (!incident) throw new Error('Incident not found');
+      if (incident.assignedResponderId !== responderId)
+        throw new Error('Not assigned to this responder');
+
+      // 1. Reset Incident
+      const updatedIncident = await tx.incident.update({
+        where: { id: incidentId },
+        data: {
+          status: 'RECEIVED',
+          assignedResponderId: null,
+          assignedAgencyId: null, // Returning to general pool? Or should we keep agency?
+          // If we keep agency, it's still assigned to agency but unassigned to responder.
+          // But user requirement says "move incident back to RECEIVED queue".
+          // RECEIVED usually implies "New / Unassigned".
+          // I'll stick to RECEIVED and clear assignments.
+          dispatchedAt: null,
+          acknowledgedAt: null,
+        },
+      });
+
+      // 2. Reset Responder
+      await tx.responder.update({
+        where: { id: responderId },
+        data: { status: 'AVAILABLE' },
+      });
+
+      // 3. Log
+      await tx.auditLog.create({
+        data: {
+          actorId: actorUserId,
+          action: 'DECLINE_ASSIGNMENT',
+          targetType: 'Incident',
+          targetId: incidentId,
+          note: reason,
+        },
+      });
+
+      const { logActivity } = await import('../incident/activity.service');
+      // We can't use the imported service easily inside transaction if it uses global prisma,
+      // but activity service usually just does prisma.activityLog.create.
+      // Ideally we'd use the tx here.
+      // I'll manually create the activity log to be safe in transaction.
+      await tx.activityLog.create({
+        data: {
+          incidentId,
+          userId: actorUserId,
+          type: 'STATUS_CHANGE', // or DISPATCH?
+          message: `Assignment Declined: ${reason}`,
+        },
+      });
+
+      const { emitIncidentUpdated, toIncidentPayload } =
+        await import('../../events/incidentEvents');
+      emitIncidentUpdated(toIncidentPayload(updatedIncident));
+
+      return updatedIncident;
+    });
+  }
 }
 
 export const dispatchService = new DispatchService();

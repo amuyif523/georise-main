@@ -82,9 +82,47 @@ export const autoAssignIncident = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ incident, selected: top });
+    return res.json({ incident, selected: top });
   } catch (err: any) {
     logger.error({ err }, 'Auto-assign error');
-    res.status(400).json({ message: err.message || 'Failed to auto-assign' });
+    return res.status(400).json({ message: err.message || 'Failed to auto-assign' });
+  }
+};
+
+export const acknowledgeIncident = async (req: Request, res: Response) => {
+  try {
+    const { incidentId } = req.body;
+    if (!incidentId) return res.status(400).json({ message: 'incidentId required' });
+
+    // Find responder profile for current user
+    const responder = await prisma.responder.findFirst({
+      where: { userId: req.user!.id },
+    });
+    if (!responder) return res.status(403).json({ message: 'User is not a responder' });
+
+    await dispatchService.acknowledgeAssignment(Number(incidentId), responder.id, req.user!.id);
+    return res.json({ success: true });
+  } catch (err: any) {
+    logger.error({ err }, 'Acknowledge error');
+    return res.status(400).json({ message: err.message || 'Failed to acknowledge' });
+  }
+};
+
+export const declineIncident = async (req: Request, res: Response) => {
+  try {
+    const { incidentId, reason } = req.body;
+    if (!incidentId || !reason)
+      return res.status(400).json({ message: 'incidentId and reason required' });
+
+    const responder = await prisma.responder.findFirst({
+      where: { userId: req.user!.id },
+    });
+    if (!responder) return res.status(403).json({ message: 'User is not a responder' });
+
+    await dispatchService.declineAssignment(Number(incidentId), responder.id, reason, req.user!.id);
+    return res.json({ success: true });
+  } catch (err: any) {
+    logger.error({ err }, 'Decline error');
+    return res.status(400).json({ message: err.message || 'Failed to decline' });
   }
 };
