@@ -235,6 +235,7 @@ model Incident {
   reportedAt       DateTime       @default(now())
   verifiedAt       DateTime?
   dispatchedAt     DateTime?
+  acknowledgedAt   DateTime?
   arrivalAt        DateTime?
   resolvedAt       DateTime?
   isDemo           Boolean        @default(false)
