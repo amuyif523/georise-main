@@ -9,6 +9,8 @@ import {
   MapPin,
   Share2,
   Send,
+  Check,
+  XCircle,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { severityBadgeClass, severityLabel } from '../../utils/severity';
@@ -34,10 +36,13 @@ type Incident = {
   latitude: number | null;
   longitude: number | null;
   createdAt: string;
+  assignedResponderId?: number | null;
+  acknowledgedAt?: string | null;
   reporter?: {
     id: number;
     fullName: string;
     trustScore?: number | null;
+    phone?: string;
   } | null;
 };
 
@@ -51,8 +56,6 @@ type IncidentPhoto = {
   originalName: string;
   createdAt: string;
 };
-
-
 
 type ChatMessage = {
   senderId: number;
@@ -94,7 +97,7 @@ const typeIcon = (type: ActivityLog['type']) => {
 };
 
 const IncidentDetailPane: React.FC<Props> = ({
-  incident,
+  incident: initialIncident,
   onClose,
   onAssign,
   onRespond,
@@ -103,11 +106,39 @@ const IncidentDetailPane: React.FC<Props> = ({
   onAssignResponder,
 }) => {
   const { user } = useAuth();
+  const [incident, setIncident] = useState<Incident | null>(initialIncident);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
-  const isOpen = Boolean(incident);
+  const isOpen = Boolean(initialIncident);
+
+  // Action State
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showDeclineInput, setShowDeclineInput] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
+  // Sync prop to state and fetch details
+  useEffect(() => {
+    setIncident(initialIncident);
+    setShowDeclineInput(false);
+    setDeclineReason('');
+
+    if (initialIncident) {
+      const fetchDetails = async () => {
+        try {
+          const res = await api.get(`/incidents/${initialIncident.id}`);
+          if (res.data.incident) {
+            setIncident((prev) => ({ ...prev, ...res.data.incident }));
+          }
+        } catch (e) {
+          console.error('Failed to fetch incident details', e);
+        }
+      };
+      fetchDetails();
+    }
+  }, [initialIncident]);
+
   const [recs, setRecs] = useState<
     Array<{
       agencyId: number;
@@ -129,6 +160,50 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'timeline' | 'chat'>('timeline');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+
+  // Helper to find my responder profile
+  const myResponderProfile = useMemo(() => {
+    if (!user) return null;
+    // Responders are usually Agency Staff role or have a linked profile
+    // The responders prop contains the list from /api/responders
+    // We need to match user.id to responder.userId
+    return responders.find((r: any) => r.userId === user.id);
+  }, [user, responders]);
+
+  const isAssignedToMe = useMemo(() => {
+    if (!incident || !myResponderProfile) return false;
+    return incident.assignedResponderId === myResponderProfile.id;
+  }, [incident, myResponderProfile]);
+
+  const needsAcknowledgement =
+    isAssignedToMe && incident?.status === 'ASSIGNED' && !incident?.acknowledgedAt;
+
+  const handleAcknowledge = async () => {
+    if (!incident) return;
+    setActionLoading(true);
+    try {
+      await api.post('/dispatch/acknowledge', { incidentId: incident.id });
+      const res = await api.get(`/incidents/${incident.id}`);
+      setIncident(res.data.incident);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to acknowledge');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!incident || !declineReason.trim()) return;
+    setActionLoading(true);
+    try {
+      await api.post('/dispatch/decline', { incidentId: incident.id, reason: declineReason });
+      onClose(); // Close on decline
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to decline');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // New Sharing State
   const [isAgencyModalOpen, setIsAgencyModalOpen] = useState(false);
@@ -646,21 +721,73 @@ const IncidentDetailPane: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="p-3 border-t border-slate-800 bg-[#0C1322] flex flex-wrap gap-2">
-          {onAssign && (
-            <button className="btn btn-sm" onClick={onAssign}>
-              Assign
-            </button>
-          )}
-          {onRespond && (
-            <button className="btn btn-sm btn-primary" onClick={onRespond}>
-              Responding
-            </button>
-          )}
-          {onResolve && (
-            <button className="btn btn-sm btn-success" onClick={onResolve}>
-              Resolve
-            </button>
+        <div className="p-3 border-t border-slate-800 bg-[#0C1322] flex flex-col gap-2">
+          {needsAcknowledgement ? (
+            <div className="flex flex-col gap-2 w-full animate-in slide-in-from-bottom-2 fade-in">
+              {!showDeclineInput ? (
+                <div className="flex gap-2 w-full">
+                  <button
+                    className="btn btn-primary flex-1 gap-2"
+                    onClick={handleAcknowledge}
+                    disabled={actionLoading}
+                  >
+                    <Check size={18} />
+                    Accept Assignment
+                  </button>
+                  <button
+                    className="btn btn-error btn-outline flex-1 gap-2"
+                    onClick={() => setShowDeclineInput(true)}
+                    disabled={actionLoading}
+                  >
+                    <XCircle size={18} />
+                    Decline
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-slate-900/50 p-3 rounded-lg border border-red-900/30 space-y-2">
+                  <p className="text-sm font-medium text-red-200">Reason for declining:</p>
+                  <textarea
+                    className="textarea textarea-bordered w-full bg-slate-800 text-white textarea-sm"
+                    placeholder="e.g., Equipment failure, Out of fuel..."
+                    value={declineReason}
+                    onChange={(e) => setDeclineReason(e.target.value)}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => setShowDeclineInput(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-error btn-xs"
+                      onClick={handleDecline}
+                      disabled={!declineReason.trim() || actionLoading}
+                    >
+                      Confirm Decline
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {onAssign && (
+                <button className="btn btn-sm" onClick={onAssign}>
+                  Assign
+                </button>
+              )}
+              {onRespond && (
+                <button className="btn btn-sm btn-primary" onClick={onRespond}>
+                  Responding
+                </button>
+              )}
+              {onResolve && (
+                <button className="btn btn-sm btn-success" onClick={onResolve}>
+                  Resolve
+                </button>
+              )}
+            </div>
           )}
         </div>
       </aside>
