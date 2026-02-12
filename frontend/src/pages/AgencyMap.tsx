@@ -4,7 +4,7 @@
 import L from 'leaflet';
 import 'leaflet.heat';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap, GeoJSON } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap, GeoJSON, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import api from '../lib/api';
 import { severityBadgeClass, severityLabel } from '../utils/severity';
@@ -111,6 +111,7 @@ const AgencyMap: React.FC = () => {
   const [selectedSubCity, setSelectedSubCity] = useState<string>('');
   const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>('subcity');
   const [responders, setResponders] = useState<any[]>([]);
+  const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
   const fetchData = useCallback(async () => {
     try {
@@ -186,6 +187,13 @@ const AgencyMap: React.FC = () => {
               : r,
           ),
         );
+        setTrajectories((prev) => {
+          const currentPath = prev[payload.responderId] || [];
+          const newPath = [...currentPath, [payload.lat, payload.lng] as [number, number]].slice(
+            -5,
+          );
+          return { ...prev, [payload.responderId]: newPath };
+        });
       };
       const responderAssigned = (payload: any) => {
         setIncidents((prev) =>
@@ -462,6 +470,13 @@ const AgencyMap: React.FC = () => {
               {markers}
               {responderMarkers}
             </MarkerClusterGroup>
+            {Object.entries(trajectories).map(([id, path]) => (
+              <Polyline
+                key={`trail-${id}`}
+                positions={path}
+                pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
+              />
+            ))}
           </MapContainer>
           <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
             <div className="text-sm text-slate-300 mb-2">Live queue</div>
