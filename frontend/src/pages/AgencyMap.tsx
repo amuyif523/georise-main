@@ -32,6 +32,7 @@ type Incident = {
     trustScore?: number | null;
   } | null;
   assignedResponderId?: number | null;
+  acknowledgedAt?: string | null;
 };
 
 type HeatPoint = { lat: number; lng: number; weight: number | null };
