@@ -14,6 +14,7 @@ import {
   uploadIncidentPhoto,
   getIncidentPhotos,
   getIncidents,
+  getIncidentDetails,
 } from './incident.controller';
 import { validateBody } from '../../middleware/validate';
 import { createIncidentSchema } from './incident.validation';
@@ -292,6 +293,8 @@ router.get(
     }
   },
 );
+
+router.get('/:id', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), getIncidentDetails);
 
 // Assign/respond/resolve workflow for agencies
 router.patch(

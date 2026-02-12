@@ -236,6 +236,23 @@ export class IncidentService {
     return incident;
   }
 
+  async getIncidentDetails(id: number) {
+    // For admin/agency use
+    const incident = await prisma.incident.findUnique({
+      where: { id },
+      include: {
+        aiOutput: true,
+        statusHistory: true,
+        photos: true,
+        reporter: {
+          select: { id: true, fullName: true, trustScore: true, phone: true },
+        },
+        sharedWith: true, // Needed for permission check
+      },
+    });
+    return incident;
+  }
+
   async findPotentialDuplicates(lat: number, lng: number, title?: string, description?: string) {
     // 200 meters radius, last 2 hours
     const radius = 200;
