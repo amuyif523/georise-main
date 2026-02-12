@@ -130,7 +130,11 @@ setInterval(async () => {
         const id = Number(idStr);
         const data = JSON.parse(jsonStr);
         // Only update if data is valid
-        const updateData: any = { latitude: data.lat, longitude: data.lng };
+        const updateData: any = {
+          latitude: data.lat,
+          longitude: data.lng,
+          lastSeenAt: new Date(data.updatedAt),
+        };
         if (data.status) updateData.status = data.status;
 
         return prisma.responder.update({
