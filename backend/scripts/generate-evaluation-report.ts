@@ -4,9 +4,10 @@ import path from 'path';
 
 // Use pg directly to fallback if Prisma fails
 const client = new Client({
-  connectionString:
+  connectionString: (
     process.env.DATABASE_URL ||
-    'postgresql://georisem:georisem123@localhost:54320/georisem_db?schema=public',
+    'postgresql://georisem:georisem123@127.0.0.1:54320/georisem_db?schema=public'
+  ).replace('localhost', '127.0.0.1'),
 });
 
 async function generateReport() {
