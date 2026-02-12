@@ -23,6 +23,27 @@ class PushService {
     return true;
   }
 
+  async saveSubscription(
+    userId: number,
+    subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+  ) {
+    return prisma.pushSubscription.upsert({
+      where: { endpoint: subscription.endpoint },
+      update: {
+        userId,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        isActive: true,
+      },
+      create: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      },
+    });
+  }
+
   async sendToUsers(userIds: number[], payload: PushPayload) {
     if (!userIds.length || !this.ensureConfigured()) return;
 
