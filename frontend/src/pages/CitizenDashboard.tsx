@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import TrustBadge from '../components/user/TrustBadge';
 import AppLayout from '../layouts/AppLayout';
 import MapWrapper from '../components/maps/IncidentMap';
+import SkeletonCard from '../components/ui/SkeletonCard';
 import api from '../lib/api';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -33,6 +34,13 @@ const CitizenDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [incidents, setIncidents] = useState<DashboardIncident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trustScore, setTrustScore] = useState(0);
+
+  useEffect(() => {
+    if (user?.trustScore !== undefined) {
+      setTrustScore(user.trustScore);
+    }
+  }, [user?.trustScore]);
 
   useEffect(() => {
     const fetchIncidents = async () => {
@@ -46,6 +54,21 @@ const CitizenDashboard: React.FC = () => {
       }
     };
     fetchIncidents();
+  }, []);
+
+  // Real-time trust score updates
+  useEffect(() => {
+    import('../lib/socket').then(({ getSocket }) => {
+      const socket = getSocket();
+      if (!socket) return;
+      const onStatsUpdate = (data: { trustScore: number }) => {
+        setTrustScore(data.trustScore);
+      };
+      socket.on('user:statsUpdate', onStatsUpdate);
+      return () => {
+        socket.off('user:statsUpdate', onStatsUpdate);
+      };
+    });
   }, []);
 
   const activeIncidentsCount = incidents.filter((i) => i.status !== 'RESOLVED').length;
@@ -80,7 +103,7 @@ const CitizenDashboard: React.FC = () => {
               <p className="text-xs font-bold text-base-content">{user?.fullName}</p>
               <p className="text-[10px] text-base-content/60 uppercase">Citizen Responder</p>
             </div>
-            <TrustBadge trustScore={user?.trustScore ?? 0} />
+            <TrustBadge trustScore={trustScore} />
           </div>
         </div>
       </div>
@@ -130,7 +153,13 @@ const CitizenDashboard: React.FC = () => {
           <div className="card bg-primary text-primary-content shadow-lg p-6 relative overflow-hidden">
             <div className="relative z-10">
               <Activity className="w-8 h-8 mb-2 opacity-80" />
-              <div className="text-4xl font-black mb-1">{activeIncidentsCount}</div>
+              <div className="text-4xl font-black mb-1">
+                {loading ? (
+                  <span className="loading loading-dots loading-lg"></span>
+                ) : (
+                  activeIncidentsCount
+                )}
+              </div>
               <div className="text-sm font-medium opacity-90">Active Incidents</div>
               <div className="text-xs opacity-70 mt-1">in your vicinity</div>
             </div>
@@ -160,9 +189,11 @@ const CitizenDashboard: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
             {loading ? (
-              <div className="flex items-center justify-center h-40">
-                <span className="loading loading-spinner text-primary"></span>
-              </div>
+              <>
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </>
             ) : incidents.length === 0 ? (
               <div className="text-center p-8 opacity-50">
                 <Navigation className="w-12 h-12 mx-auto mb-2 text-base-content/20" />

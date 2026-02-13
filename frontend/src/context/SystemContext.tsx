@@ -2,11 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../lib/api';
 import { getSocket } from '../lib/socket';
 
-interface SystemContextType {
+export interface SystemContextType {
   crisisMode: boolean;
   toggleCrisisMode: (enabled: boolean) => Promise<void>;
   sendBroadcast: (message: string, targetGeoJSON?: string) => Promise<void>;
   lastBroadcast: BroadcastMessage | null;
+  isAiProcessing: boolean;
+  setIsAiProcessing: (loading: boolean) => void;
+  isSyncing: boolean;
+  setIsSyncing: (syncing: boolean) => void;
 }
 
 interface BroadcastMessage {
@@ -28,6 +32,23 @@ export const useSystem = () => {
 export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [crisisMode, setCrisisMode] = useState(false);
   const [lastBroadcast, setLastBroadcast] = useState<BroadcastMessage | null>(null);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (isAiProcessing) {
+      timeoutId = setTimeout(() => {
+        console.warn('AI Processing exceeded limit; forcing loader cleanup.');
+        setIsAiProcessing(false);
+      }, 5000);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isAiProcessing]);
 
   useEffect(() => {
     // Fetch initial config
@@ -53,12 +74,22 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       socket.on('system:broadcast', (data: BroadcastMessage) => {
         setLastBroadcast(data);
       });
+
+      socket.on('ai:processing:start', () => {
+        setIsAiProcessing(true);
+      });
+
+      socket.on('ai:processing:end', () => {
+        setIsAiProcessing(false);
+      });
     }
 
     return () => {
       if (socket) {
         socket.off('system:config');
         socket.off('system:broadcast');
+        socket.off('ai:processing:start');
+        socket.off('ai:processing:end');
       }
     };
   }, []);
@@ -73,7 +104,18 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   return (
-    <SystemContext.Provider value={{ crisisMode, toggleCrisisMode, sendBroadcast, lastBroadcast }}>
+    <SystemContext.Provider
+      value={{
+        crisisMode,
+        toggleCrisisMode,
+        sendBroadcast,
+        lastBroadcast,
+        isAiProcessing,
+        setIsAiProcessing,
+        isSyncing,
+        setIsSyncing,
+      }}
+    >
       {children}
     </SystemContext.Provider>
   );

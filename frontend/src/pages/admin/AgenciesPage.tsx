@@ -648,11 +648,11 @@ const AgenciesPage: React.FC = () => {
         <div className="modal modal-open">
           <div className="modal-box bg-slate-900 border border-slate-700">
             <h3 className="font-semibold mb-2">
-              {confirm.action === 'delete' ? 'Deactivate agency' : 'Change availability'}
+              {confirm.action === 'delete' ? 'Delete agency' : 'Change availability'}
             </h3>
             <p className="text-sm text-slate-300">
               {confirm.action === 'delete'
-                ? 'This will mark the agency as inactive. Active assignments must be cleared first.'
+                ? 'This action is permanent and will remove all staff and responders linked to this agency. Incidents must be reassigned first.'
                 : confirm.next
                   ? 'Activate this agency to receive dispatches?'
                   : 'Deactivate this agency? Active assignments must be reassigned first.'}

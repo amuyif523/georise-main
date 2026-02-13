@@ -389,18 +389,31 @@ router.delete('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (re
   const parsed = idSchema.safeParse(req.params);
   if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
   const agencyId = parsed.data.id;
-  try {
-    await assertAgencyCanDeactivate(agencyId);
-  } catch (err: any) {
-    return res.status(409).json({ message: err.message });
+  // Hard delete guard: Check for ANY assigned incidents (not just active)
+  const incidentCount = await prisma.incident.count({
+    where: { assignedAgencyId: agencyId },
+  });
+
+  if (incidentCount > 0) {
+    return res.status(409).json({
+      message: `Cannot delete agency. It has ${incidentCount} assigned incident(s). Reassign them first.`,
+    });
   }
 
-  const agency = await prisma.agency.update({
-    where: { id: agencyId },
-    data: { isActive: false },
-  });
-  await auditAgency(req.user!.id, 'DEACTIVATE_AGENCY', agencyId);
-  res.json({ agency, message: 'Agency deactivated (deletion guarded by policy).' });
+  // Transactional cleanup and delete
+  await prisma.$transaction([
+    prisma.agencyStaff.deleteMany({ where: { agencyId } }),
+    // AgencyJurisdiction table exists? Based on file read, there is a route finding from it.
+    // If AgencyJurisdiction is not a model or handled differently, I should check.
+    // Looking at the file content line 184: prisma.agencyJurisdiction.findMany
+    // So yes, it exists.
+    prisma.agencyJurisdiction.deleteMany({ where: { agencyId } }),
+    prisma.responder.deleteMany({ where: { agencyId } }), // Clean up responders
+    prisma.agency.delete({ where: { id: agencyId } }),
+  ]);
+
+  await auditAgency(req.user!.id, 'DELETE_AGENCY', agencyId);
+  res.json({ message: 'Agency and linked staff/responders permanently deleted.' });
 });
 
 // Update boundary with GeoJSON polygon
@@ -555,6 +568,7 @@ router.post(
 
 const updateUserSchema = z.object({
   fullName: z.string().optional(),
+  email: z.string().email().optional(),
   phone: z.string().optional(),
   role: z.nativeEnum(Role).optional(),
   agencyId: z.number().optional(),
@@ -580,6 +594,14 @@ router.patch(
       });
       if (!current) return res.status(404).json({ message: 'User not found' });
 
+      // Email collision check
+      if (body.email && body.email !== current.email) {
+        const existing = await prisma.user.findUnique({ where: { email: body.email } });
+        if (existing) {
+          return res.status(409).json({ message: 'Email already in use' });
+        }
+      }
+
       const nextRole = body.role ?? current.role;
       const targetAgencyId = body.agencyId ?? current.agencyStaff?.agencyId ?? null;
       if (nextRole === Role.AGENCY_STAFF && !targetAgencyId) {
@@ -591,8 +613,10 @@ router.patch(
 
       const updates: any = {};
       if (body.fullName) updates.fullName = body.fullName;
+      if (body.email) updates.email = body.email;
       if (body.phone !== undefined) updates.phone = body.phone;
       if (body.role) updates.role = body.role;
+
       const user = await prisma.user.update({
         where: { id: userId },
         data: updates,
@@ -601,36 +625,31 @@ router.patch(
       if (nextRole === Role.AGENCY_STAFF) {
         const payload: any = {
           agencyId: targetAgencyId!,
+          staffRole: body.staffRole ?? current.agencyStaff?.staffRole ?? StaffRole.DISPATCHER,
+          isActive: body.isActive ?? current.agencyStaff?.isActive ?? true,
+          deactivatedAt: body.isActive === false ? new Date() : null,
         };
-        if (body.staffRole) payload.staffRole = body.staffRole;
-        if (body.isActive !== undefined) {
-          payload.isActive = body.isActive;
-          payload.deactivatedAt = body.isActive ? null : new Date();
-        }
-        const existing = await prisma.agencyStaff.findUnique({ where: { userId } });
-        if (existing) {
-          await prisma.agencyStaff.update({
-            where: { userId },
-            data: payload,
-          });
-        } else {
-          await prisma.agencyStaff.create({
-            data: {
-              ...payload,
-              userId,
-              staffRole: payload.staffRole ?? StaffRole.DISPATCHER,
-              isActive: payload.isActive ?? true,
-              deactivatedAt: payload.deactivatedAt ?? null,
-            },
-          });
-        }
+
+        // Use upsert to prevent P2025 if the record was missing
+        await prisma.agencyStaff.upsert({
+          where: { userId },
+          update: payload,
+          create: {
+            userId,
+            ...payload,
+          },
+        });
       } else {
-        await prisma.agencyStaff.deleteMany({ where: { userId } });
+        // If role changed FROM agency staff TO something else, remove staff record
+        if ((current.role as any) === Role.AGENCY_STAFF) {
+          await prisma.agencyStaff.deleteMany({ where: { userId } });
+        }
       }
 
       await auditUser(req.user!.id, 'UPDATE_USER', user.id);
       res.json({ user });
     } catch (err: any) {
+      console.error(err);
       res.status(400).json({ message: err?.message || 'Failed to update user' });
     }
   },
@@ -878,6 +897,10 @@ router.patch('/users/:id/verify', requireAuth, requireRole([Role.ADMIN]), async 
     },
   });
 
+  // Task 1: Identity Verification Score Audit
+  const { reputationService } = await import('../reputation/reputation.service');
+  await reputationService.onVerificationApproved(userId);
+
   await prisma.auditLog.create({
     data: {
       actorId: req.user!.id,
@@ -1074,7 +1097,7 @@ router.patch(
     });
     if (updated.role === Role.AGENCY_STAFF) {
       try {
-        await prisma.agencyStaff.update({
+        await prisma.agencyStaff.updateMany({
           where: { userId },
           data: { isActive, deactivatedAt: isActive ? null : new Date() },
         });

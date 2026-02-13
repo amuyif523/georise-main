@@ -499,7 +499,7 @@ router.post(
 
       if (incident.reporterId) {
         if (decision === 'APPROVE') {
-          await reputationService.onIncidentValidated(incident.reporterId);
+          await reputationService.onIncidentVerified(incident.reporterId);
           // Check for proximity alerts
           await alertService.checkProximityAndAlert(updated.id);
         } else await reputationService.onIncidentRejected(incident.reporterId);

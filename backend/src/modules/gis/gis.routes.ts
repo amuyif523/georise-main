@@ -72,11 +72,15 @@ router.get(
       return res.json(rows);
     }
 
-    if (agencyId) {
-      return res
-        .status(403)
-        .json({ message: 'Agency staff can only access their agency boundary' });
-    }
+    // Relaxed Guard: Allow AGENCY_STAFF to view subcity/woreda for context (visualization only)
+    // The specific agency boundary query is handled above.
+    // If they ask for 'subcity' or 'woreda', we just let them proceed to the general queries below.
+
+    // if (agencyId) {
+    //   return res
+    //     .status(403)
+    //     .json({ message: 'Agency staff can only access their agency boundary' });
+    // }
 
     if (level === 'woreda') {
       const rows = await prisma.$queryRawUnsafe<any[]>(`

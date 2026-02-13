@@ -7,17 +7,35 @@ export class ReputationService {
   private MAX = 100;
 
   async adjustTrust(userId: number, delta: number) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { trustScore: true },
-    });
-    if (!user) return null;
-    const newScore = clamp((user.trustScore ?? 0) + delta, this.MIN, this.MAX);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { trustScore: newScore },
-    });
-    return newScore;
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { trustScore: true },
+      });
+      if (!user) return null;
+      const newScore = clamp((user.trustScore ?? 0) + delta, this.MIN, this.MAX);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { trustScore: newScore },
+      });
+
+      // Task 3: Real-Time Score Synchronization
+      try {
+        const { getIO } = await import('../../socket');
+        const io = getIO();
+        if (io) {
+          io.to(`user:${userId}`).emit('user:statsUpdate', { trustScore: newScore });
+        }
+      } catch (e) {
+        // Socket likely not initialized in CLI/Migration context - ignore
+      }
+
+      return newScore;
+    } catch (error) {
+      const { default: logger } = await import('../../logger');
+      logger.error({ userId, delta, error }, 'Failed to adjust trust score');
+      return null;
+    }
   }
 
   async getTier(userId: number) {
@@ -43,7 +61,8 @@ export class ReputationService {
     });
   }
 
-  async onIncidentValidated(userId: number) {
+  async onIncidentVerified(userId: number) {
+    if (!userId) return null; // Guard for anonymous
     await prisma.user.update({
       where: { id: userId },
       data: { validReports: { increment: 1 } },

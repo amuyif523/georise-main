@@ -15,11 +15,17 @@ const LandingPage: React.FC = () => {
             GEORISE
           </a>
         </div>
-        <div className="flex-none gap-2">
-          <button onClick={() => navigate('/login')} className="btn btn-ghost btn-sm">
+        <div className="flex-none flex items-center gap-4">
+          <button
+            onClick={() => navigate('/login')}
+            className="btn btn-ghost px-4 py-2 min-h-0 h-auto text-sm hidden sm:inline-flex"
+          >
             Sign In
           </button>
-          <button onClick={() => navigate('/register')} className="btn btn-primary btn-sm">
+          <button
+            onClick={() => navigate('/register')}
+            className="btn btn-primary px-4 py-2 min-h-0 h-auto text-sm"
+          >
             Register
           </button>
         </div>

@@ -1,0 +1,47 @@
+Loaded Prisma config from prisma.config.ts.
+
+Running seed command `tsx prisma/seed.ts` ...
+Clearing database...
+Database cleared.
+Seeding Geometries...
+Seeding Agencies...
+Seeding Users & Staff...
+Seeding Incidents...
+PrismaClientKnownRequestError: 
+Invalid `prisma.incident.create()` invocation in
+C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts:377:42
+
+  374 const createdAt = new Date();
+  375 createdAt.setDate(createdAt.getDate() - inc.daysAgo);
+  376 
+→ 377 const record = await prisma.incident.create(
+The column `declinedResponderIds` does not exist in the current database.
+    at qr.handleRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at qr.handleAndLogRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at qr.request (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async a (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async createIncidents (C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts:377:20)
+    at async main (C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts:438:3) {
+  code: 'P2022',
+  meta: {
+    modelName: 'Incident',
+    driverAdapterError: DriverAdapterError: ColumnNotFound
+        at PrismaPgAdapter.onError (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:651:11)
+        at PrismaPgAdapter.performIO (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:646:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async PrismaPgAdapter.queryRaw (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:566:30)
+        at async <anonymous> (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:68:22)
+        at async fr (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:56:10)
+        at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:190:26)
+        at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:217:41)
+        at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:276:41)
+        at async e.run (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:96:23) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.2.0'
+}
+
+An error occurred while running the seed command:
+Error: Command failed with exit code 1: tsx prisma/seed.ts

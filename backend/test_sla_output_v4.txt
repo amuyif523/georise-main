@@ -1,0 +1,25 @@
+--- Starting SLA Requeue Test ---
+DB URL Loaded: true
+{"level":50,"time":1770872683701,"pid":5836,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+0. Mock Socket Server initialized.
+1. Setting up Incident and Responder...
+Test Failed: PrismaClientKnownRequestError: 
+Invalid `prisma.user.findFirst()` invocation in
+C:\Users\Amanuel\Desktop\georise-main\backend\scripts\test-sla-requeue.ts:28:38
+
+  25 console.log('1. Setting up Incident and Responder...');
+  26 
+  27 // Create or find a test user for responder
+→ 28 let user = await prisma.user.findFirst(
+
+    at qr.handleRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at qr.handleAndLogRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at qr.request (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Array.$allOperations (C:\Users\Amanuel\Desktop\georise-main\backend\src\prisma.ts:22:18)
+    at async a (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async main (C:\Users\Amanuel\Desktop\georise-main\backend\scripts\test-sla-requeue.ts:28:20) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'User' },
+  clientVersion: '7.2.0'
+}

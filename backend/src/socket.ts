@@ -12,6 +12,8 @@ export const initSocketServer = (server: HttpServer) => {
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:4173',
+    'http://localhost:4174',
     process.env.CLIENT_ORIGIN,
   ].filter(Boolean) as string[];
 
@@ -21,10 +23,19 @@ export const initSocketServer = (server: HttpServer) => {
       methods: ['GET', 'POST'],
       credentials: true,
     },
+    transports: ['polling', 'websocket'], // Allow graceful upgrade
   });
 
   io.on('connection', async (socket) => {
-    logger.info({ socketId: socket.id }, 'Socket connection');
+    logger.info(
+      {
+        socketId: socket.id,
+        transport: socket.conn.transport.name,
+        query: socket.handshake.query,
+      },
+      'Socket connection attempt',
+    );
+
     const token = socket.handshake.auth?.token as string | undefined;
     if (!token) {
       logger.warn('Socket missing token; disconnecting');
@@ -46,6 +57,7 @@ export const initSocketServer = (server: HttpServer) => {
       // Incident Chat Rooms
       socket.on('join_incident', (incidentId: number) => {
         socket.join(`incident:${incidentId}`);
+        socket.emit('room:joined', { room: `incident:${incidentId}` });
         logger.info({ userId, incidentId }, 'Joined incident room');
       });
 
@@ -112,6 +124,7 @@ export const initSocketServer = (server: HttpServer) => {
       });
     } catch (err) {
       logger.error({ err }, 'Socket auth failed');
+      socket.emit('auth_error', { message: 'Authentication failed' }); // Notify client
       socket.disconnect();
     }
   });
@@ -125,29 +138,38 @@ setInterval(async () => {
     if (updates.length === 0) return;
 
     // Process in chunks or parallel
-    await prisma.$transaction(
-      updates.map(([idStr, jsonStr]) => {
-        const id = Number(idStr);
-        const data = JSON.parse(jsonStr);
-        // Only update if data is valid
-        const updateData: any = {
-          latitude: data.lat,
-          longitude: data.lng,
-          lastSeenAt: new Date(data.updatedAt),
-        };
-        if (data.status) updateData.status = data.status;
+    // Process updates individually to avoid one failure blocking all
+    await Promise.all(
+      updates.map(async ([idStr, jsonStr]) => {
+        try {
+          const id = Number(idStr);
+          const data = JSON.parse(jsonStr);
 
-        return prisma.responder.update({
-          where: { id },
-          data: updateData,
-        });
+          const updateData: any = {
+            latitude: data.lat,
+            longitude: data.lng,
+            lastSeenAt: new Date(data.updatedAt),
+          };
+          if (data.status) updateData.status = data.status;
+
+          await prisma.responder.update({
+            where: { id },
+            data: updateData,
+          });
+        } catch (err: any) {
+          if (err.code === 'P2025') {
+            // Record not found in DB but exists in Redis (Stale data)
+            // Remove from Redis to stop future errors
+            await redis.hdel('responder:locations', idStr);
+            logger.warn({ id: idStr }, 'Removed stale responder from Redis sync');
+          } else {
+            logger.error({ err, id: idStr }, 'Failed to update responder location');
+          }
+        }
       }),
     );
-
-    // Optional: Clear or expire? No, we keep it as latest state.
-    // Ideally we track "lastSynced" or just overwrite. Overwriting is safe.
   } catch (err) {
-    logger.error({ err }, 'Failed to sync responder locations');
+    logger.error({ err }, 'Failed to sync responder locations (Critical Job Error)');
   }
 }, 30000); // 30 seconds
 

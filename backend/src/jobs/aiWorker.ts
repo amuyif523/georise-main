@@ -22,15 +22,19 @@ export const aiWorker = new Worker(
       // 1. Call AI Service
       aiOutput = await classifyWithBackoff({ title, description });
       aiSuccess = true;
-    } catch (err) {
-      logger.error({ err, incidentId }, 'AI Service failed in worker');
-      // Fallback
+    } catch (err: any) {
+      const errorDetails = err.response?.data || err.message || 'Unknown error';
+      const statusCode = err.response?.status;
+
+      logger.error({ err, incidentId, statusCode, errorDetails }, 'AI Service failed in worker');
+
+      // Fallback with visible error summary
       aiOutput = {
         predicted_category: 'UNSPECIFIED',
         severity_score: 2,
         confidence: 0,
         model_version: 'worker-fallback',
-        summary: null,
+        summary: `AI Error: ${typeof errorDetails === 'object' ? JSON.stringify(errorDetails) : errorDetails}`,
       };
     } finally {
       const durationMs = Number(process.hrtime.bigint() - start) / 1_000_000;

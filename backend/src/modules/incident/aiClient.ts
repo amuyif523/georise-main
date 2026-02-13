@@ -1,5 +1,6 @@
 import axios from 'axios';
 import logger from '../../logger';
+import { INTERNAL_SERVICE_SECRET } from '../../config/env';
 
 const AI_BASE =
   process.env.AI_ENDPOINT?.replace(/\/classify$/, '') ||
@@ -23,7 +24,10 @@ export async function classifyWithBackoff(payload: Record<string, any>) {
   for (const delay of attempts) {
     if (delay) await sleep(delay);
     try {
-      const res = await axios.post(CLASSIFY_URL, payload, { timeout: 4500 });
+      const res = await axios.post(CLASSIFY_URL, payload, {
+        timeout: 4500,
+        headers: { Authorization: `Bearer ${INTERNAL_SERVICE_SECRET}` },
+      });
       return res.data;
     } catch (err) {
       lastError = err;
@@ -38,7 +42,10 @@ export async function fetchAiMetadata(force = false): Promise<MetadataPayload | 
     return metadataCache.value;
   }
   try {
-    const res = await axios.get(HEALTH_URL, { timeout: 2000 });
+    const res = await axios.get(HEALTH_URL, {
+      timeout: 2000,
+      headers: { Authorization: `Bearer ${INTERNAL_SERVICE_SECRET}` },
+    });
     const payload: MetadataPayload = {
       model: res.data?.model,
       metadata: res.data?.metadata,

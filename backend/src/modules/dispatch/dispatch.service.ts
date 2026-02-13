@@ -65,7 +65,8 @@ export class DispatchService {
              location,
              latitude,
              longitude,
-             category
+             category,
+             "declinedResponderIds"
       FROM "Incident"
       WHERE id = ${incidentId}
       LIMIT 1;
@@ -133,7 +134,13 @@ export class DispatchService {
         inJurisdiction = !!flag[0]?.inside;
       }
       const jurisdictionScore = inJurisdiction ? 1 : 0.5;
-      const agencyUnits = units.filter((u) => u.agencyid === agency.id || u.agencyId === agency.id);
+      const declinedIds: number[] = incident.declinedResponderIds || [];
+
+      const agencyUnits = units.filter((u) => {
+        const uId = u.id;
+        const aId = u.agencyid || u.agencyId;
+        return aId === agency.id && !declinedIds.includes(uId);
+      });
 
       if (!agencyUnits.length) {
         const catBonus = categoryPreferred(incident.category, agency.type);
@@ -343,11 +350,14 @@ export class DispatchService {
     reason: string,
     actorUserId: number,
   ) {
-    return prisma.$transaction(async (tx) => {
+    // 1. Reset Incident & Track Decline
+    const result = await prisma.$transaction(async (tx) => {
       const incident = await tx.incident.findUnique({ where: { id: incidentId } });
       if (!incident) throw new Error('Incident not found');
       if (incident.assignedResponderId !== responderId)
         throw new Error('Not assigned to this responder');
+
+      const newDeclinedIds = [...(incident.declinedResponderIds || []), responderId];
 
       // 1. Reset Incident
       const updatedIncident = await tx.incident.update({
@@ -355,13 +365,10 @@ export class DispatchService {
         data: {
           status: 'RECEIVED',
           assignedResponderId: null,
-          assignedAgencyId: null, // Returning to general pool? Or should we keep agency?
-          // If we keep agency, it's still assigned to agency but unassigned to responder.
-          // But user requirement says "move incident back to RECEIVED queue".
-          // RECEIVED usually implies "New / Unassigned".
-          // I'll stick to RECEIVED and clear assignments.
+          assignedAgencyId: null,
           dispatchedAt: null,
           acknowledgedAt: null,
+          declinedResponderIds: newDeclinedIds,
         },
       });
 
@@ -382,16 +389,11 @@ export class DispatchService {
         },
       });
 
-      const { logActivity } = await import('../incident/activity.service');
-      // We can't use the imported service easily inside transaction if it uses global prisma,
-      // but activity service usually just does prisma.activityLog.create.
-      // Ideally we'd use the tx here.
-      // I'll manually create the activity log to be safe in transaction.
       await tx.activityLog.create({
         data: {
           incidentId,
           userId: actorUserId,
-          type: 'STATUS_CHANGE', // or DISPATCH?
+          type: 'STATUS_CHANGE',
           message: `Assignment Declined: ${reason}`,
         },
       });
@@ -402,6 +404,15 @@ export class DispatchService {
 
       return updatedIncident;
     });
+
+    // Post-transaction: Attempt Auto-Reassign
+    try {
+      await this.executeAutoAssignment(incidentId);
+    } catch (err) {
+      console.error('Failed to auto-reassign after decline:', err);
+    }
+
+    return result;
   }
 }
 

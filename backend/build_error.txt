@@ -1,0 +1,10 @@
+
+> backend@1.0.0 build
+> tsc
+
+src/jobs/sla.job.ts(102,64): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(obj: "Socket emit failed during SLA check", msg?: undefined): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(obj: "Socket emit failed during SLA check", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/modules/push/push.controller.ts(12,23): error TS2339: Property 'saveSubscription' does not exist on type 'PushService'.

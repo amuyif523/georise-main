@@ -3,11 +3,21 @@ import { io, Socket } from 'socket.io-client';
 let socket: Socket | null = null;
 
 export const connectSocket = (token: string) => {
-  socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:4000', {
+  const url = import.meta.env.VITE_WS_URL || 'http://localhost:4000';
+  socket = io(url, {
     auth: { token },
     transports: ['websocket'],
-    autoConnect: true,
+    withCredentials: true,
+    reconnectionAttempts: 5,
+    autoConnect: false,
   });
+
+  socket.connect();
+
+  socket.on('connect_error', (err) => {
+    console.error('Responder Socket Error:', err.message);
+  });
+
   return socket;
 };
 

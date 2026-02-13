@@ -67,7 +67,7 @@ const NotificationBell: React.FC = () => {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-64 rounded-lg border border-slate-800 bg-[#0D1117] shadow-2xl p-2 z-40">
+        <div className="absolute right-0 mt-2 w-64 rounded-lg border border-slate-800 bg-[#0D1117] shadow-2xl p-2 z-[9999]">
           <div className="text-xs text-slate-400 mb-2">Live notifications</div>
           <div className="space-y-1 max-h-64 overflow-auto">
             {notifications.length === 0 && (

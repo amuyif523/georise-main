@@ -50,6 +50,16 @@ const UsersPage: React.FC = () => {
   const [agencies, setAgencies] = useState<Agency[]>([]);
 
   const [createModal, setCreateModal] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    role: '',
+    staffRole: '',
+    agencyId: '',
+  });
+
   const [newUser, setNewUser] = useState({
     fullName: '',
     email: '',
@@ -294,6 +304,22 @@ const UsersPage: React.FC = () => {
                         Verify
                       </button>
                     )}
+                    <button
+                      className="btn btn-xs btn-ghost btn-active"
+                      onClick={() => {
+                        setEditUser(u);
+                        setEditForm({
+                          fullName: u.fullName,
+                          email: u.email,
+                          phone: u.phone || '',
+                          role: u.role,
+                          staffRole: u.agencyStaff?.staffRole || 'DISPATCHER',
+                          agencyId: u.agencyStaff?.agencyId?.toString() || '',
+                        });
+                      }}
+                    >
+                      Edit
+                    </button>
                     <button className="btn btn-xs btn-ghost" onClick={() => forceReset(u.id)}>
                       Force reset
                     </button>
@@ -328,14 +354,14 @@ const UsersPage: React.FC = () => {
 
       {createModal && (
         <div className="modal modal-open">
-          <div className="modal-box space-y-3">
+          <div className="modal-box space-y-3 bg-slate-900 border border-slate-700 text-white">
             <h3 className="font-bold text-lg">Invite user</h3>
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Full name</span>
               </label>
               <input
-                className="input input-bordered"
+                className="input input-bordered bg-slate-800 border-slate-700"
                 value={newUser.fullName}
                 onChange={(e) => setNewUser((p) => ({ ...p, fullName: e.target.value }))}
               />
@@ -345,7 +371,7 @@ const UsersPage: React.FC = () => {
                 <span className="label-text">Email</span>
               </label>
               <input
-                className="input input-bordered"
+                className="input input-bordered bg-slate-800 border-slate-700"
                 value={newUser.email}
                 onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
               />
@@ -355,7 +381,7 @@ const UsersPage: React.FC = () => {
                 <span className="label-text">Phone</span>
               </label>
               <input
-                className="input input-bordered"
+                className="input input-bordered bg-slate-800 border-slate-700"
                 value={newUser.phone}
                 onChange={(e) => setNewUser((p) => ({ ...p, phone: e.target.value }))}
               />
@@ -365,7 +391,7 @@ const UsersPage: React.FC = () => {
                 <span className="label-text">Role</span>
               </label>
               <select
-                className="select select-bordered"
+                className="select select-bordered bg-slate-800 border-slate-700"
                 value={newUser.role}
                 onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}
               >
@@ -382,7 +408,7 @@ const UsersPage: React.FC = () => {
                   <span className="label-text">Staff role</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className="select select-bordered bg-slate-800 border-slate-700"
                   value={newUser.staffRole}
                   onChange={(e) => setNewUser((p) => ({ ...p, staffRole: e.target.value }))}
                 >
@@ -400,7 +426,7 @@ const UsersPage: React.FC = () => {
                   <span className="label-text">Agency</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className="select select-bordered bg-slate-800 border-slate-700"
                   value={newUser.agencyId}
                   onChange={(e) => setNewUser((p) => ({ ...p, agencyId: e.target.value }))}
                 >
@@ -419,11 +445,143 @@ const UsersPage: React.FC = () => {
               </div>
             )}
             <div className="modal-action">
-              <button className="btn" onClick={() => setCreateModal(false)}>
+              <button className="btn btn-ghost" onClick={() => setCreateModal(false)}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={invite}>
                 Invite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editUser && (
+        <div className="modal modal-open">
+          <div className="modal-box space-y-3 bg-slate-900 border border-slate-700 text-white">
+            <h3 className="font-bold text-lg">Edit User</h3>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Full name</span>
+              </label>
+              <input
+                className="input input-bordered bg-slate-800 border-slate-700"
+                value={editForm.fullName}
+                onChange={(e) => setEditForm((p) => ({ ...p, fullName: e.target.value }))}
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Email</span>
+              </label>
+              <input
+                className="input input-bordered bg-slate-800 border-slate-700"
+                value={editForm.email}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Phone</span>
+              </label>
+              <input
+                className="input input-bordered bg-slate-800 border-slate-700"
+                value={editForm.phone}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+              />
+            </div>
+            {!isAgencyAdmin && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Role</span>
+                </label>
+                <select
+                  className="select select-bordered bg-slate-800 border-slate-700"
+                  value={editForm.role}
+                  onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                >
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="AGENCY_STAFF">AGENCY_STAFF</option>
+                  <option value="CITIZEN">CITIZEN</option>
+                </select>
+              </div>
+            )}
+            {editForm.role === 'AGENCY_STAFF' && (
+              <>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Staff role</span>
+                  </label>
+                  <select
+                    className="select select-bordered bg-slate-800 border-slate-700"
+                    value={editForm.staffRole}
+                    onChange={(e) => setEditForm((p) => ({ ...p, staffRole: e.target.value }))}
+                  >
+                    {staffRoleOptions.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {!isAgencyAdmin && (
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text">Agency</span>
+                    </label>
+                    <select
+                      className="select select-bordered bg-slate-800 border-slate-700"
+                      value={editForm.agencyId}
+                      onChange={(e) => setEditForm((p) => ({ ...p, agencyId: e.target.value }))}
+                    >
+                      <option value="">Select agency</option>
+                      {agencies.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={() => setEditUser(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={async () => {
+                  if (!editUser) return;
+                  try {
+                    const payload: any = {
+                      fullName: editForm.fullName,
+                      email: editForm.email,
+                      phone: editForm.phone || undefined,
+                      role: editForm.role,
+                    };
+
+                    if (editForm.role === 'AGENCY_STAFF') {
+                      payload.staffRole = editForm.staffRole;
+                      if (!isAgencyAdmin && editForm.agencyId) {
+                        payload.agencyId = Number(editForm.agencyId);
+                      }
+                    }
+
+                    const url = isAgencyAdmin
+                      ? `/admin/agency/users/${editUser.id}`
+                      : `/admin/users/${editUser.id}`;
+
+                    await api.patch(url, payload);
+                    setEditUser(null);
+                    fetchUsers();
+                  } catch (err: any) {
+                    setError(err?.response?.data?.message || 'Failed to update user');
+                  }
+                }}
+              >
+                Save Changes
               </button>
             </div>
           </div>

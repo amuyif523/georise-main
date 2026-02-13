@@ -90,7 +90,10 @@ const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({ poi
   return null;
 };
 
+import { useAuth } from '../context/AuthContext';
+
 const AgencyMap: React.FC = () => {
+  const { user } = useAuth();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
   const [clusterPoints, setClusterPoints] = useState<ClusterPoint[]>([]);
@@ -109,8 +112,13 @@ const AgencyMap: React.FC = () => {
   const [fallbackPoll, setFallbackPoll] = useState<ReturnType<typeof setInterval> | null>(null);
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
   const [selectedSubCity, setSelectedSubCity] = useState<string>('');
-  const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>('subcity');
-  const [responders, setResponders] = useState<any[]>([]);
+
+  // Task 3: Default to 'agency' for AGENCY_STAFF to prevent 403s on load
+  const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>(
+    user?.role === 'AGENCY_STAFF' ? 'agency' : 'subcity',
+  );
+
+  const [responders, setResponders] = useState<any[]>([]); // Task 2: Ensure array init
   const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
   const fetchData = useCallback(async () => {
@@ -321,37 +329,36 @@ const AgencyMap: React.FC = () => {
     [incidents, actionLoading],
   );
 
-  const responderMarkers = useMemo(
-    () =>
-      responders
-        .filter((r) => r.latitude != null && r.longitude != null)
-        .map((r) => {
-          const color = getResponderColor(r.status);
-          return (
-            <Marker
-              key={`resp-${r.id}`}
-              position={[r.latitude as number, r.longitude as number]}
-              icon={L.divIcon({
-                className: 'responder-marker',
-                html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;"></div>`,
-                iconSize: [14, 14],
-                iconAnchor: [7, 7],
-              })}
-            >
-              <Popup>
-                <div className="text-sm space-y-1">
-                  <p className="font-semibold">{r.name}</p>
-                  <p className="text-xs text-slate-500">{r.type}</p>
-                  <p className="text-xs">
-                    Status: <span style={{ color }}>{r.status}</span>
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        }),
-    [responders],
-  );
+  const responderMarkers = useMemo(() => {
+    if (!Array.isArray(responders)) return []; // Task 2: Critical safety guard
+    return responders
+      .filter((r) => r.latitude != null && r.longitude != null)
+      .map((r) => {
+        const color = getResponderColor(r.status);
+        return (
+          <Marker
+            key={`resp-${r.id}`}
+            position={[r.latitude as number, r.longitude as number]}
+            icon={L.divIcon({
+              className: 'responder-marker',
+              html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;"></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            })}
+          >
+            <Popup>
+              <div className="text-sm space-y-1">
+                <p className="font-semibold">{r.name}</p>
+                <p className="text-xs text-slate-500">{r.type}</p>
+                <p className="text-xs">
+                  Status: <span style={{ color }}>{r.status}</span>
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      });
+  }, [responders]);
 
   const selectedIncident = incidents.find((i) => i.id === selectedId) || null;
 

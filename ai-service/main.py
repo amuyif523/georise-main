@@ -1,21 +1,128 @@
+import os
+import json
 from pathlib import Path
 from typing import Optional
 
 import torch
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from utils.severity import infer_severity
 
-app = FastAPI()
-
+# --- Configuration & Constants ---
+INTERNAL_SERVICE_SECRET = os.getenv("INTERNAL_SERVICE_SECRET")
 MODEL_DIR = Path(__file__).parent / "models" / "afroxlmr_incident_classifier"
 DEFAULT_MODEL_NAME = "Davlan/afro-xlmr-base"
 METADATA_PATH = MODEL_DIR / "metadata.json"
+KEYWORDS_PATH = Path(__file__).parent / "data" / "keywords.json"
+
+# --- Globals ---
 model_metadata = None
+KEYWORDS = {}
+
+# --- Helper Functions ---
 
 
+def load_keywords():
+    global KEYWORDS
+    if KEYWORDS_PATH.exists():
+        try:
+            KEYWORDS = json.loads(KEYWORDS_PATH.read_text(encoding="utf-8"))
+            print(f"Loaded {len(KEYWORDS)} keyword categories from {KEYWORDS_PATH}")
+        except Exception as e:
+            print(f"Failed to load keywords: {e}")
+    else:
+        print(f"Keywords file not found at {KEYWORDS_PATH}")
+
+
+def load_model():
+    """
+    Load a local fine-tuned model if present; otherwise fall back to the base model
+    so the service keeps running even without weights.
+    """
+    version = None
+    global model_metadata
+    model_path = DEFAULT_MODEL_NAME
+
+    if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
+        model_path = MODEL_DIR
+        print(f"Loading local model from {model_path}")
+        if METADATA_PATH.exists():
+            try:
+                model_metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
+                version = model_metadata.get("version_tag")
+            except Exception:
+                version = None
+                model_metadata = None
+    else:
+        print(f"Loading default base model {model_path}")
+
+    tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+    model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
+    model.eval()
+    return tokenizer, model, version or str(model_path)
+
+
+def heuristic_category(text: str) -> str:
+    t = text.lower()
+
+    # Negation / Safety Check (Highest Priority for OTHER)
+    negations = [
+        "no incident",
+        "no danger",
+        "no fire",
+        "false alarm",
+        "test only",
+        "አደጋ የለም",
+        "ምንም እሳት የለም",
+        "በስህተት",
+        "ምንም አይጠበቅም",
+        "የለም",
+    ]
+    if any(n in t for n in negations):
+        return "OTHER"
+
+    # Dynamic keyword lookup
+    for category, words in KEYWORDS.items():
+        if any(w in t for w in words):
+            return category.upper()
+
+    # Fallback to hardcoded if JSON missing or empty
+    if not KEYWORDS:
+        if any(w in t for w in ["fire", "smoke", "flame", "burn", "እሳት", "ጭስ"]):
+            return "FIRE"
+        if any(w in t for w in ["medical", "injury", "blood", "ambulance", "ሕክምና"]):
+            return "MEDICAL"
+
+    return "OTHER"
+
+
+# --- Initialization ---
+load_keywords()
+tokenizer, model, model_version = load_model()
+
+# --- FastAPI App & Security ---
+app = FastAPI()
+security = HTTPBearer()
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not INTERNAL_SERVICE_SECRET:
+        # Require secret to be set for security
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server misconfigured: INTERNAL_SERVICE_SECRET missing",
+        )
+    if credentials.credentials != INTERNAL_SERVICE_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+        )
+
+
+# --- Models ---
 class ClassifyRequest(BaseModel):
     title: str
     description: str
@@ -29,82 +136,10 @@ class ClassifyResponse(BaseModel):
     summary: Optional[str] = None
 
 
-def load_model():
-    """
-    Load a local fine-tuned model if present; otherwise fall back to the base model
-    so the service keeps running even without weights.
-    """
-    version = None
-    global model_metadata
-    if MODEL_DIR.exists() and (MODEL_DIR / "config.json").exists():
-        model_path = MODEL_DIR
-        print(f"Loading local model from {model_path}")
-        if METADATA_PATH.exists():
-            try:
-                import json
-
-                model_metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
-                version = model_metadata.get("version_tag")
-            except Exception:
-                version = None
-                model_metadata = None
-    else:
-        model_path = DEFAULT_MODEL_NAME
-        print(f"Loading default base model {model_path}")
-
-    tokenizer = AutoTokenizer.from_pretrained(str(model_path))
-    model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
-    model.eval()
-    return tokenizer, model, version or str(model_path)
+# --- Routes ---
 
 
-KEYWORDS_PATH = Path(__file__).parent / "data" / "keywords.json"
-KEYWORDS = {}
-
-def load_keywords():
-    global KEYWORDS
-    if KEYWORDS_PATH.exists():
-        try:
-            import json
-            KEYWORDS = json.loads(KEYWORDS_PATH.read_text(encoding="utf-8"))
-            print(f"Loaded {len(KEYWORDS)} keyword categories from {KEYWORDS_PATH}")
-        except Exception as e:
-            print(f"Failed to load keywords: {e}")
-    else:
-        print(f"Keywords file not found at {KEYWORDS_PATH}")
-
-load_keywords()
-
-def heuristic_category(text: str) -> str:
-    t = text.lower()
-    
-    # Negation / Safety Check (Highest Priority for OTHER)
-    negations = [
-        "no incident", "no danger", "no fire", "false alarm", "test only",
-        "አደጋ የለም", "ምንም እሳት የለም", "በስህተት", "ምንም አይጠበቅም", "የለም"
-    ]
-    if any(n in t for n in negations):
-        return "OTHER"
-
-    # Dynamic keyword lookup
-    for category, words in KEYWORDS.items():
-        if any(w in t for w in words):
-            return category.upper()
-    
-    # Fallback to hardcoded if JSON missing or empty (Safety Net)
-    if not KEYWORDS:
-        if any(w in t for w in ["fire", "smoke", "flame", "burn", "እሳት", "ጭስ"]):
-            return "FIRE"
-        if any(w in t for w in ["medical", "injury", "blood", "ambulance", "ሕክምና"]):
-            return "MEDICAL"
-            
-    return "OTHER"
-
-
-tokenizer, model, model_version = load_model()
-
-
-@app.get("/health")
+@app.get("/health", dependencies=[Depends(verify_token)])
 def health():
     return {
         "status": "AI service running",
@@ -113,7 +148,9 @@ def health():
     }
 
 
-@app.post("/classify", response_model=ClassifyResponse)
+@app.post(
+    "/classify", response_model=ClassifyResponse, dependencies=[Depends(verify_token)]
+)
 def classify(req: ClassifyRequest):
     try:
         text = (req.title.strip() + " " + req.description.strip()).strip()
@@ -141,8 +178,7 @@ def classify(req: ClassifyRequest):
 
         pred_id = int(probs.argmax())
 
-        # If using base model (not fine-tuned), id2label might be generic LABEL_0, etc.
-        # Or if confidence is very low, fallback to heuristic.
+        # Logic for base model or low confidence
         if "afro-xlmr-base" in str(model_version) and not MODEL_DIR.exists():
             pred_label = heuristic_category(text)
             confidence = 0.5
@@ -150,7 +186,6 @@ def classify(req: ClassifyRequest):
             pred_label = model.config.id2label.get(pred_id, "OTHER")
             confidence = float(probs[pred_id])
 
-            # Fallback if label is generic
             if pred_label.startswith("LABEL_"):
                 pred_label = heuristic_category(text)
 
@@ -166,7 +201,6 @@ def classify(req: ClassifyRequest):
         )
     except Exception as e:
         print(f"Classification error: {e}")
-        # Fallback response
         return ClassifyResponse(
             predicted_category="OTHER",
             severity_score=2,

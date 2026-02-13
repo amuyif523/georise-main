@@ -65,3 +65,17 @@ export const emitIncidentShared = (incident: IncidentPayload, targetAgencyId: nu
   const io = getIO();
   io.to(`agency:${targetAgencyId}`).emit('incident:shared', incident);
 };
+
+export const emitIncidentProcessingStart = (incidentId: number, reporterId: number) => {
+  const io = getIO();
+  if (reporterId) {
+    io.to(`user:${reporterId}`).emit('ai:processing:start', { incidentId });
+  }
+};
+
+export const emitIncidentProcessingEnd = (incidentId: number, reporterId: number) => {
+  const io = getIO();
+  if (reporterId) {
+    io.to(`user:${reporterId}`).emit('ai:processing:end', { incidentId });
+  }
+};

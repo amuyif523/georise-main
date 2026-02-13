@@ -54,7 +54,6 @@ const updateSW = registerSW({
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    // ... inside render
     <AuthProvider>
       <SystemProvider>
         <NotificationProvider>

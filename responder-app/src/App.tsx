@@ -39,7 +39,6 @@ const App: React.FC = () => {
 
       localStorage.setItem('responder_token', t);
       setToken(t);
-      connectSocket(t);
       setMessage('Connected as responder.');
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || 'Login failed');

@@ -1,0 +1,39 @@
+Loaded Prisma config from prisma.config.ts.
+
+Running seed command `tsx prisma/seed.ts` ...
+Clearing database...
+Database cleared.
+Seeding Geometries...
+PrismaClientKnownRequestError: 
+Invalid `prisma.$executeRaw()` invocation:
+
+
+Raw query failed. Code: `XX000`. Message: `Cannot find SRID (4326) in spatial_ref_sys`
+    at qr.handleRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at qr.handleAndLogRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at qr.request (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async a (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async createGeometries (C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts:67:5)
+    at async main (C:\Users\Amanuel\Desktop\georise-main\backend\prisma\seed.ts:416:25) {
+  code: 'P2010',
+  meta: {
+    driverAdapterError: DriverAdapterError: Cannot find SRID (4326) in spatial_ref_sys
+        at PrismaPgAdapter.onError (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:651:11)
+        at PrismaPgAdapter.performIO (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:646:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async PrismaPgAdapter.executeRaw (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:605:13)
+        at async <anonymous> (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:68:22)
+        at async fr (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:56:10)
+        at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:172:18)
+        at async e.run (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:96:23)
+        at async e.execute (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\core\engines\client\LocalExecutor.ts:81:12)
+        at async Dt.request (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\core\engines\client\ClientEngine.ts:472:22) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.2.0'
+}
+
+An error occurred while running the seed command:
+Error: Command failed with exit code 1: tsx prisma/seed.ts

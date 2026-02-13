@@ -3,9 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../ui/NotificationBell';
 import NotificationToggle from '../ui/NotificationToggle';
 import LanguageSwitcher from '../LanguageSwitcher';
+import { useSystem } from '../../context/SystemContext';
+import { Loader2 } from 'lucide-react';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
+  const { isAiProcessing, isSyncing } = useSystem();
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
   const [offline, setOffline] = useState(!online);
 
@@ -20,13 +23,23 @@ const AppHeader: React.FC = () => {
     };
   }, []);
 
+  const showLoader = isAiProcessing || isSyncing;
+
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#0D1117]/80 backdrop-blur">
+    <header className="relative z-50 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-[#0D1117]/80 backdrop-blur">
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${offline ? 'bg-yellow-400' : 'bg-emerald-400'}`} />
         <span className="text-xs text-slate-400">
           {offline ? 'Offline (fallback to polling)' : 'Online'}
         </span>
+        {showLoader && (
+          <div className="flex items-center gap-2 ml-4 px-2 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
+            <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+            <span className="text-[10px] text-blue-300 font-mono uppercase tracking-wider">
+              {isAiProcessing ? 'AI Processing' : 'Syncing'}
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <LanguageSwitcher />

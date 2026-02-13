@@ -241,6 +241,7 @@ model Incident {
   isDemo           Boolean        @default(false)
   demoScenarioCode String?
   isReporterAtScene Boolean       @default(true)
+  declinedResponderIds Int[]      @default([])
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

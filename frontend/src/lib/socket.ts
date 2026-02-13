@@ -18,10 +18,19 @@ export const connectSocket = (token: string) => {
   }
 
   currentToken = token;
-  socket = io(url, {
+  const socketOptions = {
     auth: { token },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'], // Start with polling to avoid connection issues
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 10,
+  };
+
+  socket = io(url, socketOptions);
+
+  socket.on('connect_error', (err) => {
+    console.error('Socket Connection Failed:', err.message);
   });
+
   return socket;
 };
 

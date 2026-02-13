@@ -6,9 +6,9 @@ import {
   Role,
   StaffRole,
   VerificationStatus,
+  PrismaClient,
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import 'dotenv/config';
@@ -23,7 +23,45 @@ const prisma = new PrismaClient({
 
 const SEED_PASSWORD = 'password123';
 
-// Helper for geometries
+async function clearDatabase() {
+  console.log('Clearing database...');
+  // Truncate tables in specific order to avoid foreign key constraints
+  const tablenames = await prisma.$queryRaw<
+    Array<{ tablename: string }>
+  >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
+
+  const tables = tablenames
+    .map(({ tablename }) => tablename)
+    .filter((name) => name !== '_prisma_migrations' && name !== 'spatial_ref_sys')
+    .map((name) => `"public"."${name}"`)
+    .join(', ');
+
+  if (tables) {
+    try {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
+    } catch (error) {
+      console.log({ error });
+    }
+  }
+
+  // Attempt to restore SRID 4326 if missing (recovery from previous bad seed)
+  try {
+    const has4326 = await prisma.$queryRaw`SELECT srid FROM spatial_ref_sys WHERE srid=4326`;
+    if (Array.isArray(has4326) && has4326.length === 0) {
+      console.log('Restoring SRID 4326...');
+      await prisma.$executeRaw`
+          INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)
+          VALUES (4326, 'EPSG', 4326, 
+          'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]', 
+          '+proj=longlat +datum=WGS84 +no_defs');
+        `;
+    }
+  } catch (err) {
+    console.warn('Could not restore SRID 4326 (might already exist or permission error)', err);
+  }
+
+  console.log('Database cleared.');
+}
 
 async function createGeometries() {
   console.log('Seeding Geometries...');
@@ -32,18 +70,17 @@ async function createGeometries() {
     { name: 'Arada', lat: 9.04, lng: 38.74 },
     { name: 'Yeka', lat: 9.03, lng: 38.82 },
     { name: 'Lideta', lat: 9.01, lng: 38.73 },
+    { name: 'Kirkos', lat: 9.0, lng: 38.76 },
   ];
 
-  const dbSubCities = [];
+  const dbSubCities: any[] = [];
 
   for (const seed of subCities) {
-    const subCity = await prisma.subCity.upsert({
-      where: { name: seed.name },
-      update: { code: seed.name.slice(0, 3).toUpperCase() },
-      create: { name: seed.name, code: seed.name.slice(0, 3).toUpperCase() },
+    const subCity = await prisma.subCity.create({
+      data: { name: seed.name, code: seed.name.slice(0, 3).toUpperCase() },
     });
 
-    // Set simplified jurisdiction buffer
+    // Set jurisdiction buffer (approx 3km radius)
     await prisma.$executeRaw`
       UPDATE "SubCity"
       SET jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${seed.lng}, ${seed.lat}), 4326)::geography, 3000)::geometry
@@ -52,20 +89,18 @@ async function createGeometries() {
     dbSubCities.push({ ...subCity, lat: seed.lat, lng: seed.lng });
   }
 
-  // Create a few Woredas per SubCity
+  // Create Woredas
   const dbWoredas = [];
   for (const sc of dbSubCities) {
-    for (let i = 1; i <= 2; i++) {
+    for (let i = 1; i <= 3; i++) {
       const wName = `${sc.name} Woreda ${i}`;
-      const w = await prisma.woreda.upsert({
-        where: { subCityId_name: { subCityId: sc.id, name: wName } },
-        update: {},
-        create: { name: wName, subCityId: sc.id, code: `${sc.code}-W${i}` },
+      const w = await prisma.woreda.create({
+        data: { name: wName, subCityId: sc.id, code: `${sc.code}-W${i}` },
       });
 
       // Offset slightly for center
-      const lat = sc.lat + (i === 1 ? 0.01 : -0.01);
-      const lng = sc.lng + (i === 1 ? 0.01 : -0.01);
+      const lat = sc.lat + (i === 1 ? 0.01 : i === 2 ? -0.01 : 0);
+      const lng = sc.lng + (i === 1 ? 0.01 : i === 2 ? 0 : -0.01);
 
       await prisma.$executeRaw`
             UPDATE "Woreda"
@@ -76,46 +111,47 @@ async function createGeometries() {
     }
   }
 
-  return { subCities: dbSubCities, woredas: dbWoredas };
+  return { subCities: dbSubCities };
 }
 
-async function createDeterministicAgencies(subCities: any[]) {
+async function createAgencies(subCities: any[]) {
   console.log('Seeding Agencies...');
-  const bole = subCities.find((s) => s.name === 'Bole') || subCities[0];
-  const arada = subCities.find((s) => s.name === 'Arada') || subCities[0];
+  const bole = subCities.find((s) => s.name === 'Bole');
+  const arada = subCities.find((s) => s.name === 'Arada');
+  const kirkos = subCities.find((s) => s.name === 'Kirkos');
 
   const agenciesData = [
     {
-      name: 'Central Police HQ',
+      name: 'Addis Ababa Police Commission',
       type: AgencyType.POLICE,
       city: 'Addis Ababa',
       subCityId: arada.id,
-      lat: arada.lat,
-      lng: arada.lng,
+      lat: 9.035,
+      lng: 38.75,
     },
     {
-      name: 'Addis Fire & Rescue',
+      name: 'Addis Ababa Fire & Emergency',
       type: AgencyType.FIRE,
       city: 'Addis Ababa',
-      subCityId: bole.id,
-      lat: bole.lat,
-      lng: bole.lng,
+      subCityId: kirkos.id,
+      lat: 9.015,
+      lng: 38.77,
     },
     {
-      name: 'Tikur Anbessa Ambulance',
+      name: 'Red Cross Ambulance Service',
       type: AgencyType.MEDICAL,
       city: 'Addis Ababa',
-      subCityId: arada.id,
-      lat: arada.lat - 0.005,
-      lng: arada.lng + 0.005,
+      subCityId: bole.id,
+      lat: 9.005,
+      lng: 38.79,
     },
     {
-      name: 'Traffic Management Center',
+      name: 'Traffic Management Agency',
       type: AgencyType.TRAFFIC,
       city: 'Addis Ababa',
-      subCityId: bole.id,
-      lat: bole.lat + 0.005,
-      lng: bole.lng - 0.005,
+      subCityId: kirkos.id,
+      lat: 9.01,
+      lng: 38.76,
     },
   ];
 
@@ -133,17 +169,16 @@ async function createDeterministicAgencies(subCities: any[]) {
       },
     });
 
-    // Set location
     await prisma.$executeRaw`
             UPDATE "Agency"
             SET "centerLatitude" = ${a.lat},
                 "centerLongitude" = ${a.lng},
-                boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 5000)::geometry,
-                jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 5000)::geometry
+                boundary = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 8000)::geometry,
+                jurisdiction = ST_Buffer(ST_SetSRID(ST_MakePoint(${a.lng}, ${a.lat}), 4326)::geography, 8000)::geometry
             WHERE id = ${agency.id};
         `;
 
-    // Give them jurisdiction over ALL subcities for simplicity in this demo
+    // Grant full jurisdiction
     for (const sc of subCities) {
       await prisma.agencyJurisdiction.create({
         data: {
@@ -162,107 +197,170 @@ async function createDeterministicAgencies(subCities: any[]) {
 async function createUsersAndStaff(agencies: any[], passwordHash: string) {
   console.log('Seeding Users & Staff...');
 
-  // 1. Admin
-  await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: { passwordHash, role: Role.ADMIN, isActive: true },
-    create: {
-      fullName: 'System Admin',
-      email: 'admin@example.com',
+  // 1. Super Admin
+  await prisma.user.create({
+    data: {
+      fullName: 'Super Admin',
+      email: 'admin@georise.com',
       passwordHash,
       role: Role.ADMIN,
       isActive: true,
+      phone: '+251911111111',
     },
   });
 
-  // 2. Citizen
-  const citizen = await prisma.user.upsert({
-    where: { email: 'citizen@georise.com' },
-    update: { passwordHash, role: Role.CITIZEN, isActive: true },
-    create: {
-      fullName: 'Abebe Bikila',
-      email: 'citizen@georise.com',
+  // 2. Verified Citizen (Gold)
+  const citizenGold = await prisma.user.create({
+    data: {
+      fullName: 'Dawit Mekonnen',
+      email: 'dawit@gmail.com',
       passwordHash,
       role: Role.CITIZEN,
-      phone: '+251911000000',
+      phone: '+251922222222',
       isActive: true,
-      trustScore: 100, // High trust for testing
+      trustScore: 450, // Gold Tier
+    },
+  });
+  await prisma.citizenVerification.create({
+    data: {
+      userId: citizenGold.id,
+      status: VerificationStatus.VERIFIED,
+      nationalId: 'NID12345',
+      phone: '+251922222222',
     },
   });
 
-  // Verify the citizen separately
-  await prisma.citizenVerification.upsert({
-    where: { userId: citizen.id },
-    create: {
-      userId: citizen.id,
-      status: VerificationStatus.VERIFIED,
-      nationalId: '123456789',
-      phone: '+251911000000',
-    },
-    update: {
-      status: VerificationStatus.VERIFIED,
-      nationalId: '123456789',
+  // 3. Unverified Citizen
+  await prisma.user.create({
+    data: {
+      fullName: 'Abebe Kebede',
+      email: 'abebe@gmail.com',
+      passwordHash,
+      role: Role.CITIZEN,
+      phone: '+251933333333',
+      isActive: true,
+      trustScore: 0,
     },
   });
 
-  // 3. Agency Staff
+  // 4. Agency Staff & Responders
   // Helper to find agency by type
   const findAgency = (type: AgencyType) => agencies.find((a: any) => a.type === type);
 
-  const staffAccounts = [
+  const staffData = [
+    // Dispatchers
     {
-      email: 'police@georise.com',
-      name: 'Police Dispatcher',
+      email: 'police.admin@georise.com',
+      name: 'Commander Alemu',
+      type: AgencyType.POLICE,
+      role: StaffRole.SUPERVISOR,
+    },
+    {
+      email: 'police.dispatch@georise.com',
+      name: 'Sgt. Berhanu',
       type: AgencyType.POLICE,
       role: StaffRole.DISPATCHER,
     },
     {
-      email: 'fire@georise.com',
-      name: 'Fire Dispatcher',
+      email: 'fire.dispatch@georise.com',
+      name: 'Chief Tadesse',
       type: AgencyType.FIRE,
       role: StaffRole.DISPATCHER,
     },
     {
-      email: 'medic@georise.com',
-      name: 'Ambulance Dispatcher',
+      email: 'medic.dispatch@georise.com',
+      name: 'Dr. Sara',
       type: AgencyType.MEDICAL,
       role: StaffRole.DISPATCHER,
     },
+
+    // Police Responders
     {
-      email: 'traffic@georise.com',
-      name: 'Traffic Officer',
+      email: 'patrol1@georise.com',
+      name: 'Patrol Unit Alpha',
+      type: AgencyType.POLICE,
+      role: StaffRole.RESPONDER,
+      lat: 9.03,
+      lng: 38.75,
+    },
+    {
+      email: 'patrol2@georise.com',
+      name: 'Patrol Unit Bravo',
+      type: AgencyType.POLICE,
+      role: StaffRole.RESPONDER,
+      lat: 9.04,
+      lng: 38.76,
+    },
+    {
+      email: 'patrol3@georise.com',
+      name: 'Patrol Unit Charlie',
+      type: AgencyType.POLICE,
+      role: StaffRole.RESPONDER,
+      lat: 9.02,
+      lng: 38.74,
+    },
+
+    // Fire Responders
+    {
+      email: 'engine1@georise.com',
+      name: 'Fire Engine 1',
+      type: AgencyType.FIRE,
+      role: StaffRole.RESPONDER,
+      lat: 9.015,
+      lng: 38.77,
+    },
+    {
+      email: 'engine2@georise.com',
+      name: 'Fire Engine 2',
+      type: AgencyType.FIRE,
+      role: StaffRole.RESPONDER,
+      lat: 9.02,
+      lng: 38.78,
+    },
+
+    // Medical Responders
+    {
+      email: 'ambulance1@georise.com',
+      name: 'Medic 1',
+      type: AgencyType.MEDICAL,
+      role: StaffRole.RESPONDER,
+      lat: 9.005,
+      lng: 38.79,
+    },
+    {
+      email: 'ambulance2@georise.com',
+      name: 'Medic 2',
+      type: AgencyType.MEDICAL,
+      role: StaffRole.RESPONDER,
+      lat: 9.01,
+      lng: 38.8,
+    },
+    {
+      email: 'ambulance3@georise.com',
+      name: 'Medic 3',
+      type: AgencyType.MEDICAL,
+      role: StaffRole.RESPONDER,
+      lat: 9.0,
+      lng: 38.78,
+    },
+
+    // Traffic Responders
+    {
+      email: 'traffic1@georise.com',
+      name: 'Moto Unit 1',
       type: AgencyType.TRAFFIC,
-      role: StaffRole.DISPATCHER,
-    },
-    // Responders
-    {
-      email: 'police_unit@georise.com',
-      name: 'Patrol Unit 1',
-      type: AgencyType.POLICE,
       role: StaffRole.RESPONDER,
-    },
-    {
-      email: 'fire_unit@georise.com',
-      name: 'Engine 1',
-      type: AgencyType.FIRE,
-      role: StaffRole.RESPONDER,
-    },
-    {
-      email: 'medic_unit@georise.com',
-      name: 'Ambulance 1',
-      type: AgencyType.MEDICAL,
-      role: StaffRole.RESPONDER,
+      lat: 9.01,
+      lng: 38.76,
     },
   ];
 
-  for (const acc of staffAccounts) {
+  for (const acc of staffData) {
     const agency = findAgency(acc.type);
     if (!agency) continue;
 
-    const user = await prisma.user.upsert({
-      where: { email: acc.email },
-      update: { passwordHash, role: Role.AGENCY_STAFF, isActive: true },
-      create: {
+    const user = await prisma.user.create({
+      data: {
         fullName: acc.name,
         email: acc.email,
         passwordHash,
@@ -272,86 +370,124 @@ async function createUsersAndStaff(agencies: any[], passwordHash: string) {
       },
     });
 
-    await prisma.agencyStaff.upsert({
-      where: { userId: user.id },
-      update: { agencyId: agency.id, staffRole: acc.role },
-      create: { userId: user.id, agencyId: agency.id, staffRole: acc.role },
+    await prisma.agencyStaff.create({
+      data: { userId: user.id, agencyId: agency.id, staffRole: acc.role },
     });
 
-    // Create Responder profile if needed
     if (acc.role === StaffRole.RESPONDER) {
-      const exist = await prisma.responder.findFirst({ where: { userId: user.id } });
-      if (!exist) {
-        await prisma.responder.create({
-          data: {
-            name: acc.name,
-            type: acc.type === AgencyType.MEDICAL ? 'AMBULANCE' : 'UNIT',
-            status: ResponderStatus.AVAILABLE,
-            agencyId: agency.id,
-            userId: user.id,
-            // Place them near agency center
-            latitude: 9.03,
-            longitude: 38.74,
-            lastSeenAt: new Date(),
-          },
-        });
-      }
+      // Randomize status
+      const statuses = [
+        ResponderStatus.AVAILABLE,
+        ResponderStatus.AVAILABLE,
+        ResponderStatus.AVAILABLE,
+        ResponderStatus.ASSIGNED,
+        ResponderStatus.OFFLINE,
+      ];
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+      await prisma.responder.create({
+        data: {
+          name: acc.name,
+          type: acc.type === AgencyType.MEDICAL ? 'AMBULANCE' : 'UNIT',
+          status: status,
+          agencyId: agency.id,
+          userId: user.id,
+          latitude: acc.lat,
+          longitude: acc.lng,
+          lastSeenAt: new Date(),
+        },
+      });
     }
   }
 
-  return { citizen };
+  return { citizenGold };
 }
 
-async function createSampleIncidents(citizen: any, subCities: any[]) {
-  console.log('Seeding Sample Incidents...');
-  const bole = subCities.find((s) => s.name === 'Bole');
+async function createIncidents(citizen: any, subCities: any[]) {
+  console.log('Seeding Incidents...');
+  const activeSubCity = subCities[0];
 
   const incidentsData = [
+    // Resolved (Past)
     {
-      title: 'House Fire in Bole',
-      desc: 'Large fire visible from main road, black smoke.',
-      category: 'FIRE',
-      severity: 4,
-      lat: bole.lat + 0.002,
-      lng: bole.lng + 0.002,
-    },
-    {
-      title: 'Car Accident at Junction',
-      desc: 'Two cars collided, blocking traffic. No severe injuries visible.',
+      title: 'Minor Fender Bender',
+      desc: 'Two cars scratched each other.',
       category: 'TRAFFIC',
-      severity: 2,
-      lat: bole.lat - 0.002,
-      lng: bole.lng - 0.002,
+      severity: 1,
+      status: IncidentStatus.RESOLVED,
+      daysAgo: 2,
     },
     {
-      title: 'Heart Attack Suspected',
-      desc: 'Older man collapsed near the cafe.',
+      title: 'Dumpster Fire',
+      desc: 'Fire in alleyway dumpster.',
+      category: 'FIRE',
+      severity: 2,
+      status: IncidentStatus.RESOLVED,
+      daysAgo: 5,
+    },
+    // Active (Recent)
+    {
+      title: 'Multi-Vehicle Collision',
+      desc: 'Three cars involved at Bole Ring Road, heavy traffic blocked.',
+      category: 'TRAFFIC',
+      severity: 4,
+      status: IncidentStatus.RECEIVED,
+      daysAgo: 0,
+    },
+    {
+      title: 'Building Fire',
+      desc: 'Smoke seen from 4th floor of apartment complex.',
+      category: 'FIRE',
+      severity: 5,
+      status: IncidentStatus.RECEIVED,
+      daysAgo: 0,
+    },
+    {
+      title: 'Unconscious Person',
+      desc: 'Male approx 50s collapsed on sidewalk.',
       category: 'MEDICAL',
       severity: 5,
-      lat: bole.lat,
-      lng: bole.lng,
+      status: IncidentStatus.ASSIGNED, // Simulate currently handled
+      daysAgo: 0,
+    },
+    {
+      title: 'Suspicious Activity',
+      desc: 'Group loitering near bank entrance.',
+      category: 'POLICE',
+      severity: 3,
+      status: IncidentStatus.RECEIVED,
+      daysAgo: 0,
     },
   ];
 
   for (const inc of incidentsData) {
+    const lat = activeSubCity.lat + (Math.random() * 0.04 - 0.02);
+    const lng = activeSubCity.lng + (Math.random() * 0.04 - 0.02);
+
+    // Date calculation
+    const createdAt = new Date();
+    createdAt.setDate(createdAt.getDate() - inc.daysAgo);
+
     const record = await prisma.incident.create({
       data: {
         title: inc.title,
         description: inc.desc,
         category: inc.category,
         severityScore: inc.severity,
-        status: IncidentStatus.RECEIVED,
+        status: inc.status,
         reporterId: citizen.id,
-        subCityId: bole.id,
-        latitude: inc.lat,
-        longitude: inc.lng,
-        reviewStatus: ReviewStatus.NOT_REQUIRED, // Auto-validate for demo
+        subCityId: activeSubCity.id,
+        latitude: lat,
+        longitude: lng,
+        reviewStatus: ReviewStatus.NOT_REQUIRED,
+        createdAt: createdAt,
+        resolvedAt: inc.status === IncidentStatus.RESOLVED ? new Date() : null,
       },
     });
 
     await prisma.$executeRaw`
             UPDATE "Incident"
-            SET location = ST_SetSRID(ST_MakePoint(${inc.lng}, ${inc.lat}), 4326)
+            SET location = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)
             WHERE id = ${record.id};
         `;
 
@@ -359,18 +495,17 @@ async function createSampleIncidents(citizen: any, subCities: any[]) {
     await prisma.incidentAIOutput.create({
       data: {
         incidentId: record.id,
-        modelVersion: 'seed-v2',
+        modelVersion: 'seed-v3-robust',
         predictedCategory: inc.category,
         severityScore: inc.severity,
-        confidence: 0.95,
-        summary: 'Auto-generated seed summary',
+        confidence: 0.85 + Math.random() * 0.14,
+        summary: `Auto-generated summary for ${inc.title}`,
       },
     });
   }
 }
 
 async function createDispatchRules() {
-  await prisma.dispatchRule.deleteMany();
   await prisma.dispatchRule.createMany({
     data: [
       { category: 'FIRE', defaultAgencyType: AgencyType.FIRE },
@@ -385,22 +520,29 @@ async function createDispatchRules() {
 }
 
 async function main() {
+  await clearDatabase();
+
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
 
   const { subCities } = await createGeometries();
-  const agencies = await createDeterministicAgencies(subCities);
+  const agencies = await createAgencies(subCities);
   await createDispatchRules();
 
-  const { citizen } = await createUsersAndStaff(agencies, passwordHash);
-  await createSampleIncidents(citizen, subCities);
+  const { citizenGold } = await createUsersAndStaff(agencies, passwordHash);
+  await createIncidents(citizenGold, subCities);
 
-  console.log('Deterministic Seeding Complete!');
   console.log('------------------------------------------------');
-  console.log('Admin:   admin@example.com / password123');
-  console.log('Citizen: citizen@georise.com / password123');
-  console.log('Police:  police@georise.com (Dispatcher)');
-  console.log('Fire:    fire@georise.com (Dispatcher)');
-  console.log('Medic:   medic@georise.com (Dispatcher)');
+  console.log('ROBUST SEEDING COMPLETE');
+  console.log('------------------------------------------------');
+  console.log('Super Admin:      admin@georise.com / password123');
+  console.log('Police Admin:     police.admin@georise.com / password123');
+  console.log('Police Dispatch:  police.dispatch@georise.com / password123');
+  console.log('Fire Dispatch:    fire.dispatch@georise.com / password123');
+  console.log('Medic Dispatch:   medic.dispatch@georise.com / password123');
+  console.log('Gold Citizen:     dawit@gmail.com / password123');
+  console.log('------------------------------------------------');
+  console.log('Responders created: ~9 (Police, Fire, Medic, Traffic)');
+  console.log('Incidents created:  6 (Mixed categories & statuses)');
   console.log('------------------------------------------------');
 }
 

@@ -14,16 +14,16 @@ const LanguageSwitcher: React.FC = () => {
       <div tabIndex={0} role="button" className="btn btn-ghost btn-sm gap-2 text-slate-300">
         <Globe className="w-4 h-4 text-cyan-400" />
         {i18n.language === 'am'
-          ? 'አማርኛ'
+          ? t('common.amharic')
           : i18n.language === 'om'
-            ? 'Afaan Oromoo'
+            ? t('common.oromo')
             : i18n.language === 'so'
-              ? 'Soomaali'
-              : 'English'}
+              ? t('common.somali')
+              : t('common.english')}
       </div>
       <ul
         tabIndex={0}
-        className="dropdown-content z-[1] menu p-2 shadow-2xl bg-[#0D1220] border border-slate-700 rounded-box w-52"
+        className="dropdown-content z-[9999] menu p-2 shadow-2xl bg-[#0D1220] border border-slate-700 rounded-box w-52"
       >
         <li>
           <button

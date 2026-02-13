@@ -41,7 +41,14 @@
     "home": "መነሻ",
     "dashboard": "ዳሽቦርድ",
     "map": "ካርታ",
-    "report": "ሪፖርት አቅርብ"
+    "report": "ሪፖርት አቅርብ",
+    "history": "የታሪክ መዝገብ",
+    "verify": "መታወቂያ ያረጋግጡ",
+    "users": "የተጠቃሚ አስተዳደር",
+    "agencies": "የአደጋ ጊዜ ኤጀንሲዎች",
+    "verification": "መታወቂያ ማረጋገጫ",
+    "review": "ክስተት ግምገማ",
+    "activity": "የስርዓት እንቅስቃሴ"
   },
   "incident": {
     "report_new": "አዲስ ሪፖርት አቅርብ",
@@ -88,6 +95,8 @@
     "success": "ተሳክቷል",
     "language": "ቋንቋ",
     "amharic": "አማርኛ",
-    "english": "እንግሊዝኛ"
+    "english": "እንግሊዝኛ",
+    "oromo": "ኦሮምኛ",
+    "somali": "ሶማሊኛ"
   }
 }

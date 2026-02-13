@@ -163,7 +163,7 @@ const IncidentDetailPane: React.FC<Props> = ({
 
   // Helper to find my responder profile
   const myResponderProfile = useMemo(() => {
-    if (!user) return null;
+    if (!user || !Array.isArray(responders)) return null; // Added array check
     // Responders are usually Agency Staff role or have a linked profile
     // The responders prop contains the list from /api/responders
     // We need to match user.id to responder.userId
@@ -457,7 +457,7 @@ const IncidentDetailPane: React.FC<Props> = ({
           </a>
         </div>
 
-        {onAssignResponder && responders.length > 0 && (
+        {onAssignResponder && Array.isArray(responders) && responders.length > 0 && (
           <div className="p-3 border-b border-slate-800 bg-slate-900/60">
             <p className="text-sm font-semibold text-white mb-2">Assign responder</p>
             <div className="flex gap-2 items-center">

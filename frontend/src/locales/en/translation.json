@@ -41,7 +41,14 @@
     "home": "Home",
     "dashboard": "Dashboard",
     "map": "Live Map",
-    "report": "Report Incident"
+    "report": "Report Incident",
+    "history": "My History",
+    "verify": "Verify Identity",
+    "users": "User Management",
+    "agencies": "Emergency Agencies",
+    "verification": "ID Verifications",
+    "review": "Incident Review",
+    "activity": "System Activity"
   },
   "analytics": {
     "title": "Analytics",
@@ -85,6 +92,8 @@
     "success": "Success",
     "language": "Language",
     "amharic": "Amharic",
-    "english": "English"
+    "english": "English",
+    "oromo": "Oromo",
+    "somali": "Somali"
   }
 }

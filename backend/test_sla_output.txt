@@ -1,0 +1,17 @@
+--- Starting SLA Requeue Test ---
+0. Mock Socket Server initialized.
+1. Setting up Incident and Responder...
+{"level":50,"time":1770872407354,"pid":14192,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+Test Failed: Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+    at C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PrismaPgAdapter.performIO (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:616:22)
+    at async PrismaPgAdapter.queryRaw (file:///C:/Users/Amanuel/Desktop/georise-main/backend/node_modules/@prisma/adapter-pg/dist/index.mjs:566:30)
+    at async <anonymous> (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:68:22)
+    at async fr (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\tracing.ts:56:10)
+    at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:190:26)
+    at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:217:41)
+    at async e.interpretNode (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:276:41)
+    at async e.run (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client-engine-runtime\src\interpreter\query-interpreter.ts:96:23) {
+  clientVersion: '7.2.0'
+}

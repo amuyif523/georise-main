@@ -76,13 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const run = async () => {
       if (token) {
         await fetchMe();
+        if (!cancelled) setLoading(false); // Unlock UI immediately
         if (!cancelled) {
           connectSocket(token);
         }
       } else {
         setUser(null);
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
 
     if (token) {

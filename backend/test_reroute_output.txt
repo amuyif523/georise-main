@@ -1,0 +1,24 @@
+--- Starting Decline Re-Routing Test ---
+{"level":50,"time":1770873136872,"pid":20456,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+{"level":50,"time":1770873136924,"pid":20456,"hostname":"DESKTOP-3P240QT","err":{"type":"AggregateError","message":"","stack":"AggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)","aggregateErrors":[{"type":"Error","message":"connect ECONNREFUSED ::1:6379","stack":"Error: connect ECONNREFUSED ::1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"::1","port":6379},{"type":"Error","message":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at createConnectionError (node:net:1678:14)\n    at afterConnectMultiple (node:net:1708:16)","errno":-4078,"code":"ECONNREFUSED","syscall":"connect","address":"127.0.0.1","port":6379}],"code":"ECONNREFUSED"},"msg":"Redis connection error"}
+1. Setting up Agency and Responders...
+Test Failed: PrismaClientKnownRequestError: 
+Invalid `prisma.agency.findFirst()` invocation in
+C:\Users\Amanuel\Desktop\georise-main\backend\scripts\test-decline-rerouting.ts:23:42
+
+  20 
+  21 // 1. Setup Agency & Responders
+  22 console.log('1. Setting up Agency and Responders...');
+→ 23 let agency = await prisma.agency.findFirst(
+
+    at qr.handleRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at qr.handleAndLogRequestError (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at qr.request (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Array.$allOperations (C:\Users\Amanuel\Desktop\georise-main\backend\src\prisma.ts:22:18)
+    at async a (C:\Users\Amanuel\Desktop\georise-main\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:805:24)
+    at async main (C:\Users\Amanuel\Desktop\georise-main\backend\scripts\test-decline-rerouting.ts:23:22) {
+  code: 'ECONNREFUSED',
+  meta: { modelName: 'Agency' },
+  clientVersion: '7.2.0'
+}
