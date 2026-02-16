@@ -141,8 +141,10 @@ class ClassifyResponse(BaseModel):
 
 @app.get("/health", dependencies=[Depends(verify_token)])
 def health():
+    ready = model is not None
     return {
-        "status": "AI service running",
+        "status": "AI service running" if ready else "Model loading...",
+        "ready": ready,
         "model": model_version,
         "metadata": model_metadata or {},
     }

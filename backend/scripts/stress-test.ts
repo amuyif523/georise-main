@@ -38,8 +38,28 @@ async function main() {
   const incidentIds: number[] = [];
 
   try {
-    // 0. Dynamic User Discovery
-    log('Step 0: Resolving Admin User...');
+    // 0. Pre-flight Check
+    log('Step 0a: Checking AI Service Health...');
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    try {
+      const health = await axios.get(`${AI_SERVICE_URL}/health`, {
+        headers: { Authorization: `Bearer ${process.env.INTERNAL_SERVICE_SECRET}` },
+      });
+      if (!health.data.ready) {
+        log(`⚠️ AI Service is running but model is not ready: ${JSON.stringify(health.data)}`);
+        // Wait for it?
+        log('Waiting 5s for model warm-up...');
+        await sleep(5000);
+      } else {
+        log('✅ AI Service is READY.');
+      }
+    } catch (e: any) {
+      log(`⚠️ AI Service Health Check Failed: ${e.message}`);
+      log('Continuing, but AI processing might fail...');
+    }
+
+    // 0b. Dynamic User Discovery
+    log('Step 0b: Resolving Admin User...');
     const testUser = await prisma.user.findFirst({
       where: { email: 'admin@georise.com' },
     });
@@ -100,19 +120,28 @@ async function main() {
     log('✅ Jobs pushed to queue');
 
     // 4. Verification Check (Polling)
-    log('Step 4: Verifying AI Processing (Polling for 10s)...');
+    log('Step 4: Verifying AI Processing (Polling for 30s)...');
     let allProcessed = false;
-    for (let k = 0; k < 10; k++) {
-      await sleep(1000);
+    const POLLING_INTERVAL = 2000;
+    const MAX_POLLS = 15; // 30s total
+
+    for (let k = 0; k < MAX_POLLS; k++) {
+      await sleep(POLLING_INTERVAL);
       const check = await prisma.incident.findMany({
         where: { id: { in: incidentIds } },
-        select: { id: true, category: true, severityScore: true },
+        select: { id: true, category: true, severityScore: true, aiOutput: true },
       });
 
       const processedCount = check.filter(
         (c) => c.category !== null && c.severityScore !== null,
       ).length;
       log(`Polling... ${processedCount}/5 processed`);
+
+      // Check for errors
+      const errors = check.filter((c) => c.aiOutput?.modelVersion === 'worker-fallback');
+      if (errors.length > 0) {
+        log(`⚠️ Fallback detected in ${errors.length} incidents: ${errors[0].aiOutput?.summary}`);
+      }
 
       if (processedCount === 5) {
         allProcessed = true;

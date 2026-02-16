@@ -73,7 +73,11 @@ export const aiWorker = new Worker(
 
     // 3. Emit Real-time Update
     emitIncidentUpdated(toIncidentPayload(updated));
-    logger.info({ incidentId, category: updated.category }, 'Incident AI analysis complete');
+    const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+    logger.info(
+      { incidentId, category: updated.category, durationMs },
+      'Incident AI analysis complete',
+    );
 
     // 4. Auto-Pilot Dispatch (Task 1 of Sprint 5)
     try {
@@ -109,6 +113,7 @@ export const aiWorker = new Worker(
       max: 10,
       duration: 1000,
     },
+    lockDuration: 30000, // 30s to allow model warm-up/processing
   },
 );
 

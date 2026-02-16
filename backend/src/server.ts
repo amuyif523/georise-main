@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import prisma from './prisma';
 import http from 'http';
 import app from './app';
 import { initSocketServer } from './socket';
@@ -16,8 +17,18 @@ initHeartbeatJob();
 stopResponderSimulation();
 
 import { ensureTestAgency } from './utils/seed-helper';
-
 server.listen(PORT, async () => {
-  await ensureTestAgency();
-  console.log(`Backend API + Socket running on http://localhost:${PORT}`);
+  try {
+    console.log('Initializing database connection...');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+
+    await ensureTestAgency();
+
+    console.log(`Backend API + Socket running on http://localhost:${PORT}`);
+    console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
+  } catch (err) {
+    console.error('CRITICAL: Database connection failed during boot:', err);
+    process.exit(1);
+  }
 });
