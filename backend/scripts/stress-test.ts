@@ -3,6 +3,7 @@ import prisma from '../src/prisma';
 import { Queue } from 'bullmq';
 import { REDIS_URL } from '../src/config/env';
 import * as fs from 'fs';
+import axios from 'axios';
 
 /**
  * Stress Test Script
