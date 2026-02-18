@@ -281,7 +281,6 @@ const AgenciesPage: React.FC = () => {
 
   return (
     <AppLayout>
-      {error && <div className="alert alert-error text-sm">{error}</div>}
       <div className="grid lg:grid-cols-[1.15fr,1fr] gap-4">
         <div className="cyber-card h-[78vh] flex flex-col">
           <div className="flex items-center justify-between mb-3">
@@ -634,9 +633,31 @@ const AgenciesPage: React.FC = () => {
       </div>
 
       {createModal && (
-        <div className="modal modal-open z-[9999] backdrop-blur-sm">
-          <div className="modal-box bg-slate-900 border border-slate-700 pointer-events-auto">
+        <div
+          className="modal modal-open z-[9999] backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="modal-box bg-slate-900 border border-slate-700 pointer-events-auto relative">
             <h3 className="font-semibold mb-2">Create agency</h3>
+            {error && (
+              <div className="alert alert-error text-sm mb-3 z-[10000]">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
             <div className="space-y-3">
               <input
                 className="input input-bordered w-full bg-slate-800 border-slate-700"
@@ -662,6 +683,28 @@ const AgenciesPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="divider text-xs text-slate-500 my-1">Initial Admin</div>
+              <input
+                className="input input-bordered w-full bg-slate-800 border-slate-700"
+                placeholder="Admin Name"
+                value={form.adminName}
+                onChange={(e) => setForm((p) => ({ ...p, adminName: e.target.value }))}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="input input-bordered bg-slate-800 border-slate-700"
+                  placeholder="Admin Email"
+                  type="email"
+                  value={form.adminEmail}
+                  onChange={(e) => setForm((p) => ({ ...p, adminEmail: e.target.value }))}
+                />
+                <input
+                  className="input input-bordered bg-slate-800 border-slate-700"
+                  placeholder="Admin Phone"
+                  value={form.adminPhone}
+                  onChange={(e) => setForm((p) => ({ ...p, adminPhone: e.target.value }))}
+                />
               </div>
               <textarea
                 className="textarea textarea-bordered w-full bg-slate-800 border-slate-700"
@@ -700,11 +743,8 @@ const AgenciesPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="btn btn-primary hover:bg-primary-focus active:scale-95 transition-all relative z-[100]"
-                onClick={submitCreate}
-                disabled={
-                  creating || !form.name || !form.city || !form.adminName || !form.adminEmail
-                }
+                className={`btn btn-primary hover:bg-primary-focus active:scale-95 transition-all relative z-[100] ${creating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={!creating ? submitCreate : undefined}
               >
                 {creating ? 'Saving...' : 'Create Agency & Admin'}
               </button>
