@@ -35,7 +35,7 @@ const StaffManagementPage: React.FC = () => {
   const fetchStaff = async () => {
     try {
       const res = await api.get('/agency/users'); // Changed from /agency/staff
-      setStaff(res.data.users); // Changed from res.data.staff
+      setStaff(res.data.staff || res.data.users || []); // Safety check
     } catch (err) {
       console.error(err);
     } finally {
@@ -169,14 +169,14 @@ const StaffManagementPage: React.FC = () => {
                     Loading...
                   </td>
                 </tr>
-              ) : staff.length === 0 ? (
+              ) : !staff || staff.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-8 text-slate-500">
                     No staff members found.
                   </td>
                 </tr>
               ) : (
-                staff.map((member) => (
+                staff?.map((member) => (
                   <tr
                     key={member.userId}
                     className="border-b border-slate-800/50 hover:bg-slate-800/30"

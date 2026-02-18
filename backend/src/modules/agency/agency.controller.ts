@@ -77,7 +77,7 @@ export const getStaff = async (req: Request, res: Response) => {
     if (!agencyId) return res.status(403).json({ message: 'Unauthorized' });
 
     const staff = await agencyService.getStaff(agencyId);
-    return res.json({ staff });
+    return res.json({ staff: staff || [] });
   } catch (error) {
     console.error('Get staff error', error);
     return res.status(500).json({ message: 'Failed to fetch staff' });
