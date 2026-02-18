@@ -268,6 +268,7 @@ const AgenciesPage: React.FC = () => {
       setCreateModal(false);
       fetchAll();
     } catch (err: any) {
+      console.error('Agency creation failed:', err.response?.data || err.message);
       setError(err?.response?.data?.message || 'Failed to create agency');
     } finally {
       setCreating(false);
@@ -632,7 +633,7 @@ const AgenciesPage: React.FC = () => {
       </div>
 
       {createModal && (
-        <div className="modal modal-open">
+        <div className="modal modal-open z-[9999] backdrop-blur-sm">
           <div className="modal-box bg-slate-900 border border-slate-700">
             <h3 className="font-semibold mb-2">Create agency</h3>
             <div className="space-y-3">
