@@ -11,6 +11,7 @@ import {
   Bell,
   Radio,
   BarChart3,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -48,6 +49,7 @@ const AppSidebar: React.FC = () => {
           { to: '/admin/verification', icon: <Shield size={16} />, label: t('nav.verification') },
           { to: '/admin/review', icon: <Bell size={16} />, label: t('nav.review') },
           { to: '/admin/activity', icon: <Radio size={16} />, label: t('nav.activity') },
+          { to: '/admin/audit', icon: <FileText size={16} />, label: 'Audit Logs' },
           { to: '/admin/analytics', icon: <BarChart3 size={16} />, label: t('analytics.title') },
         ]
       : role === 'AGENCY_STAFF'
