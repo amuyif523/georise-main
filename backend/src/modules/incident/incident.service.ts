@@ -631,6 +631,112 @@ export class IncidentService {
 
     return shared;
   }
+
+  async getIncidents(
+    user: { id: number; role: string },
+    filters: {
+      status?: string;
+      reviewStatus?: string;
+      hours?: number;
+      subCityId?: number;
+      search?: string;
+      page: number;
+      limit: number;
+    },
+  ) {
+    let agencyId: number | null = null;
+    if (user.role === 'AGENCY_STAFF') {
+      const staff = await prisma.agencyStaff.findUnique({
+        where: { userId: user.id },
+        select: { agencyId: true },
+      });
+      if (!staff) throw new Error('Forbidden: No agency context');
+      agencyId = staff.agencyId;
+    } else if (user.role !== 'ADMIN') {
+      throw new Error('Forbidden');
+    }
+
+    const { status, reviewStatus, hours, subCityId, search, page, limit } = filters;
+    const skip = (page - 1) * limit;
+
+    const conditions: any = { deletedAt: null }; // Ensure soft-deleted incidents are excluded
+
+    // Status Filter
+    if (status) conditions.status = status;
+
+    // Review Status Filter
+    if (reviewStatus) conditions.reviewStatus = reviewStatus;
+
+    // Time Filter
+    if (hours) {
+      conditions.createdAt = {
+        gte: new Date(Date.now() - hours * 3600 * 1000),
+      };
+    }
+
+    // SubCity Filter
+    if (subCityId) {
+      conditions.subCityId = subCityId;
+    }
+
+    // Search Filter
+    if (search) {
+      conditions.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Role-based Isolation (Critical)
+    if (user.role === 'AGENCY_STAFF' && agencyId) {
+      // Enforce agency isolation: incidents assigned to OR shared with this agency
+      if (conditions.OR) {
+        conditions.AND = [
+          { OR: conditions.OR },
+          { OR: [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }] },
+        ];
+        delete conditions.OR;
+      } else {
+        conditions.OR = [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }];
+      }
+    }
+
+    const baseSelect = {
+      id: true,
+      title: true,
+      category: true,
+      severityScore: true,
+      status: true,
+      latitude: true,
+      longitude: true,
+      subCityId: true,
+      reviewStatus: true,
+      createdAt: true,
+      assignedAgencyId: true,
+      sharedWith: { select: { agencyId: true } },
+    };
+
+    const [total, incidents] = await Promise.all([
+      prisma.incident.count({ where: conditions }),
+      prisma.incident.findMany({
+        where: conditions,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select:
+          user.role === 'ADMIN'
+            ? {
+                ...baseSelect,
+                reporter: {
+                  select: { id: true, fullName: true, trustScore: true, email: true, phone: true },
+                },
+              }
+            : baseSelect,
+      }),
+    ]);
+
+    return { total, incidents };
+  }
 }
 
 export const incidentService = new IncidentService();
