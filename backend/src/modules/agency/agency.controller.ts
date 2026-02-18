@@ -3,11 +3,49 @@ import { agencyService } from './agency.service'; // Ensure correct import path?
 
 export const getAgencies = async (req: Request, res: Response) => {
   try {
-    const agencies = await agencyService.getAgencies();
-    return res.json({ agencies });
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+
+    const result = await agencyService.getAgencies({
+      page,
+      limit,
+      search: req.query.search as string,
+      status: req.query.status as any,
+      type: req.query.type as any,
+    });
+    return res.json({ ...result, page, limit });
   } catch (error) {
     console.error('Get agencies error', error);
     return res.status(500).json({ message: 'Failed to fetch agencies' });
+  }
+};
+
+export const createAgency = async (req: Request, res: Response) => {
+  try {
+    const { name, type, city, description, isApproved, isActive, admin } = req.body;
+
+    if (!admin || !admin.email || !admin.fullName) {
+      return res.status(400).json({ message: 'Admin details (email, fullName) are required' });
+    }
+
+    const result = await agencyService.createAgencyWithAdmin(
+      { name, type, city, description, isApproved, isActive },
+      admin,
+    );
+
+    // Audit is handled in route or here?
+    // Route in admin.routes used to handle it.
+    // Ideally service doesn't depend on req.user for audit, keeping it pure.
+    // Controller can handle audit or route.
+    // For now, return result.
+
+    return res.status(201).json({
+      agency: result.agency,
+      admin: { ...result.user, tempPassword: result.tempPassword },
+    });
+  } catch (error: any) {
+    console.error('Create agency error', error);
+    return res.status(400).json({ message: error.message || 'Failed to create agency' });
   }
 };
 

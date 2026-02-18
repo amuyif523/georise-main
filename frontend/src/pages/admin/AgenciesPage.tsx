@@ -93,6 +93,9 @@ const AgenciesPage: React.FC = () => {
     description: '',
     isApproved: false,
     isActive: false,
+    adminName: '',
+    adminEmail: '',
+    adminPhone: '',
   });
 
   const [boundaryGeoJSON, setBoundaryGeoJSON] = useState<string>('');
@@ -239,6 +242,9 @@ const AgenciesPage: React.FC = () => {
       description: '',
       isApproved: false,
       isActive: false,
+      adminName: '',
+      adminEmail: '',
+      adminPhone: '',
     });
     setCreateModal(true);
   };
@@ -247,8 +253,17 @@ const AgenciesPage: React.FC = () => {
     try {
       setCreating(true);
       await api.post('/admin/agencies', {
-        ...form,
+        name: form.name,
+        city: form.city,
+        type: form.type,
         description: form.description || undefined,
+        isApproved: form.isApproved,
+        isActive: form.isActive,
+        admin: {
+          fullName: form.adminName,
+          email: form.adminEmail,
+          phone: form.adminPhone || undefined,
+        },
       });
       setCreateModal(false);
       fetchAll();
@@ -681,8 +696,14 @@ const AgenciesPage: React.FC = () => {
               >
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={submitCreate} disabled={creating}>
-                {creating ? 'Saving...' : 'Create'}
+              <button
+                className="btn btn-primary"
+                onClick={submitCreate}
+                disabled={
+                  creating || !form.name || !form.city || !form.adminName || !form.adminEmail
+                }
+              >
+                {creating ? 'Saving...' : 'Create Agency & Admin'}
               </button>
             </div>
           </div>

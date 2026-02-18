@@ -7,6 +7,7 @@ import prisma from '../../prisma';
 import { z } from 'zod';
 import { validateBody } from '../../middleware/validate';
 import * as systemController from './system.controller';
+import * as agencyController from '../agency/agency.controller';
 import { metrics } from '../../metrics/metrics.service';
 import rateLimit from 'express-rate-limit';
 
@@ -120,115 +121,7 @@ router.get('/agencies/pending', requireAuth, requireRole([Role.ADMIN]), async (_
 });
 
 // List all agencies
-router.get('/agencies', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
-  const parsed = agencyPaginationSchema.safeParse(req.query);
-  if (!parsed.success) return res.status(400).json({ message: 'Invalid query' });
-  const { page, limit, search, status, type } = parsed.data;
-  const skip = (Number(page) - 1) * Number(limit);
-
-  const where: any = {};
-  if (status === 'active') {
-    where.isActive = true;
-    where.isApproved = true;
-  } else if (status === 'inactive') {
-    where.isActive = false;
-  } else if (status === 'pending') {
-    where.isApproved = false;
-  }
-  if (type) where.type = type;
-  if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { city: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ];
-  }
-
-  const [total, agencies] = await Promise.all([
-    prisma.agency.count({ where: { ...where, deletedAt: null } }),
-    prisma.agency.findMany({
-      where: { ...where, deletedAt: null },
-      skip,
-      take: Number(limit),
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        city: true,
-        description: true,
-        isApproved: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-  ]);
-
-  const agencyIds = agencies.map((a) => a.id);
-  const [responderGroups, incidentGroups] = await Promise.all([
-    agencyIds.length
-      ? prisma.responder.groupBy({
-          by: ['agencyId', 'status'],
-          _count: { _all: true },
-          where: { agencyId: { in: agencyIds } },
-        })
-      : [],
-    agencyIds.length
-      ? prisma.incident.groupBy({
-          by: ['assignedAgencyId'],
-          _count: { _all: true },
-          where: {
-            assignedAgencyId: { in: agencyIds },
-            status: {
-              in: [
-                IncidentStatus.RECEIVED,
-                IncidentStatus.UNDER_REVIEW,
-                IncidentStatus.ASSIGNED,
-                IncidentStatus.RESPONDING,
-              ],
-            },
-          },
-        })
-      : [],
-  ]);
-
-  const responderStats = new Map<number, Record<string, number>>();
-  responderGroups.forEach((row) => {
-    const map = responderStats.get(row.agencyId) ?? {};
-    map[row.status] = row._count._all;
-    responderStats.set(row.agencyId, map);
-  });
-  const incidentStats = new Map<number, number>();
-  incidentGroups.forEach((row) => {
-    if (row.assignedAgencyId !== null) {
-      incidentStats.set(row.assignedAgencyId, row._count._all);
-    }
-  });
-
-  const withStats = agencies.map((a) => {
-    const stats = responderStats.get(a.id) || {};
-    const activeResponders =
-      (stats[ResponderStatus.AVAILABLE] || 0) +
-      (stats[ResponderStatus.ASSIGNED] || 0) +
-      (stats[ResponderStatus.EN_ROUTE] || 0) +
-      (stats[ResponderStatus.ON_SCENE] || 0);
-    return {
-      ...a,
-      responderStats: {
-        available: stats[ResponderStatus.AVAILABLE] || 0,
-        assigned: stats[ResponderStatus.ASSIGNED] || 0,
-        enRoute: stats[ResponderStatus.EN_ROUTE] || 0,
-        onScene: stats[ResponderStatus.ON_SCENE] || 0,
-        offline: stats[ResponderStatus.OFFLINE] || 0,
-        active: activeResponders,
-      },
-      activeIncidentCount: incidentStats.get(a.id) || 0,
-    };
-  });
-
-  res.json({ total, page: Number(page), limit: Number(limit), agencies: withStats });
-});
+router.get('/agencies', requireAuth, requireRole([Role.ADMIN]), agencyController.getAgencies);
 
 // Get agency details with boundary
 router.get('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (req, res) => {
@@ -293,35 +186,26 @@ router.get('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (req, 
   });
 });
 
-const createAgencySchema = z.object({
+const createAgencyWithAdminSchema = z.object({
   name: z.string().min(3),
   type: z.nativeEnum(AgencyType),
   city: z.string().min(2),
   description: z.string().optional(),
   isApproved: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  admin: z.object({
+    fullName: z.string().min(3),
+    email: z.string().email(),
+    phone: z.string().optional(),
+  }),
 });
 
 router.post(
   '/agencies',
   requireAuth,
   requireRole([Role.ADMIN]),
-  validateBody(createAgencySchema),
-  async (req, res) => {
-    const data = req.body as z.infer<typeof createAgencySchema>;
-    const agency = await prisma.agency.create({
-      data: {
-        name: data.name,
-        type: data.type,
-        city: data.city,
-        description: data.description,
-        isApproved: data.isApproved ?? false,
-        isActive: data.isActive ?? false,
-      },
-    });
-    await auditAgency(req.user!.id, 'CREATE_AGENCY', agency.id);
-    res.status(201).json({ agency });
-  },
+  validateBody(createAgencyWithAdminSchema),
+  agencyController.createAgency,
 );
 
 const updateAgencySchema = z.object({
