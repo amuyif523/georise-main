@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth';
-import { getAgencies, addStaff, getStaff } from './agency.controller';
+import { getAgencies, addStaff, getStaff, toggleStaffStatus } from './agency.controller';
 
 import prisma from '../../prisma';
 
@@ -27,5 +27,6 @@ router.get('/', requireAuth, getAgencies);
 router.post('/staff', requireAuth, addStaff);
 router.get('/staff', requireAuth, getStaff);
 router.get('/users', requireAuth, getStaff); // Alias for frontend compatibility
+router.patch('/users/:userId', requireAuth, toggleStaffStatus);
 
 export default router;

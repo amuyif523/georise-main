@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { agencyService } from './agency.service'; // Ensure correct import path?
+import prisma from '../../prisma';
 
 export const getAgencies = async (req: Request, res: Response) => {
   try {
@@ -81,5 +82,30 @@ export const getStaff = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Get staff error', error);
     return res.status(500).json({ message: 'Failed to fetch staff' });
+  }
+};
+
+export const toggleStaffStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.userId);
+    const { isActive } = req.body;
+    const requesterAgencyId = req.user?.agencyId;
+
+    if (!requesterAgencyId) return res.status(403).json({ message: 'Unauthorized' });
+
+    // Verify target user belongs to requester's agency
+    const targetStaff = await prisma.agencyStaff.findUnique({
+      where: { userId },
+    });
+
+    if (!targetStaff || targetStaff.agencyId !== requesterAgencyId) {
+      return res.status(404).json({ message: 'Staff member not found in your agency' });
+    }
+
+    const updatedUser = await agencyService.setStaffStatus(userId, isActive);
+    return res.json({ message: 'Status updated', user: updatedUser });
+  } catch (error: any) {
+    console.error('Toggle staff status error', error);
+    return res.status(400).json({ message: error.message || 'Failed to update status' });
   }
 };

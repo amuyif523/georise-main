@@ -214,6 +214,19 @@ const StaffManagementPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-4">
+                      {/* Badge Logic already present? No, rewriting explicit status cell above */}
+                      {/* Ah, I am replacing the cell content actually. */}
+                      {/* Wait, the previous code had text. The user wants a "Badge". */}
+                      <div
+                        className={`badge ${member.isActive ? 'badge-success gap-2' : 'badge-error gap-2'} badge-outline`}
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full ${member.isActive ? 'bg-success' : 'bg-error'}`}
+                        ></div>
+                        {member.isActive ? 'Active' : 'Deactivated'}
+                      </div>
+                    </td>
+                    <td className="p-4">
                       <button
                         className={`btn btn-xs ${member.isActive ? 'btn-error btn-outline' : 'btn-success btn-outline'}`}
                         onClick={() => toggleStatus(member.id, member.isActive)}

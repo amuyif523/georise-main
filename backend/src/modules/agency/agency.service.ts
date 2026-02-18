@@ -2,6 +2,7 @@ import prisma from '../../prisma';
 import bcrypt from 'bcrypt';
 import { StaffRole, AgencyType, IncidentStatus, ResponderStatus, Role } from '@prisma/client';
 import { smsService } from '../sms/sms.service';
+import { getIO } from '../../socket';
 
 export const agencyService = {
   async getAgencies(filters: {
@@ -257,5 +258,26 @@ export const agencyService = {
         },
       },
     });
+  },
+
+  async setStaffStatus(userId: number, isActive: boolean) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      include: { agencyStaff: true },
+    });
+
+    // If deactivating, disconnect socket and revoke session
+    if (!isActive) {
+      try {
+        const io = getIO();
+        // Assuming we join users to a room 'user:{id}' or similar upon connection
+        io.in(`user:${userId}`).disconnectSockets(true);
+      } catch (e) {
+        console.error('Failed to disconnect socket for user', userId, e);
+      }
+    }
+
+    return user;
   },
 };

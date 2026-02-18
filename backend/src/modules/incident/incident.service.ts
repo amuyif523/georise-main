@@ -688,16 +688,19 @@ export class IncidentService {
     }
 
     // Role-based Isolation (Critical)
+    // Role-based Isolation (Critical)
     if (user.role === 'AGENCY_STAFF' && agencyId) {
       // Enforce agency isolation: incidents assigned to OR shared with this agency
+      // Also potentially check jurisdiction overlap if we had GIS logic here, but ID-based is primary.
+      const isolationFilter = {
+        OR: [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }],
+      };
+
       if (conditions.OR) {
-        conditions.AND = [
-          { OR: conditions.OR },
-          { OR: [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }] },
-        ];
+        conditions.AND = [{ OR: conditions.OR }, isolationFilter];
         delete conditions.OR;
       } else {
-        conditions.OR = [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }];
+        Object.assign(conditions, isolationFilter);
       }
     }
 

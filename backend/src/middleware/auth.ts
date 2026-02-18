@@ -27,6 +27,18 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       agencyId: payload.agencyId,
     };
 
+    // Sprint 6: Scope Hardening
+    // If request contains agencyId param/body, ensure it matches user's agency
+    // (Ignoring strictly purely 'get' queries for now if they don't imply 'action', but logically strict read is good too)
+    // Actually, params usually implies "acting ON this agency" or "fetching FOR this agency".
+    // For agency_staff, they shouldn't use a route with :agencyId that isn't theirs.
+    if (req.params.agencyId && req.user.role === 'AGENCY_STAFF') {
+      const requestedId = parseInt(req.params.agencyId);
+      if (!isNaN(requestedId) && requestedId !== req.user.agencyId) {
+        return res.status(403).json({ message: 'Forbidden: You can only access your own agency' });
+      }
+    }
+
     return next();
   } catch (err) {
     logger.error({ err }, 'Auth error');
