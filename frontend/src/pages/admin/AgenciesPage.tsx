@@ -429,47 +429,78 @@ const AgenciesPage: React.FC = () => {
             </div>
             <span className="text-xs text-slate-500">{total} total</span>
           </div>
-          <div className="flex flex-wrap gap-2 mb-3">
-            <input
-              className="input input-sm input-bordered bg-slate-900 border-slate-700"
-              placeholder="Search by name or city"
-              value={search}
-              onChange={(e) => {
-                setPage(1);
-                setSearch(e.target.value);
-              }}
-            />
-            <select
-              className="select select-sm select-bordered bg-slate-900 border-slate-700"
-              value={statusFilter}
-              onChange={(e) => {
-                setPage(1);
-                setStatusFilter(e.target.value as any);
-              }}
-            >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="pending">Pending approval</option>
-            </select>
-            <select
-              className="select select-sm select-bordered bg-slate-900 border-slate-700"
-              value={typeFilter}
-              onChange={(e) => {
-                setPage(1);
-                setTypeFilter(e.target.value);
-              }}
-            >
-              <option value="all">All types</option>
-              {agencyTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-sm btn-outline" onClick={openCreate}>
-              + Create
-            </button>
+          <div className="flex flex-col gap-3 mb-3">
+            <div className="tabs tabs-boxed bg-slate-900 border border-slate-700 p-1">
+              <a
+                className={`tab ${statusFilter === 'all' ? 'tab-active' : ''}`}
+                onClick={() => {
+                  setStatusFilter('all');
+                  setPage(1);
+                }}
+              >
+                All
+              </a>
+              <a
+                className={`tab ${statusFilter === 'active' ? 'tab-active' : ''}`}
+                onClick={() => {
+                  setStatusFilter('active');
+                  setPage(1);
+                }}
+              >
+                Active
+              </a>
+              <a
+                className={`tab ${statusFilter === 'pending' ? 'tab-active' : ''}`} // Approval Queue
+                onClick={() => {
+                  setStatusFilter('pending');
+                  setPage(1);
+                }}
+              >
+                Approval Queue
+                {agencies.some((a) => !a.isApproved) && (
+                  <span className="ml-2 w-2 h-2 rounded-full bg-error"></span>
+                )}
+              </a>
+              <a
+                className={`tab ${statusFilter === 'inactive' ? 'tab-active' : ''}`}
+                onClick={() => {
+                  setStatusFilter('inactive');
+                  setPage(1);
+                }}
+              >
+                Inactive
+              </a>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                className="input input-sm input-bordered bg-slate-900 border-slate-700 flex-1"
+                placeholder="Search by name or city"
+                value={search}
+                onChange={(e) => {
+                  setPage(1);
+                  setSearch(e.target.value);
+                }}
+              />
+              <select
+                className="select select-sm select-bordered bg-slate-900 border-slate-700"
+                value={typeFilter}
+                onChange={(e) => {
+                  setPage(1);
+                  setTypeFilter(e.target.value);
+                }}
+              >
+                <option value="all">All types</option>
+                {agencyTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <button className="btn btn-sm btn-outline" onClick={openCreate}>
+                + Create
+              </button>
+            </div>
           </div>
           {loading ? (
             <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
@@ -500,10 +531,24 @@ const AgenciesPage: React.FC = () => {
                   {agencies.map((a) => (
                     <tr key={a.id} className="hover:bg-slate-900/60">
                       <td
-                        className="font-semibold cursor-pointer"
+                        className="font-semibold cursor-pointer flex items-center gap-2"
                         onClick={() => handleSelectAgency(a.id)}
                       >
                         {a.name}
+                        {a.isActive && a.isApproved && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-4 h-4 text-blue-400"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
                       </td>
                       <td>{a.city}</td>
                       <td>{a.type}</td>

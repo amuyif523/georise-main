@@ -41,22 +41,23 @@ async function main() {
   try {
     // 0. Pre-flight Check
     log('Step 0a: Checking AI Service Health...');
-    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8001';
     try {
       const health = await axios.get(`${AI_SERVICE_URL}/health`, {
         headers: { Authorization: `Bearer ${process.env.INTERNAL_SERVICE_SECRET}` },
       });
-      if (!health.data.ready) {
-        log(`⚠️ AI Service is running but model is not ready: ${JSON.stringify(health.data)}`);
-        // Wait for it?
-        log('Waiting 5s for model warm-up...');
-        await sleep(5000);
-      } else {
-        log('✅ AI Service is READY.');
+      if (health.status !== 200 || !health.data.ready) {
+        log(`⚠️ AI Service Health Check Failed: ${JSON.stringify(health.data)}`);
+        throw new Error('AI Service not ready');
       }
-    } catch (e: any) {
-      log(`⚠️ AI Service Health Check Failed: ${e.message}`);
-      log('Continuing, but AI processing might fail...');
+      log('✅ AI Service is READY');
+    } catch (err: any) {
+      log(`⚠️ AI Service Health Check Failed: ${err.message}`);
+      if (err.response) {
+        log(`Response Status: ${err.response.status}`);
+        log(`Response Data: ${JSON.stringify(err.response.data)}`);
+      }
+      throw err;
     }
 
     // 0b. Dynamic User Discovery
@@ -166,8 +167,16 @@ async function main() {
     process.exitCode = 1;
   } finally {
     log('Step 5: Cleaning up test data...');
+    // Sync delay to allow last worker logs to flush
+    await sleep(2000);
     // Clean up even on failure
     if (incidentIds.length > 0) {
+      // 1. Delete dependent AI results first
+      await prisma.incidentAIOutput
+        .deleteMany({ where: { incidentId: { in: incidentIds } } })
+        .catch((e) => log(`Cleanup Error (AI Output): ${e.message}`));
+
+      // 2. Now safe to delete incidents
       await prisma.incident
         .deleteMany({ where: { id: { in: incidentIds } } })
         .catch((e) => log(`Cleanup Error (Incidents): ${e.message}`));

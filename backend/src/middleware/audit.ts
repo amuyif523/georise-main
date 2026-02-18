@@ -29,7 +29,7 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
       const targetId = deriveTargetId(req, responseBody);
 
       const payload = {
-        body: req.body,
+        body: sanitize(req.body),
         params: req.params,
         query: req.query,
       };
@@ -41,7 +41,8 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
           targetType,
           targetId: targetId ? Number(targetId) : null,
           payload: payload as any, // Prisma Json compatibility
-          ipAddress: req.ip || req.socket.remoteAddress,
+          ipAddress:
+            req.headers['x-forwarded-for']?.toString() || req.ip || req.socket.remoteAddress,
           note: `Status: ${res.statusCode}`,
         },
       });
@@ -92,4 +93,28 @@ function deriveTargetId(req: Request, resBody: any): number | null {
     }
   }
   return null;
+}
+
+function sanitize(body: any): any {
+  if (!body) return body;
+  if (typeof body !== 'object') return body;
+
+  const sensitiveKeys = [
+    'password',
+    'token',
+    'secret',
+    'authorization',
+    'passwordHash',
+    'confirmPassword',
+  ];
+  const sanitized = { ...body };
+
+  for (const key of Object.keys(sanitized)) {
+    if (sensitiveKeys.some((k) => key.toLowerCase().includes(k))) {
+      sanitized[key] = '***REDACTED***';
+    } else if (typeof sanitized[key] === 'object') {
+      sanitized[key] = sanitize(sanitized[key]);
+    }
+  }
+  return sanitized;
 }

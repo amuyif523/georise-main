@@ -1,9 +1,11 @@
 import os
 import json
+import traceback
 from pathlib import Path
 from typing import Optional
 
 import torch
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -11,8 +13,18 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from utils.severity import infer_severity
 
+load_dotenv(Path(__file__).parent / ".env", override=True)
+
 # --- Configuration & Constants ---
 INTERNAL_SERVICE_SECRET = os.getenv("INTERNAL_SERVICE_SECRET")
+
+print(f"DEBUG: Current Dir: {os.getcwd()}")
+print(f"DEBUG: .env exists? {(Path(__file__).parent / '.env').exists()}")
+print(f"DEBUG: Secret loaded? {'Yes' if INTERNAL_SERVICE_SECRET else 'No'}")
+print(
+    f"DEBUG: Secret length: {len(INTERNAL_SERVICE_SECRET) if INTERNAL_SERVICE_SECRET else 0}"
+)
+
 MODEL_DIR = Path(__file__).parent / "models" / "afroxlmr_incident_classifier"
 DEFAULT_MODEL_NAME = "Davlan/afro-xlmr-base"
 METADATA_PATH = MODEL_DIR / "metadata.json"
@@ -102,6 +114,7 @@ def heuristic_category(text: str) -> str:
 # --- Initialization ---
 load_keywords()
 tokenizer, model, model_version = load_model()
+# ... (rest of imports/config)
 
 # --- FastAPI App & Security ---
 app = FastAPI()
@@ -110,6 +123,9 @@ security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not INTERNAL_SERVICE_SECRET:
+        print(
+            "❌ WARNING: INTERNAL_SERVICE_SECRET is not set!"
+        )  # Log warning as requested
         # Require secret to be set for security
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -141,13 +157,17 @@ class ClassifyResponse(BaseModel):
 
 @app.get("/health", dependencies=[Depends(verify_token)])
 def health():
-    ready = model is not None
-    return {
-        "status": "AI service running" if ready else "Model loading...",
-        "ready": ready,
-        "model": model_version,
-        "metadata": model_metadata or {},
-    }
+    try:
+        ready = model is not None
+        return {
+            "status": "AI service running" if ready else "Model loading...",
+            "ready": ready,
+            "model": model_version,
+            "metadata": model_metadata or {},
+        }
+    except Exception:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Health check failed")
 
 
 @app.post(

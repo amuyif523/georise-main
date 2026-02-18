@@ -145,9 +145,9 @@ router.get('/agencies', requireAuth, requireRole([Role.ADMIN]), async (req, res)
   }
 
   const [total, agencies] = await Promise.all([
-    prisma.agency.count({ where }),
+    prisma.agency.count({ where: { ...where, deletedAt: null } }),
     prisma.agency.findMany({
-      where,
+      where: { ...where, deletedAt: null },
       skip,
       take: Number(limit),
       orderBy: { name: 'asc' },
@@ -236,7 +236,7 @@ router.get('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (req, 
   if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
   const agencyId = parsed.data.id;
 
-  const agency = await prisma.agency.findUnique({ where: { id: agencyId } });
+  const agency = await prisma.agency.findFirst({ where: { id: agencyId, deletedAt: null } });
   if (!agency) return res.status(404).json({ message: 'Agency not found' });
 
   // Fetch boundary as GeoJSON
@@ -389,31 +389,44 @@ router.delete('/agencies/:id', requireAuth, requireRole([Role.ADMIN]), async (re
   const parsed = idSchema.safeParse(req.params);
   if (!parsed.success) return res.status(400).json({ message: 'Invalid agency id' });
   const agencyId = parsed.data.id;
-  // Hard delete guard: Check for ANY assigned incidents (not just active)
-  const incidentCount = await prisma.incident.count({
-    where: { assignedAgencyId: agencyId },
+  // Soft delete guard: Check for ACTIVE assigned incidents (not just any)
+  const activeIncidentCount = await prisma.incident.count({
+    where: {
+      assignedAgencyId: agencyId,
+      status: {
+        notIn: [IncidentStatus.RESOLVED, IncidentStatus.CANCELLED],
+      },
+      deletedAt: null,
+    },
   });
 
-  if (incidentCount > 0) {
+  if (activeIncidentCount > 0) {
     return res.status(409).json({
-      message: `Cannot delete agency. It has ${incidentCount} assigned incident(s). Reassign them first.`,
+      message: `Cannot delete agency. It has ${activeIncidentCount} active incident(s). Resolve or reassign them first.`,
     });
   }
 
-  // Transactional cleanup and delete
+  // Soft delete: Update Agency, Deactivate Staff/Responders
   await prisma.$transaction([
-    prisma.agencyStaff.deleteMany({ where: { agencyId } }),
-    // AgencyJurisdiction table exists? Based on file read, there is a route finding from it.
-    // If AgencyJurisdiction is not a model or handled differently, I should check.
-    // Looking at the file content line 184: prisma.agencyJurisdiction.findMany
-    // So yes, it exists.
-    prisma.agencyJurisdiction.deleteMany({ where: { agencyId } }),
-    prisma.responder.deleteMany({ where: { agencyId } }), // Clean up responders
-    prisma.agency.delete({ where: { id: agencyId } }),
+    prisma.agency.update({
+      where: { id: agencyId },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+      },
+    }),
+    prisma.agencyStaff.updateMany({
+      where: { agencyId },
+      data: { isActive: false, deactivatedAt: new Date() },
+    }),
+    prisma.responder.updateMany({
+      where: { agencyId },
+      data: { status: ResponderStatus.OFFLINE },
+    }),
   ]);
 
   await auditAgency(req.user!.id, 'DELETE_AGENCY', agencyId);
-  res.json({ message: 'Agency and linked staff/responders permanently deleted.' });
+  res.json({ message: 'Agency soft-deleted and staff deactivated.' });
 });
 
 // Update boundary with GeoJSON polygon

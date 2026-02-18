@@ -9,6 +9,7 @@ export const agencyService = {
       where: {
         isActive: true,
         isApproved: true,
+        deletedAt: null,
       },
       select: {
         id: true,

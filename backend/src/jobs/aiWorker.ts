@@ -42,66 +42,75 @@ export const aiWorker = new Worker(
     }
 
     // 2. Update Database
-    const updated = await prisma.incident.update({
-      where: { id: incidentId },
-      data: {
-        category: aiOutput.predicted_category,
-        severityScore: aiOutput.severity_score,
-        // If the AI took a while, we might want to checking if status changed?
-        // For now, simple update.
-        aiOutput: {
-          upsert: {
-            create: {
-              modelVersion: aiOutput.model_version,
-              predictedCategory: aiOutput.predicted_category,
-              severityScore: aiOutput.severity_score,
-              confidence: aiOutput.confidence,
-              summary: aiOutput.summary,
-            },
-            update: {
-              modelVersion: aiOutput.model_version,
-              predictedCategory: aiOutput.predicted_category,
-              severityScore: aiOutput.severity_score,
-              confidence: aiOutput.confidence,
-              summary: aiOutput.summary,
+    try {
+      const updated = await prisma.incident.update({
+        where: { id: incidentId },
+        data: {
+          category: aiOutput.predicted_category,
+          severityScore: aiOutput.severity_score,
+          aiOutput: {
+            upsert: {
+              create: {
+                modelVersion: aiOutput.model_version,
+                predictedCategory: aiOutput.predicted_category,
+                severityScore: aiOutput.severity_score,
+                confidence: aiOutput.confidence,
+                summary: aiOutput.summary,
+              },
+              update: {
+                modelVersion: aiOutput.model_version,
+                predictedCategory: aiOutput.predicted_category,
+                severityScore: aiOutput.severity_score,
+                confidence: aiOutput.confidence,
+                summary: aiOutput.summary,
+              },
             },
           },
         },
-      },
-      include: { aiOutput: true },
-    });
-
-    // 3. Emit Real-time Update
-    emitIncidentUpdated(toIncidentPayload(updated));
-    const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
-    logger.info(
-      { incidentId, category: updated.category, durationMs },
-      'Incident AI analysis complete',
-    );
-
-    // 4. Auto-Pilot Dispatch (Task 1 of Sprint 5)
-    try {
-      const autoResult = await dispatchService.executeAutoAssignment(incidentId);
-      if (autoResult) {
-        logger.info(
-          { incidentId, unit: autoResult.unit.name },
-          'Auto-Pilot successfully dispatched incident',
-        );
-      }
-    } catch (err) {
-      logger.error({ err, incidentId }, 'Auto-Pilot dispatch check failed');
-    }
-
-    // 5. Critical Alert Logic (Async)
-    if (updated.severityScore && updated.severityScore >= 4) {
-      await notificationService.send({
-        userId: reporterId,
-        title: 'High Severity Alert',
-        message: `Your report #${updated.id} has been analyzed as HIGH severity (${updated.category}). Help is being prioritized.`,
-        type: 'INCIDENT_UPDATE',
-        data: { incidentId: updated.id },
-        channels: ['SMS', 'PUSH', 'IN_APP'],
+        include: { aiOutput: true },
       });
+
+      // 3. Emit Real-time Update
+      emitIncidentUpdated(toIncidentPayload(updated));
+      const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
+      logger.info(
+        { incidentId, category: updated.category, durationMs },
+        'Incident AI analysis complete',
+      );
+
+      // 4. Auto-Pilot Dispatch (Task 1 of Sprint 5)
+      try {
+        const autoResult = await dispatchService.executeAutoAssignment(incidentId);
+        if (autoResult) {
+          logger.info(
+            { incidentId, unit: autoResult.unit.name },
+            'Auto-Pilot successfully dispatched incident',
+          );
+        }
+      } catch (err) {
+        logger.error({ err, incidentId }, 'Auto-Pilot dispatch check failed');
+      }
+
+      // 5. Critical Alert Logic (Async)
+      if (updated.severityScore && updated.severityScore >= 4) {
+        await notificationService.send({
+          userId: reporterId,
+          title: 'High Severity Alert',
+          message: `Your report #${updated.id} has been analyzed as HIGH severity (${updated.category}). Help is being prioritized.`,
+          type: 'INCIDENT_UPDATE',
+          data: { incidentId: updated.id },
+          channels: ['SMS', 'PUSH', 'IN_APP'],
+        });
+      }
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        logger.info(
+          { incidentId },
+          `ℹ️ Skipping AI update: Incident ${incidentId} was deleted before processing.`,
+        );
+        return;
+      }
+      throw error;
     }
   },
   {

@@ -46,6 +46,10 @@ export const runSLAChecks = async () => {
         status: 'ASSIGNED',
         acknowledgedAt: null,
         dispatchedAt: { lt: ackDeadline },
+        // Suppress noise from stress tests
+        assignedAgency: {
+          name: { not: { contains: 'STRESS_TEST' } },
+        },
       },
       include: { assignedResponder: true },
     });

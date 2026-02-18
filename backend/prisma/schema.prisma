@@ -113,8 +113,10 @@ model User {
   lastLatitude  Float?
   lastLongitude Float?
   location      Unsupported("geometry(Point, 4326)")?
+  deletedAt     DateTime?
 
   @@index([location], name: "user_location_idx", type: Gist)
+  @@index([id, deletedAt])
 }
 
 model Notification {
@@ -159,6 +161,7 @@ model Agency {
   woredaId    Int?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
 
   subCity   SubCity? @relation(fields: [subCityId], references: [id])
   woreda    Woreda?  @relation(fields: [woredaId], references: [id])
@@ -170,6 +173,7 @@ model Agency {
 
   @@index([boundary], name: "agency_boundary_idx", type: Gist)
   @@index([jurisdiction], name: "agency_jurisdiction_idx", type: Gist)
+  @@index([id, deletedAt])
 }
 
 model AuditLog {
@@ -244,6 +248,7 @@ model Incident {
   declinedResponderIds Int[]      @default([])
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
 
   reporter       User?                @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
@@ -261,6 +266,7 @@ model Incident {
   photos         IncidentPhoto[]
 
   @@index([location], name: "incident_location_idx", type: Gist)
+  @@index([id, deletedAt])
 }
 
 model SharedIncident {
@@ -296,7 +302,7 @@ model IncidentAIOutput {
   confidence        Float
   summary           String?
 
-  incident Incident @relation(fields: [incidentId], references: [id])
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 }
 
 model IncidentStatusHistory {

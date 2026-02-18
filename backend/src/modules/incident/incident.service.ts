@@ -401,7 +401,7 @@ export class IncidentService {
 
   async getMyIncidents(reporterId: number) {
     const incidents = await prisma.incident.findMany({
-      where: { reporterId },
+      where: { reporterId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       include: { aiOutput: true },
     });
@@ -418,8 +418,8 @@ export class IncidentService {
 
   async getIncidentDetails(id: number) {
     // For admin/agency use
-    const incident = await prisma.incident.findUnique({
-      where: { id },
+    const incident = await prisma.incident.findFirst({
+      where: { id, deletedAt: null },
       include: {
         aiOutput: true,
         statusHistory: true,
