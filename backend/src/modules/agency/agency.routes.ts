@@ -26,5 +26,6 @@ router.get('/', requireAuth, getAgencies);
 // Agency Staff Management
 router.post('/staff', requireAuth, addStaff);
 router.get('/staff', requireAuth, getStaff);
+router.get('/users', requireAuth, getStaff); // Alias for frontend compatibility
 
 export default router;
