@@ -4,16 +4,19 @@ import api from '../../lib/api';
 import { Users, UserPlus } from 'lucide-react';
 
 interface StaffMember {
-  userId: number;
-  agencyId: number;
-  staffRole: 'DISPATCHER' | 'RESPONDER' | 'SUPERVISOR';
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string | null;
   isActive: boolean;
-  user: {
-    id: number;
-    fullName: string;
-    email: string;
-    phone: string | null;
+  agencyStaff?: {
+    agencyId: number;
+    staffRole: 'DISPATCHER' | 'RESPONDER' | 'SUPERVISOR';
   };
+  // Fallback if needed but API returns flattened User with agencyStaff relation
+  staffRole?: 'DISPATCHER' | 'RESPONDER' | 'SUPERVISOR';
+  userId?: number;
+  user?: any; // For backward compat just in case
 }
 
 const StaffManagementPage: React.FC = () => {
@@ -31,8 +34,8 @@ const StaffManagementPage: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const res = await api.get('/agency/staff');
-      setStaff(res.data.staff);
+      const res = await api.get('/agency/users'); // Changed from /agency/staff
+      setStaff(res.data.users); // Changed from res.data.staff
     } catch (err) {
       console.error(err);
     } finally {
@@ -47,13 +50,23 @@ const StaffManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/agency/staff', formData);
+      await api.post('/agency/users', formData); // Changed from /agency/staff
       alert('Staff added successfully');
       setIsModalOpen(false);
       setFormData({ fullName: '', email: '', phone: '', staffRole: 'RESPONDER' });
       fetchStaff();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to add staff');
+    }
+  };
+
+  const toggleStatus = async (userId: number, currentStatus: boolean) => {
+    if (currentStatus && !confirm('Are you sure you want to deactivate this staff member?')) return;
+    try {
+      await api.patch(`/agency/users/${userId}`, { isActive: !currentStatus });
+      fetchStaff();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -146,18 +159,19 @@ const StaffManagementPage: React.FC = () => {
                 <th className="text-left p-4">Role</th>
                 <th className="text-left p-4">Contact</th>
                 <th className="text-left p-4">Status</th>
+                <th className="text-left p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-slate-500">
+                  <td colSpan={5} className="text-center py-8 text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : staff.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-slate-500">
+                  <td colSpan={5} className="text-center py-8 text-slate-500">
                     No staff members found.
                   </td>
                 </tr>
@@ -167,29 +181,45 @@ const StaffManagementPage: React.FC = () => {
                     key={member.userId}
                     className="border-b border-slate-800/50 hover:bg-slate-800/30"
                   >
-                    <td className="font-medium text-white p-4">{member.user.fullName}</td>
+                    <td className="font-medium text-white p-4">
+                      {member.fullName || member.user?.fullName}
+                    </td>
                     <td className="p-4">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-semibold
                                         ${
-                                          member.staffRole === 'SUPERVISOR'
+                                          (member.agencyStaff?.staffRole || member.staffRole) ===
+                                          'SUPERVISOR'
                                             ? 'bg-purple-900/50 text-purple-200 border border-purple-700'
-                                            : member.staffRole === 'DISPATCHER'
+                                            : (member.agencyStaff?.staffRole ||
+                                                  member.staffRole) === 'DISPATCHER'
                                               ? 'bg-blue-900/50 text-blue-200 border border-blue-700'
                                               : 'bg-green-900/50 text-green-200 border border-green-700'
                                         }`}
                       >
-                        {member.staffRole}
+                        {member.agencyStaff?.staffRole || member.staffRole}
                       </span>
                     </td>
                     <td className="p-4">
-                      <div className="text-sm text-slate-200">{member.user.email}</div>
-                      <div className="text-xs text-slate-500">{member.user.phone}</div>
+                      <div className="text-sm text-slate-200">
+                        {member.email || member.user?.email}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {member.phone || member.user?.phone}
+                      </div>
                     </td>
                     <td className="p-4">
                       <span className={member.isActive ? 'text-green-400' : 'text-red-400'}>
                         {member.isActive ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <button
+                        className={`btn btn-xs ${member.isActive ? 'btn-error btn-outline' : 'btn-success btn-outline'}`}
+                        onClick={() => toggleStatus(member.id, member.isActive)}
+                      >
+                        {member.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
                     </td>
                   </tr>
                 ))
