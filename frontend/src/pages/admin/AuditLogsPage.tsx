@@ -13,6 +13,10 @@ type AuditLog = {
 
 const PAGE_SIZE = 50;
 
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import AppLayout from '../../layouts/AppLayout';
+
 const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,58 +48,70 @@ const AuditLogsPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="min-h-screen bg-[#0A0F1A] text-slate-100 p-6 space-y-4">
-      <div>
-        <p className="text-sm text-cyan-200">Admin control</p>
-        <h1 className="text-3xl font-bold">Audit Logs</h1>
-        <p className="text-slate-400 text-sm">Recent sensitive actions.</p>
-      </div>
-      {error && <div className="alert alert-error text-sm">{error}</div>}
-      {loading ? (
-        <div className="text-slate-300">Loading…</div>
-      ) : (
-        <>
-          <div className="space-y-2">
-            {logs.map((log) => (
-              <div
-                key={log.id}
-                className="p-3 rounded-lg border border-slate-800 bg-[#0D1117] shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {log.action} → {log.targetType} #{log.targetId ?? 'N/A'}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {log.actor.fullName} ({log.actor.email})
+    <AppLayout>
+      <div className="p-6 space-y-4 max-w-7xl mx-auto">
+        <div className="flex items-center gap-4">
+          <Link to="/admin" className="btn btn-sm btn-ghost gap-2">
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Link>
+        </div>
+        <div>
+          <p className="text-sm text-cyan-200">Admin control</p>
+          <h1 className="text-3xl font-bold">Audit Logs</h1>
+          <p className="text-slate-400 text-sm">Recent sensitive actions.</p>
+        </div>
+        {error && <div className="alert alert-error text-sm">{error}</div>}
+        {loading ? (
+          <div className="text-slate-300">Loading…</div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {logs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-3 rounded-lg border border-slate-800 bg-[#0D1117] shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {log.action} → {log.targetType} #{log.targetId ?? 'N/A'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {log.actor.fullName} ({log.actor.email})
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {new Date(log.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </p>
+                  {log.note && <p className="text-xs text-slate-400 mt-1">Note: {log.note}</p>}
                 </div>
-                {log.note && <p className="text-xs text-slate-400 mt-1">Note: {log.note}</p>}
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-3 pt-3">
-            <button className="btn btn-xs" disabled={page <= 1} onClick={() => fetchLogs(page - 1)}>
-              Prev
-            </button>
-            <span className="text-xs text-slate-400">
-              Page {page} of {totalPages} ({total} records)
-            </span>
-            <button
-              className="btn btn-xs"
-              disabled={page >= totalPages}
-              onClick={() => fetchLogs(page + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 pt-3">
+              <button
+                className="btn btn-xs"
+                disabled={page <= 1}
+                onClick={() => fetchLogs(page - 1)}
+              >
+                Prev
+              </button>
+              <span className="text-xs text-slate-400">
+                Page {page} of {totalPages} ({total} records)
+              </span>
+              <button
+                className="btn btn-xs"
+                disabled={page >= totalPages}
+                onClick={() => fetchLogs(page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </AppLayout>
   );
 };
 
