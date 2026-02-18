@@ -250,6 +250,7 @@ const AgenciesPage: React.FC = () => {
   };
 
   const submitCreate = async () => {
+    console.log('SUBMIT TRIGGERED', form);
     try {
       setCreating(true);
       await api.post('/admin/agencies', {
@@ -634,7 +635,7 @@ const AgenciesPage: React.FC = () => {
 
       {createModal && (
         <div className="modal modal-open z-[9999] backdrop-blur-sm">
-          <div className="modal-box bg-slate-900 border border-slate-700">
+          <div className="modal-box bg-slate-900 border border-slate-700 pointer-events-auto">
             <h3 className="font-semibold mb-2">Create agency</h3>
             <div className="space-y-3">
               <input
@@ -698,7 +699,8 @@ const AgenciesPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                className="btn btn-primary"
+                type="button"
+                className="btn btn-primary hover:bg-primary-focus active:scale-95 transition-all relative z-[100]"
                 onClick={submitCreate}
                 disabled={
                   creating || !form.name || !form.city || !form.adminName || !form.adminEmail
