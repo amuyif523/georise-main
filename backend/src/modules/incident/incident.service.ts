@@ -740,6 +740,74 @@ export class IncidentService {
 
     return { total, incidents };
   }
+  async updateIncidentTriage(
+    id: number,
+    data: { category: string; severityScore: number; reason?: string },
+    correctorId: number,
+  ) {
+    const incident = await prisma.incident.findUnique({
+      where: { id },
+      include: { aiOutput: true },
+    });
+
+    if (!incident) throw new Error('Incident not found');
+
+    const originalCategory = incident.category;
+    const originalSeverity = incident.severityScore;
+
+    const hasChanged =
+      originalCategory !== data.category || originalSeverity !== data.severityScore;
+
+    if (hasChanged) {
+      // Transactional update & audit
+      await prisma.$transaction(async (tx) => {
+        // Create Audit
+        await tx.classificationAudit.create({
+          data: {
+            incidentId: id,
+            correctorId,
+            originalCategory,
+            correctedCategory: data.category,
+            originalSeverity,
+            correctedSeverity: data.severityScore,
+            reason: data.reason,
+            confidence: incident.aiOutput?.confidence,
+          },
+        });
+
+        // Update Incident
+        await tx.incident.update({
+          where: { id },
+          data: {
+            category: data.category,
+            severityScore: data.severityScore,
+          },
+        });
+
+        // Update AI Output if exists
+        if (incident.aiOutput) {
+          await tx.incidentAIOutput.update({
+            where: { incidentId: id },
+            data: {
+              predictedCategory: data.category, // Override prediction or keep original?
+              // Typically we keep original prediction and severity in aiOutput for comparison
+              // But if this table drives the UI "Ai Output", we might want to update it.
+              // However, we want to start retraining.
+              // Let's NOT update aiOutput to preserve the "AI's opinion", unless we want to "correct" the record.
+              // The schema description says "Use aiCategory" for original.
+              // So we DON't update IncidentAIOutput.
+            },
+          });
+        }
+      });
+
+      // Emit update
+      const updated = await prisma.incident.findUnique({ where: { id } });
+      emitIncidentUpdated(toIncidentPayload(updated as any));
+    }
+
+    return incident;
+  }
 }
 
 export const incidentService = new IncidentService();

@@ -251,3 +251,25 @@ export const getIncidents = async (req: Request, res: Response) => {
     return res.status(400).json({ message: err?.message || 'Failed to fetch incidents' });
   }
 };
+
+export const updateIncidentTriage = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { category, severityScore, reason } = req.body;
+
+    if (!category || severityScore === undefined) {
+      return res.status(400).json({ message: 'Category and severityScore are required' });
+    }
+
+    const updated = await incidentService.updateIncidentTriage(
+      Number(id),
+      { category, severityScore, reason },
+      req.user!.id,
+    );
+
+    return res.json({ incident: updated });
+  } catch (err: any) {
+    logger.error({ err }, 'Update triage error');
+    return res.status(400).json({ message: err?.message || 'Failed to update triage' });
+  }
+};

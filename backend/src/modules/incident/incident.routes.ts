@@ -15,6 +15,7 @@ import {
   getIncidentPhotos,
   getIncidents,
   getIncidentDetails,
+  updateIncidentTriage,
 } from './incident.controller';
 import { validateBody } from '../../middleware/validate';
 import { createIncidentSchema } from './incident.validation';
@@ -524,6 +525,13 @@ router.post(
       res.status(400).json({ message: errorMessage(err, 'Failed to review incident') });
     }
   },
+);
+
+router.patch(
+  '/:id/triage',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  updateIncidentTriage,
 );
 
 export default router;

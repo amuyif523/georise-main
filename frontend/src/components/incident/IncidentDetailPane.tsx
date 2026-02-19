@@ -11,6 +11,7 @@ import {
   Send,
   Check,
   XCircle,
+  PenLine,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { severityBadgeClass, severityLabel } from '../../utils/severity';
@@ -117,6 +118,40 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeclineInput, setShowDeclineInput] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+
+  // Triage Correction State
+  const [isEditingTriage, setIsEditingTriage] = useState(false);
+  const [triageCategory, setTriageCategory] = useState('');
+  const [triageSeverity, setTriageSeverity] = useState(1);
+  const [triageReason, setTriageReason] = useState('');
+
+  useEffect(() => {
+    if (incident) {
+      setTriageCategory(incident.category ?? 'OTHER');
+      setTriageSeverity(incident.severityScore ?? 1);
+      setIsEditingTriage(false);
+      setTriageReason('');
+    }
+  }, [incident]);
+
+  const handleSaveTriage = async () => {
+    if (!incident || !triageReason.trim()) return;
+    setActionLoading(true);
+    try {
+      const res = await api.patch(`/incidents/${incident.id}/triage`, {
+        category: triageCategory,
+        severityScore: triageSeverity,
+        reason: triageReason,
+      });
+      setIncident(res.data.incident);
+      setIsEditingTriage(false);
+      setTriageReason('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to update triage');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Sync prop to state and fetch details
   useEffect(() => {
@@ -405,8 +440,17 @@ const IncidentDetailPane: React.FC<Props> = ({
               <span className={severityBadgeClass(incident.severityScore)}>
                 {severityLabel(incident.severityScore)}
               </span>
-              <span className="badge badge-outline badge-xs">
+              <span className="badge badge-outline badge-xs gap-1">
                 {incident.category ?? 'Unclassified'}
+                {user?.role !== 'CITIZEN' && (
+                  <button
+                    onClick={() => setIsEditingTriage(true)}
+                    className="hover:text-cyan-300 ml-1"
+                    title="Correct Triage"
+                  >
+                    <PenLine size={10} />
+                  </button>
+                )}
               </span>
               <span className="badge badge-ghost badge-xs">Status: {incident.status}</span>
               <span className="text-slate-400">
@@ -439,6 +483,68 @@ const IncidentDetailPane: React.FC<Props> = ({
               <X size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Categories / Triage Correction UI */}
+        <div className="px-4 pt-4">
+          {isEditingTriage ? (
+            <div className="p-3 bg-slate-900 border border-slate-700 rounded-lg space-y-3">
+              <h3 className="text-sm font-semibold text-white">Correct AI Triage</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="form-control">
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <span className="label-text text-xs text-slate-400">Category</span>
+                  </label>
+                  <select
+                    className="select select-bordered select-xs w-full bg-slate-800 text-white"
+                    value={triageCategory}
+                    onChange={(e) => setTriageCategory(e.target.value)}
+                  >
+                    <option value="TRAFFIC_ACCIDENT">Traffic Accident</option>
+                    <option value="FIRE_EMERGENCY">Fire Emergency</option>
+                    <option value="MEDICAL_EMERGENCY">Medical Emergency</option>
+                    <option value="POLLUTION">Pollution</option>
+                    <option value="INFRASTRUCTURE">Infrastructure</option>
+                    <option value="SECURITY">Security</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div className="form-control">
+                  <label className="label cursor-pointer justify-start gap-2">
+                    <span className="label-text text-xs text-slate-400">Severity</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    className="input input-bordered input-xs w-full bg-slate-800 text-white"
+                    value={triageSeverity}
+                    onChange={(e) => setTriageSeverity(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <textarea
+                className="textarea textarea-bordered textarea-xs w-full bg-slate-800 text-white"
+                placeholder="Reason for correction (required)..."
+                value={triageReason}
+                onChange={(e) => setTriageReason(e.target.value)}
+              />
+              <div className="flex gap-2 justify-end">
+                <button className="btn btn-xs btn-ghost" onClick={() => setIsEditingTriage(false)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-xs btn-primary"
+                  onClick={handleSaveTriage}
+                  disabled={actionLoading || !triageReason}
+                >
+                  {actionLoading ? 'Saving...' : 'Submit Correction'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-2">{/* Original Read-only View */}</div>
+          )}
         </div>
 
         {/* Tabs */}

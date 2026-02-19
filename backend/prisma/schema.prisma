@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
   extensions = [postgis(map: "postgis")]
 }
 
@@ -74,41 +74,42 @@ enum AgencyType {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  fullName     String
-  email        String    @unique
-  phone        String?   @unique
-  passwordHash String
-  role         Role      @default(CITIZEN)
-  isActive     Boolean   @default(true)
-  deactivatedAt DateTime?
-  isShadowBanned Boolean @default(false)
-  tokenVersion Int       @default(0)
-  failedLoginAttempts Int @default(0)
-  lockedUntil  DateTime?
-  trustScore   Int       @default(0)
-  totalReports Int       @default(0)
-  validReports Int       @default(0)
-  rejectedReports Int    @default(0)
-  lastReportAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                  Int       @id @default(autoincrement())
+  fullName            String
+  email               String    @unique
+  phone               String?   @unique
+  passwordHash        String
+  role                Role      @default(CITIZEN)
+  isActive            Boolean   @default(true)
+  deactivatedAt       DateTime?
+  isShadowBanned      Boolean   @default(false)
+  tokenVersion        Int       @default(0)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  trustScore          Int       @default(0)
+  totalReports        Int       @default(0)
+  validReports        Int       @default(0)
+  rejectedReports     Int       @default(0)
+  lastReportAt        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   // Relations
-  citizenVerification CitizenVerification?
-  agencyStaff         AgencyStaff?
-  incidentsReported   Incident[]             @relation("IncidentsReportedByUser")
-  statusHistory       IncidentStatusHistory[]
-  auditLogs           AuditLog[]
-  reviewedIncidents   Incident[]             @relation("IncidentReviewUser")
-  activityLogs        ActivityLog[]
-  responders          Responder[]
-  chatMessages        IncidentChat[]
-  broadcasts          BroadcastLog[]
-  notifications       Notification[]
-  pushSubscriptions   PushSubscription[]
-  incidentPhotos      IncidentPhoto[] @relation("IncidentPhotoUploadedBy")
-  passwordResets      PasswordResetToken[]
+  citizenVerification  CitizenVerification?
+  agencyStaff          AgencyStaff?
+  incidentsReported    Incident[]              @relation("IncidentsReportedByUser")
+  statusHistory        IncidentStatusHistory[]
+  auditLogs            AuditLog[]
+  reviewedIncidents    Incident[]              @relation("IncidentReviewUser")
+  activityLogs         ActivityLog[]
+  responders           Responder[]
+  chatMessages         IncidentChat[]
+  broadcasts           BroadcastLog[]
+  notifications        Notification[]
+  pushSubscriptions    PushSubscription[]
+  incidentPhotos       IncidentPhoto[]         @relation("IncidentPhotoUploadedBy")
+  passwordResets       PasswordResetToken[]
+  classificationAudits ClassificationAudit[]
 
   lastLatitude  Float?
   lastLongitude Float?
@@ -119,17 +120,21 @@ model User {
   @@index([id, deletedAt])
 }
 
+// ... (existing content is fine, I need to check where to insert User relation field specifically or just append to end of User model, wait, replace_file_content replaces a block. I should target the User model end and Incident model end separately or use multi_replace if possible for different files? No, same file.)
+
+// I will use multi_replace_file_content for schema.prisma to handle User, Incident, and the new model.
+
 model Notification {
   id        String   @id @default(cuid())
   userId    Int
   title     String
   message   String
-  type      String   // "PROXIMITY_ALERT", "SYSTEM", etc.
+  type      String // "PROXIMITY_ALERT", "SYSTEM", etc.
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-  data      Json?    // Extra data like incidentId
+  data      Json? // Extra data like incidentId
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model PushSubscription {
@@ -142,33 +147,33 @@ model PushSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Agency {
-  id          Int         @id @default(autoincrement())
-  name        String
-  type        AgencyType
-  city        String
-  description String?
-  isApproved  Boolean     @default(false)
-  isActive    Boolean     @default(false)
-  boundary    Unsupported("geometry(Polygon,4326)")?
+  id              Int                                    @id @default(autoincrement())
+  name            String
+  type            AgencyType
+  city            String
+  description     String?
+  isApproved      Boolean                                @default(false)
+  isActive        Boolean                                @default(false)
+  boundary        Unsupported("geometry(Polygon,4326)")?
   centerLatitude  Float?
   centerLongitude Float?
   jurisdiction    Unsupported("geometry(Polygon,4326)")?
-  subCityId   Int?
-  woredaId    Int?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
+  subCityId       Int?
+  woredaId        Int?
+  createdAt       DateTime                               @default(now())
+  updatedAt       DateTime                               @updatedAt
+  deletedAt       DateTime?
 
-  subCity   SubCity? @relation(fields: [subCityId], references: [id])
-  woreda    Woreda?  @relation(fields: [woredaId], references: [id])
-  staff     AgencyStaff[]
-  incidents Incident[]   @relation("IncidentsAssignedToAgency")
-  jurisdictions AgencyJurisdiction[]
-  responders  Responder[]
+  subCity         SubCity?             @relation(fields: [subCityId], references: [id])
+  woreda          Woreda?              @relation(fields: [woredaId], references: [id])
+  staff           AgencyStaff[]
+  incidents       Incident[]           @relation("IncidentsAssignedToAgency")
+  jurisdictions   AgencyJurisdiction[]
+  responders      Responder[]
   sharedIncidents SharedIncident[]
 
   @@index([boundary], name: "agency_boundary_idx", type: Gist)
@@ -187,16 +192,16 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
-  actor      User     @relation(fields: [actorId], references: [id])
+  actor User @relation(fields: [actorId], references: [id])
 }
 
 model AgencyStaff {
-  id       Int     @id @default(autoincrement())
-  userId   Int     @unique
-  agencyId Int
-  position String?
-  staffRole StaffRole @default(DISPATCHER)
-  isActive  Boolean   @default(true)
+  id            Int       @id @default(autoincrement())
+  userId        Int       @unique
+  agencyId      Int
+  position      String?
+  staffRole     StaffRole @default(DISPATCHER)
+  isActive      Boolean   @default(true)
   deactivatedAt DateTime?
 
   user   User   @relation(fields: [userId], references: [id])
@@ -218,79 +223,80 @@ model CitizenVerification {
 }
 
 model Incident {
-  id               Int            @id @default(autoincrement())
-  reporterId       Int?
-  assignedAgencyId Int?
-  assignedResponderId Int?
-  title            String
-  description      String
-  category         String?
-  severityScore    Int?
-  status           IncidentStatus @default(RECEIVED)
-  latitude         Float?
-  longitude        Float?
-  location         Unsupported("geometry")?
-  subCityId        Int?
-  woredaId         Int?
-  reviewStatus     ReviewStatus   @default(NOT_REQUIRED)
-  reviewedById     Int?
-  reviewedAt       DateTime?
-  reviewNote       String?
-  reportedAt       DateTime       @default(now())
-  verifiedAt       DateTime?
-  dispatchedAt     DateTime?
-  acknowledgedAt   DateTime?
-  arrivalAt        DateTime?
-  resolvedAt       DateTime?
-  isDemo           Boolean        @default(false)
-  demoScenarioCode String?
-  isReporterAtScene Boolean       @default(true)
-  declinedResponderIds Int[]      @default([])
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  deletedAt        DateTime?
+  id                   Int                      @id @default(autoincrement())
+  reporterId           Int?
+  assignedAgencyId     Int?
+  assignedResponderId  Int?
+  title                String
+  description          String
+  category             String?
+  severityScore        Int?
+  status               IncidentStatus           @default(RECEIVED)
+  latitude             Float?
+  longitude            Float?
+  location             Unsupported("geometry")?
+  subCityId            Int?
+  woredaId             Int?
+  reviewStatus         ReviewStatus             @default(NOT_REQUIRED)
+  reviewedById         Int?
+  reviewedAt           DateTime?
+  reviewNote           String?
+  reportedAt           DateTime                 @default(now())
+  verifiedAt           DateTime?
+  dispatchedAt         DateTime?
+  acknowledgedAt       DateTime?
+  arrivalAt            DateTime?
+  resolvedAt           DateTime?
+  isDemo               Boolean                  @default(false)
+  demoScenarioCode     String?
+  isReporterAtScene    Boolean                  @default(true)
+  declinedResponderIds Int[]                    @default([])
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  deletedAt            DateTime?
 
-  reporter       User?                @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
-  assignedAgency Agency?              @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
-  assignedResponder Responder?        @relation("IncidentAssignedResponder", fields: [assignedResponderId], references: [id])
-  subCity        SubCity?             @relation(fields: [subCityId], references: [id])
-  woreda         Woreda?              @relation(fields: [woredaId], references: [id])
-  reviewer       User?                @relation("IncidentReviewUser", fields: [reviewedById], references: [id])
-  aiOutput       IncidentAIOutput?
-  statusHistory  IncidentStatusHistory[]
-  activityLogs   ActivityLog[]
-  responders     Responder[]          @relation("IncidentResponders")
-  language       String?              @default("ENGLISH") // AMHARIC, ENGLISH, etc.
-  sharedWith     SharedIncident[]
-  chatMessages   IncidentChat[]
-  photos         IncidentPhoto[]
+  reporter             User?                   @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
+  assignedAgency       Agency?                 @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
+  assignedResponder    Responder?              @relation("IncidentAssignedResponder", fields: [assignedResponderId], references: [id])
+  subCity              SubCity?                @relation(fields: [subCityId], references: [id])
+  woreda               Woreda?                 @relation(fields: [woredaId], references: [id])
+  reviewer             User?                   @relation("IncidentReviewUser", fields: [reviewedById], references: [id])
+  aiOutput             IncidentAIOutput?
+  statusHistory        IncidentStatusHistory[]
+  activityLogs         ActivityLog[]
+  responders           Responder[]             @relation("IncidentResponders")
+  language             String?                 @default("ENGLISH") // AMHARIC, ENGLISH, etc.
+  sharedWith           SharedIncident[]
+  chatMessages         IncidentChat[]
+  photos               IncidentPhoto[]
+  classificationAudits ClassificationAudit[]
 
   @@index([location], name: "incident_location_idx", type: Gist)
   @@index([id, deletedAt])
 }
 
 model SharedIncident {
-  id          Int      @id @default(autoincrement())
-  incidentId  Int
-  agencyId    Int
-  sharedAt    DateTime @default(now())
-  reason      String?  // e.g., "Requesting Backup", "Jurisdiction Overlap"
-  
-  incident    Incident @relation(fields: [incidentId], references: [id])
-  agency      Agency   @relation(fields: [agencyId], references: [id])
+  id         Int      @id @default(autoincrement())
+  incidentId Int
+  agencyId   Int
+  sharedAt   DateTime @default(now())
+  reason     String? // e.g., "Requesting Backup", "Jurisdiction Overlap"
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  agency   Agency   @relation(fields: [agencyId], references: [id])
 
   @@unique([incidentId, agencyId])
 }
 
 model IncidentChat {
-  id          Int      @id @default(autoincrement())
-  incidentId  Int
-  senderId    Int
-  message     String
-  createdAt   DateTime @default(now())
-  
-  incident    Incident @relation(fields: [incidentId], references: [id])
-  sender      User     @relation(fields: [senderId], references: [id])
+  id         Int      @id @default(autoincrement())
+  incidentId Int
+  senderId   Int
+  message    String
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  sender   User     @relation(fields: [senderId], references: [id])
 }
 
 model IncidentAIOutput {
@@ -306,16 +312,16 @@ model IncidentAIOutput {
 }
 
 model IncidentStatusHistory {
-  id          Int            @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   incidentId  Int
   actorUserId Int
   fromStatus  IncidentStatus?
   toStatus    IncidentStatus
   note        String?
-  changedAt   DateTime       @default(now())
+  changedAt   DateTime        @default(now())
 
   incident Incident @relation(fields: [incidentId], references: [id])
-  actor     User     @relation(fields: [actorUserId], references: [id])
+  actor    User     @relation(fields: [actorUserId], references: [id])
 }
 
 model ActivityLog {
@@ -346,11 +352,11 @@ model IncidentPhoto {
 }
 
 model SubCity {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  code        String?   @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           Int                                    @id @default(autoincrement())
+  name         String                                 @unique
+  code         String?                                @unique
+  createdAt    DateTime                               @default(now())
+  updatedAt    DateTime                               @updatedAt
   jurisdiction Unsupported("geometry(Polygon,4326)")?
 
   agencies  Agency[]
@@ -361,18 +367,18 @@ model SubCity {
 }
 
 model Woreda {
-  id        Int      @id @default(autoincrement())
+  id        Int                                    @id @default(autoincrement())
   name      String
   code      String?
   subCityId Int
   boundary  Unsupported("geometry(Polygon,4326)")?
 
-  subCity   SubCity  @relation(fields: [subCityId], references: [id])
+  subCity   SubCity    @relation(fields: [subCityId], references: [id])
   incidents Incident[]
   agencies  Agency[]
-  @@index([boundary], name: "woreda_boundary_idx", type: Gist)
 
   @@unique([subCityId, name])
+  @@index([boundary], name: "woreda_boundary_idx", type: Gist)
 }
 
 model DispatchRule {
@@ -384,60 +390,75 @@ model DispatchRule {
 model AgencyJurisdiction {
   id           Int      @id @default(autoincrement())
   agencyId     Int
-  boundaryType String   // SUBCITY or WOREDA
-  boundaryId   Int      // gid from addis_subcities/addis_woredas
+  boundaryType String // SUBCITY or WOREDA
+  boundaryId   Int // gid from addis_subcities/addis_woredas
   createdAt    DateTime @default(now())
 
   agency Agency @relation(fields: [agencyId], references: [id])
 }
 
 model Responder {
-  id           Int      @id @default(autoincrement())
-  name         String
-  type         String
-  status       ResponderStatus @default(AVAILABLE)
-  agencyId     Int
-  incidentId   Int?
-  userId       Int?
-  latitude     Float?
-  longitude    Float?
-  lastSeenAt   DateTime?
-  isDemo       Boolean  @default(false)
+  id               Int             @id @default(autoincrement())
+  name             String
+  type             String
+  status           ResponderStatus @default(AVAILABLE)
+  agencyId         Int
+  incidentId       Int?
+  userId           Int?
+  latitude         Float?
+  longitude        Float?
+  lastSeenAt       DateTime?
+  isDemo           Boolean         @default(false)
   demoScenarioCode String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  agency       Agency   @relation(fields: [agencyId], references: [id])
-  incident     Incident? @relation("IncidentResponders", fields: [incidentId], references: [id])
+  agency            Agency     @relation(fields: [agencyId], references: [id])
+  incident          Incident?  @relation("IncidentResponders", fields: [incidentId], references: [id])
   assignedIncidents Incident[] @relation("IncidentAssignedResponder")
-  user         User?    @relation(fields: [userId], references: [id])
+  user              User?      @relation(fields: [userId], references: [id])
 }
 
 model SystemConfig {
-  key         String   @id
-  value       String
-  updatedAt   DateTime @updatedAt
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model BroadcastLog {
-  id          Int      @id @default(autoincrement())
-  message     String
-  targetArea  Unsupported("geometry(Polygon,4326)")?
-  sentBy      Int
-  sentAt      DateTime @default(now())
-  
-  sender      User     @relation(fields: [sentBy], references: [id])
+  id         Int                                    @id @default(autoincrement())
+  message    String
+  targetArea Unsupported("geometry(Polygon,4326)")?
+  sentBy     Int
+  sentAt     DateTime                               @default(now())
+
+  sender User @relation(fields: [sentBy], references: [id])
 }
 
 model PasswordResetToken {
-  id         String   @id @default(cuid())
-  userId     Int
-  tokenHash  String   @unique
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime @default(now())
+  id        String    @id @default(cuid())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
-  user       User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+model ClassificationAudit {
+  id                Int      @id @default(autoincrement())
+  incidentId        Int
+  correctorId       Int
+  originalCategory  String?
+  correctedCategory String
+  originalSeverity  Int?
+  correctedSeverity Int
+  reason            String?
+  createdAt         DateTime @default(now())
+
+  incident  Incident @relation(fields: [incidentId], references: [id])
+  corrector User     @relation(fields: [correctorId], references: [id])
 }
