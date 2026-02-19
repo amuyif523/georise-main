@@ -1,7 +1,11 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { classifyWithBackoff } from '../src/modules/incident/aiClient';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * AI Evaluation Script
@@ -153,18 +157,54 @@ async function main() {
       // Identify language ID (optional, but good for context if the API accepts it)
       // The API payload: { text: "..." }
       const response = await classifyWithBackoff({ text: record.text });
-      const predicted = response.category; // Assuming response structure { category: "FIRE", ... }
+      let predicted = response.predicted_category || response.category; // Handle different response structures
+
+      // XMLR model might return labels like "LABEL_0", "LABEL_1" if map missing
+      // Or might return specific keys.
+      // Normalization:
+      const normalize = (s: string) => s?.trim().toUpperCase();
+
+      const expected = normalize(record.expectedCategory);
+      let predNorm = normalize(predicted);
+
+      // Mapping (adjust based on what the model actually outputs vs dataset)
+      const LABEL_MAP: Record<string, string> = {
+        ACCIDENT: 'TRAFFIC',
+        TRAFFIC_ACCIDENT: 'TRAFFIC',
+        FIRE_EMERGENCY: 'FIRE',
+        MEDICAL_EMERGENCY: 'MEDICAL',
+        HEALTH: 'MEDICAL',
+        CRIME: 'POLICE',
+        SECURITY: 'POLICE',
+        PUBLIC_ORDER: 'POLICE',
+        INFRASTRUCTURE: 'INFRASTRUCTURE',
+        UTILITY: 'INFRASTRUCTURE',
+        UNKNOWN: 'OTHER',
+      };
+
+      if (LABEL_MAP[predNorm]) {
+        predNorm = LABEL_MAP[predNorm];
+      }
+
+      const isCorrect = predNorm === expected;
 
       results.push({
         id: record.id,
         text: record.text,
-        expected: record.expectedCategory,
-        predicted: predicted,
-        isCorrect: predicted === record.expectedCategory,
+        expected: record.expectedCategory, // Keep original for display
+        predicted: predicted, // Keep original for display
+        isCorrect: isCorrect,
         language: record.language,
       });
     } catch (err: any) {
-      console.error(`\n❌ Error processing ID ${record.id}:`, err.message);
+      if (err.response?.status === 422) {
+        console.error(
+          `\n❌ Validation Error ID ${record.id}:`,
+          JSON.stringify(err.response.data.detail),
+        );
+      } else {
+        console.error(`\n❌ Error processing ID ${record.id}:`, err.message);
+      }
     }
   }
 

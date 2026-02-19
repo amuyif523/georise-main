@@ -24,7 +24,13 @@ export async function classifyWithBackoff(payload: Record<string, any>) {
   for (const delay of attempts) {
     if (delay) await sleep(delay);
     try {
-      const res = await axios.post(CLASSIFY_URL, payload, {
+      // Ensure payload matches Python Pydantic model: ClassifyRequest(title: str, description: str)
+      const formattedPayload = {
+        title: payload.title || payload.text?.substring(0, 50) || 'No Title',
+        description: payload.description || payload.text || '',
+      };
+
+      const res = await axios.post(CLASSIFY_URL, formattedPayload, {
         timeout: 4500,
         headers: { Authorization: `Bearer ${INTERNAL_SERVICE_SECRET}` },
       });
