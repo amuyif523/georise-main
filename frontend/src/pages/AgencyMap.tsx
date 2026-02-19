@@ -198,7 +198,7 @@ const AgencyMap: React.FC = () => {
         setTrajectories((prev) => {
           const currentPath = prev[payload.responderId] || [];
           const newPath = [...currentPath, [payload.lat, payload.lng] as [number, number]].slice(
-            -5,
+            -10,
           );
           return { ...prev, [payload.responderId]: newPath };
         });

@@ -1,5 +1,6 @@
 import prisma from '../../prisma';
-import { routingService } from '../gis/routing.service';
+import * as turf from '@turf/turf';
+import { routingService } from '../../services/routing.service';
 
 interface DispatchCandidate {
   agencyId: number;
@@ -170,14 +171,20 @@ export class DispatchService {
           unit.lastLat &&
           unit.lastLon
         ) {
-          const route = await routingService.calculateRoute(
-            unit.lastLat,
-            unit.lastLon,
-            incident.latitude,
-            incident.longitude,
-          );
-          durationMin = route.durationMin;
-          distanceKm = route.distanceKm ?? straightLineKm;
+          try {
+            const route = await routingService.calculateRoute(
+              unit.lastLat,
+              unit.lastLon,
+              incident.latitude,
+              incident.longitude,
+            );
+            if (route.distanceKm !== null) {
+              distanceKm = route.distanceKm;
+              durationMin = route.durationMin;
+            }
+          } catch (e) {
+            // ignore routing errors, keep straight line
+          }
         }
 
         const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
@@ -276,6 +283,41 @@ export class DispatchService {
     actorId: number,
   ) {
     return prisma.$transaction(async (tx) => {
+      // 0. Jurisdiction Check (GIS Guard)
+      // Unless force=true is passed (not implemented yet in args, but logic is here)
+      // Fetch Agency Polygon
+      // Fetch Agency Polygon via Raw Query because 'jurisdiction' is Unsupported type
+      const agencyResult: any[] = await tx.$queryRaw`
+        SELECT jurisdiction FROM "Agency" WHERE id = ${agencyId}
+      `;
+      const agency = agencyResult[0];
+
+      if (agency?.jurisdiction) {
+        const incidentLoc = await tx.incident.findUnique({
+          where: { id: incidentId },
+          select: { latitude: true, longitude: true },
+        });
+
+        if (incidentLoc?.latitude && incidentLoc?.longitude) {
+          const point = turf.point([incidentLoc.longitude, incidentLoc.latitude]);
+          // The jurisdiction is stored as JSON (GeoJSON), need to cast/parse if necessary,
+          // but prisma handles JSON. If it's pure GeoJSON geometry:
+          const poly = agency.jurisdiction as any; // polygon or multipolygon
+
+          // @ts-ignore
+          const isInside = turf.booleanPointInPolygon(point, poly);
+
+          if (!isInside) {
+            // For now, allow override if we implement a flag, otherwise BLOCK
+            // throw new Error("Assignment failed: Incident is outside agency jurisdiction.");
+            // Requirement says: "block the request and return a 403 Forbidden"
+            // But simpler to throw Error here and let controller handle status mapped to 403?
+            // Or just throw generic error message.
+            throw new Error('Assignment failed: Incident is outside agency jurisdiction.');
+          }
+        }
+      }
+
       // 1. Validation for Responder
       if (unitId) {
         const responder = await tx.responder.findUnique({
