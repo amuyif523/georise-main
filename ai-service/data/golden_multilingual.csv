@@ -1,7 +1,51 @@
-id,text,category
-1,"Fire smoke in the market, flames visible","FIRE"
-2,"Injury with blood, need ambulance and hospital","MEDICAL"
-3,"Armed robbery, gun shots, call police","POLICE"
-4,"Traffic accident car crash blocking the road","TRAFFIC"
-5,"Power outage and electric wires down, flooding street","INFRASTRUCTURE"
-6,"Unclear noise reported, not sure what happened","OTHER"
+text,label,language
+የመኪና አደጋ ደርሷል ሰዎችን እርዱ,TRAFFIC,am
+ቤት ውስጥ እሳት ተነስቷል ቶሎ ኑ,FIRE,am
+መንገዱ በጎርፍ ተዘግቷል ማለፍ አልተቻለም,INFRASTRUCTURE,am
+ሌባ ቤቴ ገብቶ ንብረት ወስዶብኛል,POLICE,am
+ሰውየው በድንገት ወድቆ ራሱን ስቷል,MEDICAL,am
+የኤሌክትሪክ ገመድ ተበጥሶ መሬት ላይ ወድቋል,INFRASTRUCTURE,am
+ሁለት መኪናዎች ተጋጭተው መንገድ ተዘግቷል,TRAFFIC,am
+ፋብሪካ ውስጥ ትልቅ እሳት እየነደደ ነው,FIRE,am
+መንገድ ላይ ጦብኝ ተከስቷል ፖሊስ ይምጣ,POLICE,am
+ልጄ ትንታ ይዟት መተንፈስ አቅቷታል,MEDICAL,am
+የውሃ ቧንቧ ተበጥሶ መንገዱን አጥለቅልቆታል,INFRASTRUCTURE,am
+በጩቤ የተወጋ ሰው መንገድ ላይ ወድቋል,MEDICAL,am
+የባንክ ዘረፋ እየተካሄደ ነው ቶሎ ድረሱ,POLICE,am
+መኪና በእሳት እየነደደ ነው,FIRE,am
+የትራፊክ መብራት ስለማይሰራ ግርግር ተፈጥሯል,TRAFFIC,am
+ከፎቅ ላይ የወደቀ ሰው አለ እርዱን,MEDICAL,am
+የቆሻሻ መኪና ተገልብጦ መንገዱን ዘግቶታል,TRAFFIC,am
+ሰዎች እየተጣሉ ነው ድንጋይ ይወራወራሉ,POLICE,am
+ጋዝ እየተነፈሰ ነው ሽታው ከብዷል,FIRE,am
+የስልክ መስመር ተቋርጧል መገናኘት አልተቻለም,INFRASTRUCTURE,am
+አንዲት እናት ምጥ ይዟቸዋል አምቡላንስ ኑ,MEDICAL,am
+የጫካ እሳት ወደ ቤቶች እየተጠጋ ነው,FIRE,am
+የእግረኛ መንገድ ተደርምሷል,INFRASTRUCTURE,am
+መኪናዬ ተሰርቆብኛል ፈልጉልኝ,POLICE,am
+በመኪና ግጭት ምክንያት ሰው ቆስሏል,TRAFFIC,am
+ትልቅ የዛፍ ቅርንጫፍ ወድቆ መንገድ ዘግቷል,INFRASTRUCTURE,am
+የልብ ህመም ያመመው ሰው አለ,MEDICAL,am
+የመጋዘን እሳት ጭሱ ሰማይ ነክቷል,FIRE,am
+ህገወጥ ሰልፍ አለ መንገዱ ተዘግቷል,POLICE,am
+ባቡር መንገድ ላይ ቆሟል ግርግር አለ,TRAFFIC,am
+የኤሌክትሪክ ትራንስፎርመር ፈንድቷል,INFRASTRUCTURE,am
+መድኃኒት በስህተት የወሰደ ልጅ አለ,MEDICAL,am
+የጋዝ ሲሊንደር ፈንድቶ እሳት ተነስቷል,FIRE,am
+ቤት ውስጥ ግድያ ተፈጽሟል ፖሊስ ይምጣ,POLICE,am
+ሞተር ሳይክል ተገልብጦ ሹፌሩ ቆስሏል,TRAFFIC,am
+የድልድይ ስንጥቅ ታይቷል ማለፍ አደገኛ ነው,INFRASTRUCTURE,am
+በእሳት የተቃጠለ ሰው አለ እርዳታ ይፈልጋል,MEDICAL,am
+ምግብ ቤት ውስጥ እሳት እየነደደ ነው,FIRE,am
+የኪስ አውጭዎች በዝተዋል ፖሊስ ያስፈልጋል,POLICE,am
+የጭነት መኪና ከባድ አደጋ አድርሷል,TRAFFIC,am
+የመንገድ መብራት በሙሉ ጠፍቷል,INFRASTRUCTURE,am
+አንዲት ሴት ራሷን ስታ ወድቃለች,MEDICAL,am
+የቤት እሳት ሰዎችን አፈንቷል,FIRE,am
+የጦር መሣሪያ የያዘ ሰው በሰፈር አለ,POLICE,am
+መኪና ከገደል ገብቷል እርዳታ ኑ,TRAFFIC,am
+የቴሌኮም ምሰሶ ወድቆ መንገድ ዘግቷል,INFRASTRUCTURE,am
+ከፍተኛ ደም መፍሰስ ያለበት ሰው አለ,MEDICAL,am
+የነዳጅ ማደያ በእሳት እየተቃጠለ ነው,FIRE,am
+ሰካራሞች ሁከት እየፈጠሩ ነው,POLICE,am
+አውቶቡስ ተገልብጦ ብዙ ሰው ተጎድቷል,TRAFFIC,am

@@ -41,53 +41,57 @@ async function loadGoldenDataset(): Promise<GoldenRecord[]> {
   const lines = fileContent.trim().split('\n');
   const records: GoldenRecord[] = [];
 
-  // Skip header "id,text,category"
+  if (lines.length === 0) return records;
+
+  // Header parsing
+  // Expected header: text,label,language (or similar)
+  const headerLine = lines[0].trim();
+  const headers = headerLine.split(',').map((h) => h.trim().toLowerCase());
+
+  const textIdx = headers.indexOf('text');
+  const labelIdx = headers.indexOf('label'); // User said "label column", header in file is "label"
+  const catIdx = headers.indexOf('category'); // Fallback
+  const langIdx = headers.indexOf('language');
+
+  const finalLabelIdx = labelIdx !== -1 ? labelIdx : catIdx;
+
+  if (textIdx === -1 || finalLabelIdx === -1) {
+    console.error('❌ CSV Header mismatch. Expected "text" and "label" or "category" columns.');
+    return [];
+  }
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Handle CSV parsing (assuming simple CSV, but respecting quotes)
-    // Matches: "value" or value, separated by comma
+    // improved CSV regex to handle commas inside quotes
     const matches = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+    if (!matches) continue;
 
-    // Fallback split if regex fails or simple structure
-    // Since the view_file showed quotes around text and category:
-    // 1,"Fire smoke...","FIRE"
+    // Clean up quotes
+    const clean = matches.map((m) => m.replace(/^"|"$/g, '').trim());
 
-    // A simple regex approach for this specific CSV format:
-    // ^(\d+),"(.*?)","(.*?)"$
-    const simpleMatch = line.match(/^(\d+),"(.*?)","(.*?)"$/);
+    const text = clean[textIdx] || '';
+    const category = clean[finalLabelIdx] || '';
+    const langRaw = langIdx !== -1 ? clean[langIdx] : '';
 
-    if (simpleMatch) {
-      const text = simpleMatch[2];
-      const isAmharic = /[\u1200-\u137F]/.test(text); // Basic Amharic range check
-      records.push({
-        id: simpleMatch[1],
-        text: text,
-        expectedCategory: simpleMatch[3],
-        language: isAmharic ? 'AMHARIC' : 'ENGLISH',
-      });
+    if (!text || !category) continue;
+
+    let language: 'AMHARIC' | 'ENGLISH' = 'ENGLISH'; // Default
+    if (langRaw) {
+      if (langRaw.toLowerCase().startsWith('am')) language = 'AMHARIC';
+      else if (langRaw.toLowerCase().startsWith('en')) language = 'ENGLISH';
     } else {
-      // Try fallback for unquoted or mixed
-      const parts = line.split(',');
-      if (parts.length >= 3) {
-        const id = parts[0];
-        // Reconstruct text if it contained commas and was split
-        const category = parts[parts.length - 1].replace(/"/g, '');
-        const text = parts
-          .slice(1, parts.length - 1)
-          .join(',')
-          .replace(/^"|"$/g, '');
-
-        const isAmharic = /[\u1200-\u137F]/.test(text);
-        records.push({
-          id,
-          text,
-          expectedCategory: category,
-          language: isAmharic ? 'AMHARIC' : 'ENGLISH',
-        });
-      }
+      // Fallback detection
+      if (/[\u1200-\u137F]/.test(text)) language = 'AMHARIC';
     }
+
+    records.push({
+      id: i.toString(),
+      text,
+      expectedCategory: category,
+      language,
+    });
   }
   return records;
 }
