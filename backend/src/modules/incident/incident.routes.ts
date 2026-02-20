@@ -129,8 +129,23 @@ router.get('/:id/timeline', requireAuth, async (req, res) => {
       where: { userId: req.user.id },
       select: { agencyId: true },
     });
-    if (!staff || incident.assignedAgencyId !== staff.agencyId) {
-      return res.status(403).json({ message: 'Forbidden' });
+
+    if (!staff) return res.status(403).json({ message: 'Forbidden' });
+
+    // Allow if assigned to agency OR if in jurisdiction
+    if (incident.assignedAgencyId !== staff.agencyId) {
+      // Check jurisdiction
+      const result = await prisma.$queryRaw<Array<{ id: number }>>`
+            SELECT i.id FROM "Incident" i, "Agency" a
+            WHERE i.id = ${incidentId} 
+             AND a.id = ${staff.agencyId}
+             AND a.jurisdiction IS NOT NULL 
+             AND ST_Within(ST_SetSRID(ST_MakePoint(i.longitude, i.latitude), 4326), a.jurisdiction)
+        `;
+
+      if (result.length === 0) {
+        return res.status(403).json({ message: 'Forbidden: Outside jurisdiction' });
+      }
     }
   }
 

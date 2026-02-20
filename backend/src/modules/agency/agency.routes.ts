@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth';
-import { getAgencies, addStaff, getStaff, toggleStaffStatus } from './agency.controller';
+import {
+  getAgencies,
+  addStaff,
+  getStaff,
+  toggleStaffStatus,
+  getProfile,
+} from './agency.controller';
 
 import prisma from '../../prisma';
 
@@ -24,7 +30,9 @@ router.get('/test-activate', async (req, res) => {
 router.get('/', requireAuth, getAgencies);
 
 // Agency Staff Management
+router.get('/profile', requireAuth, getProfile);
 router.post('/staff', requireAuth, addStaff);
+router.post('/users', requireAuth, addStaff); // Alias for frontend compatibility
 router.get('/staff', requireAuth, getStaff);
 router.get('/users', requireAuth, getStaff); // Alias for frontend compatibility
 router.patch('/users/:userId', requireAuth, toggleStaffStatus);

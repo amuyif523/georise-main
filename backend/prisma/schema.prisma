@@ -457,6 +457,7 @@ model ClassificationAudit {
   originalSeverity  Int?
   correctedSeverity Int
   reason            String?
+  confidence        Float?
   createdAt         DateTime @default(now())
 
   incident  Incident @relation(fields: [incidentId], references: [id])

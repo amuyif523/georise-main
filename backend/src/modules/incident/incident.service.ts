@@ -633,7 +633,7 @@ export class IncidentService {
   }
 
   async getIncidents(
-    user: { id: number; role: string },
+    user: { id: number; role: string; agencyId?: number },
     filters: {
       status?: string;
       reviewStatus?: string;
@@ -642,65 +642,80 @@ export class IncidentService {
       search?: string;
       page: number;
       limit: number;
+      minSeverity?: number;
     },
   ) {
-    let agencyId: number | null = null;
-    if (user.role === 'AGENCY_STAFF') {
-      const staff = await prisma.agencyStaff.findUnique({
-        where: { userId: user.id },
-        select: { agencyId: true },
-      });
-      if (!staff) throw new Error('Forbidden: No agency context');
-      agencyId = staff.agencyId;
-    } else if (user.role !== 'ADMIN') {
-      throw new Error('Forbidden');
-    }
-
-    const { status, reviewStatus, hours, subCityId, search, page, limit } = filters;
+    const { status, reviewStatus, hours, subCityId, search, page, limit, minSeverity } = filters;
     const skip = (page - 1) * limit;
 
-    const conditions: any = { deletedAt: null }; // Ensure soft-deleted incidents are excluded
+    const where: any = { deletedAt: null }; // Ensure soft-deleted incidents are excluded
 
-    // Status Filter
-    if (status) conditions.status = status;
+    if (status) where.status = status;
+    if (reviewStatus) where.reviewStatus = reviewStatus;
+    if (subCityId) where.subCityId = Number(subCityId);
+    if (minSeverity) where.severityScore = { gte: Number(minSeverity) };
 
-    // Review Status Filter
-    if (reviewStatus) conditions.reviewStatus = reviewStatus;
-
-    // Time Filter
     if (hours) {
-      conditions.createdAt = {
-        gte: new Date(Date.now() - hours * 3600 * 1000),
-      };
     }
 
     // SubCity Filter
     if (subCityId) {
-      conditions.subCityId = subCityId;
+      where.subCityId = Number(subCityId);
     }
 
     // Search Filter
     if (search) {
-      conditions.OR = [
+      where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     // Role-based Isolation (Critical)
-    // Role-based Isolation (Critical)
-    if (user.role === 'AGENCY_STAFF' && agencyId) {
-      // Enforce agency isolation: incidents assigned to OR shared with this agency
-      // Also potentially check jurisdiction overlap if we had GIS logic here, but ID-based is primary.
-      const isolationFilter = {
-        OR: [{ assignedAgencyId: agencyId }, { sharedWith: { some: { agencyId } } }],
-      };
+    const isAgencyStaff = user.role === 'AGENCY_STAFF' && user.agencyId;
+    let jurisdictionIds: number[] | null = null;
+    let agencyId = user.agencyId;
 
-      if (conditions.OR) {
-        conditions.AND = [{ OR: conditions.OR }, isolationFilter];
-        delete conditions.OR;
+    if (isAgencyStaff && agencyId) {
+      // 1. Get incidents within Agency Jurisdiction using raw SQL
+      // Direct spatial query avoids fetching large geometry to JS
+      const rawIncidents = await prisma.$queryRaw<{ id: number }[]>`
+        SELECT I.id 
+        FROM "Incident" I, "Agency" A
+        WHERE A.id = ${agencyId}
+          AND A.jurisdiction IS NOT NULL
+          AND ST_Within(
+            ST_SetSRID(ST_MakePoint(I.longitude, I.latitude), 4326),
+            A.jurisdiction
+          )
+      `;
+      jurisdictionIds = rawIncidents.map((r) => r.id);
+    }
+
+    // Combine filters
+    if (isAgencyStaff && agencyId) {
+      // Enforce agency isolation: incidents assigned to OR shared with this agency
+      // OR within jurisdiction (if we want to include unassigned but local incidents)
+
+      // Let's construct a composite filter:
+      // (Assigned to Agency OR Shared with Agency) OR (ID in JurisdictionIDs)
+
+      const accessConditions: any[] = [
+        { assignedAgencyId: agencyId },
+        { sharedWith: { some: { agencyId } } },
+      ];
+
+      if (jurisdictionIds && jurisdictionIds.length > 0) {
+        accessConditions.push({ id: { in: jurisdictionIds } });
+      }
+
+      const isolationFilter = { OR: accessConditions };
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, isolationFilter];
+        delete where.OR;
       } else {
-        Object.assign(conditions, isolationFilter);
+        Object.assign(where, isolationFilter);
       }
     }
 
@@ -720,9 +735,9 @@ export class IncidentService {
     };
 
     const [total, incidents] = await Promise.all([
-      prisma.incident.count({ where: conditions }),
+      prisma.incident.count({ where }),
       prisma.incident.findMany({
-        where: conditions,
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,

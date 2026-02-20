@@ -109,3 +109,23 @@ export const toggleStaffStatus = async (req: Request, res: Response) => {
     return res.status(400).json({ message: error.message || 'Failed to update status' });
   }
 };
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const agencyId = req.user?.agencyId;
+    if (!agencyId) {
+      console.warn('GetProfile: No agencyId in user token', req.user);
+      return res.status(401).json({ message: 'Unauthorized: No agency context' });
+    }
+
+    const agency = await agencyService.getProfile(agencyId);
+    if (!agency) {
+      return res.status(404).json({ message: 'Agency not found' });
+    }
+
+    return res.json(agency);
+  } catch (error: any) {
+    console.error('Get agency profile error:', error);
+    // Return a generic error to client but log full details
+    return res.status(500).json({ message: 'Internal Server Error fetching profile' });
+  }
+};

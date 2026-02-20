@@ -232,17 +232,22 @@ export const getIncidents = async (req: Request, res: Response) => {
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
 
-    const { total, incidents } = await incidentService.getIncidents(req.user as any, {
-      status: req.query.status as string,
-      reviewStatus: req.query.reviewStatus as string,
-      hours: req.query.hours ? Number(req.query.hours) : undefined,
-      subCityId: req.query.subCityId ? Number(req.query.subCityId) : undefined,
-      search: req.query.search as string,
-      page,
-      limit,
-    });
+    const { status, reviewStatus, hours, subCityId, search, minSeverity } = req.query;
 
-    return res.json({ total, page, limit, incidents });
+    const result = await incidentService.getIncidents(
+      { id: req.user.id, role: req.user.role, agencyId: req.user.agencyId ?? undefined },
+      {
+        status: status as string,
+        reviewStatus: reviewStatus as string,
+        hours: hours ? Number(hours) : undefined,
+        subCityId: subCityId ? Number(subCityId) : undefined,
+        search: search as string,
+        page: Number(page) || 1,
+        limit: Number(limit) || 20,
+        minSeverity: minSeverity ? Number(minSeverity) : undefined,
+      },
+    );
+    return res.json({ total: result.total, page, limit, incidents: result.incidents });
   } catch (err: any) {
     if (err.message.includes('Forbidden')) {
       return res.status(403).json({ message: err.message });

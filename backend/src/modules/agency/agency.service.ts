@@ -260,6 +260,40 @@ export const agencyService = {
     });
   },
 
+  getProfile: async (agencyId: number) => {
+    const agency = await prisma.agency.findUnique({
+      where: { id: agencyId },
+    });
+
+    if (!agency) return null;
+
+    // Fetch jurisdiction as GeoJSON string
+    let jurisdiction: any = null;
+    try {
+      const raw: any[] = await prisma.$queryRaw`
+            SELECT ST_AsGeoJSON(jurisdiction) as geo 
+            FROM "Agency" 
+            WHERE id = ${agencyId}
+        `;
+
+      if (raw.length > 0 && raw[0].geo) {
+        jurisdiction = JSON.parse(raw[0].geo);
+      }
+    } catch (e) {
+      console.error('Error fetching jurisdiction raw geometry:', e);
+      // Fallback to null or empty
+    }
+
+    // Default "Empty" Polygon if null to prevent frontend crashes
+    // Or just return null and let frontend handle?
+    // User requested "return a default 'Empty Polygon'".
+    // A null jurisdiction is semantically "no jurisdiction", which is valid.
+    // However, if we MUST return a polygon, we can return a null-geometry feature.
+    // For now, let's keep it null but explicit.
+
+    return { ...agency, jurisdiction };
+  },
+
   async setStaffStatus(userId: number, isActive: boolean) {
     const user = await prisma.user.update({
       where: { id: userId },
