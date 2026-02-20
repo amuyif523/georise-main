@@ -275,6 +275,7 @@ const IncidentDetailPane: React.FC<Props> = ({
       agencyId: number;
       unitId: number | null;
       distanceKm?: number | null;
+      estimatedDurationMin?: number | null;
       totalScore?: number;
       jurisdictionScore?: number;
       severityScore?: number;
@@ -681,10 +682,22 @@ const IncidentDetailPane: React.FC<Props> = ({
                               Score {((rec.totalScore || 0) * 100).toFixed(0)}
                             </span>
                           </div>
-                          <div className="text-[11px] text-slate-400">
-                            {rec.distanceKm !== null && rec.distanceKm !== undefined
-                              ? `Distance ${rec.distanceKm.toFixed(1)} km`
-                              : 'No position'}
+                          <div className="text-[11px] text-slate-400 flex flex-col mt-1">
+                            <span>
+                              {rec.distanceKm !== null && rec.distanceKm !== undefined
+                                ? `Road Distance: ${rec.distanceKm.toFixed(1)} km`
+                                : 'No location data'}
+                            </span>
+                            {rec.estimatedDurationMin !== null &&
+                              rec.estimatedDurationMin !== undefined && (
+                                <span className="text-emerald-400">
+                                  Est. Driving Time:{' '}
+                                  {rec.estimatedDurationMin < 1
+                                    ? '< 1'
+                                    : Math.round(rec.estimatedDurationMin)}{' '}
+                                  mins
+                                </span>
+                              )}
                           </div>
                           <div className="text-[11px] text-slate-500">
                             Jurisdiction {Math.round((rec.jurisdictionScore || 0) * 100)}% •
