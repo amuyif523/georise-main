@@ -581,7 +581,7 @@ export class IncidentService {
     targetAgencyId: number,
     sharedByUserId: number,
     reason?: string,
-    note?: string,
+    _note?: string,
   ) {
     const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
     if (!incident) throw new Error('Incident not found');
@@ -645,7 +645,16 @@ export class IncidentService {
       minSeverity?: number;
     },
   ) {
-    const { status, reviewStatus, hours, subCityId, search, page, limit, minSeverity } = filters;
+    const {
+      status,
+      reviewStatus,
+      hours: _hours,
+      subCityId,
+      search,
+      page,
+      limit,
+      minSeverity,
+    } = filters;
     const skip = (page - 1) * limit;
 
     const where: any = { deletedAt: null }; // Ensure soft-deleted incidents are excluded
@@ -654,10 +663,6 @@ export class IncidentService {
     if (reviewStatus) where.reviewStatus = reviewStatus;
     if (subCityId) where.subCityId = Number(subCityId);
     if (minSeverity) where.severityScore = { gte: Number(minSeverity) };
-
-    if (hours) {
-    }
-
     // SubCity Filter
     if (subCityId) {
       where.subCityId = Number(subCityId);
@@ -674,7 +679,7 @@ export class IncidentService {
     // Role-based Isolation (Critical)
     const isAgencyStaff = user.role === 'AGENCY_STAFF' && user.agencyId;
     let jurisdictionIds: number[] | null = null;
-    let agencyId = user.agencyId;
+    const agencyId = user.agencyId;
 
     if (isAgencyStaff && agencyId) {
       // 1. Get incidents within Agency Jurisdiction using raw SQL
@@ -818,7 +823,7 @@ export class IncidentService {
 
       // Log the activity
       const message = `Triage category manually updated from ${originalCategory || 'None'} to ${data.category}. Reason: ${data.reason || 'None provided'}`;
-      await logActivity(id, 'TRIAGE_UPDATE', message, correctorId);
+      await logActivity(id, 'TRIAGE_UPDATE' as any, message, correctorId);
 
       // Emit update
       const updated = await prisma.incident.findUnique({ where: { id } });
@@ -827,7 +832,7 @@ export class IncidentService {
       // Emit timeline entry for real-time UI
       const io = getIO();
       const newLog = await prisma.activityLog.findFirst({
-        where: { incidentId: id, type: 'TRIAGE_UPDATE' },
+        where: { incidentId: id, type: 'TRIAGE_UPDATE' as any },
         orderBy: { createdAt: 'desc' },
       });
       if (newLog) {

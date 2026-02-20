@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { IncidentStatus, Role, Prisma, ReviewStatus, ResponderStatus } from '@prisma/client';
+import { IncidentStatus, Role, ResponderStatus } from '@prisma/client';
 import { requireAuth, requireRole, optionalAuth } from '../../middleware/auth';
 import prisma from '../../prisma';
 import {
@@ -7,7 +7,6 @@ import {
   getMyIncidentById,
   getMyIncidents,
   checkDuplicates,
-  mergeIncidents,
   shareIncident,
   getIncidentChat,
   postChatMessage,
