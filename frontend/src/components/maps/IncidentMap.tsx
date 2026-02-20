@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Marker, Popup, TileLayer, MapContainer, useMap } from 'react-leaflet';
+import { Marker, Popup, TileLayer, MapContainer, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
 import api from '../../lib/api';
@@ -23,6 +23,7 @@ type ClusterPoint = {
 
 interface Props {
   historyMode?: boolean;
+  jurisdiction?: any;
 }
 
 type HeatmapPoint = {
@@ -31,7 +32,7 @@ type HeatmapPoint = {
   weight?: number;
 };
 
-const IncidentMap: React.FC<Props> = ({ historyMode }) => {
+const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
   const [incidents, setIncidents] = useState<IncidentPoint[]>([]);
   const [clusters, setClusters] = useState<ClusterPoint[]>([]);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
@@ -52,6 +53,25 @@ const IncidentMap: React.FC<Props> = ({ historyMode }) => {
     }
   }, [historyMode]);
 
+  // Auto-fit bounds when jurisdiction changes
+  useEffect(() => {
+    if (jurisdiction) {
+      try {
+        const layer = L.geoJSON(jurisdiction);
+        const bounds = layer.getBounds();
+        if (bounds.isValid() && Object.keys(layer.getLayers()).length > 0) {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        } else {
+          // Default view if invalid
+          map.setView([9.03, 38.74], 12);
+        }
+      } catch (e) {
+        console.warn('Failed to fit bounds:', e);
+        map.setView([9.03, 38.74], 12);
+      }
+    }
+  }, [jurisdiction, map]);
+
   useEffect(() => {
     if (historyMode && heatmapPoints.length > 0) {
       // @ts-expect-error - L.heatLayer might not be in the typings
@@ -68,6 +88,18 @@ const IncidentMap: React.FC<Props> = ({ historyMode }) => {
   return (
     <>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+      {jurisdiction && (
+        <GeoJSON
+          data={jurisdiction}
+          style={() => ({
+            color: '#3b82f6', // blue-500
+            weight: 2,
+            fillOpacity: 0.1,
+            dashArray: '5, 5',
+          })}
+        />
+      )}
 
       {!historyMode &&
         incidents.map((i) => (

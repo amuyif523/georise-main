@@ -97,6 +97,101 @@ const typeIcon = (type: ActivityLog['type']) => {
   }
 };
 
+interface TriageCorrectionFormProps {
+  initialCategory: string;
+  initialSeverity: number;
+  onSave: (category: string, severity: number, reason: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+const TriageCorrectionForm = React.memo(
+  ({ initialCategory, initialSeverity, onSave, onCancel }: TriageCorrectionFormProps) => {
+    const [triageCategory, setTriageCategory] = useState(initialCategory || 'OTHER');
+    const [triageSeverity, setTriageSeverity] = useState(initialSeverity || 1);
+    const [triageReason, setTriageReason] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!triageReason.trim()) return;
+      setActionLoading(true);
+      try {
+        await onSave(triageCategory, triageSeverity, triageReason);
+        alert('Triage correction submitted successfully'); // Simple feedback
+      } finally {
+        setActionLoading(false);
+      }
+    };
+
+    return (
+      <form
+        onSubmit={handleSubmit}
+        className="p-3 bg-slate-900 border border-slate-700 rounded-lg space-y-3"
+      >
+        <h3 className="text-sm font-semibold text-white">Correct AI Triage</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="form-control">
+            <label className="label cursor-pointer justify-start gap-2">
+              <span className="label-text text-xs text-slate-400">Category</span>
+            </label>
+            <select
+              className="select select-bordered select-xs w-full bg-slate-800 text-white"
+              value={triageCategory}
+              onChange={(e) => setTriageCategory(e.target.value)}
+            >
+              <option value="TRAFFIC_ACCIDENT">Traffic Accident</option>
+              <option value="FIRE_EMERGENCY">Fire Emergency</option>
+              <option value="MEDICAL_EMERGENCY">Medical Emergency</option>
+              <option value="POLLUTION">Pollution</option>
+              <option value="INFRASTRUCTURE">Infrastructure</option>
+              <option value="SECURITY">Security</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div className="form-control">
+            <label className="label cursor-pointer justify-start gap-2">
+              <span className="label-text text-xs text-slate-400">Severity</span>
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="5"
+              className="input input-bordered input-xs w-full bg-slate-800 text-white"
+              value={triageSeverity}
+              onChange={(e) => setTriageSeverity(Number(e.target.value))}
+            />
+          </div>
+        </div>
+        <textarea
+          className={`textarea textarea-bordered textarea-xs w-full bg-slate-800 text-white ${
+            !triageReason.trim() && 'textarea-error'
+          }`}
+          placeholder="Reason for correction (required)..."
+          value={triageReason}
+          onChange={(e) => setTriageReason(e.target.value)}
+        />
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost"
+            onClick={onCancel}
+            disabled={actionLoading}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-xs btn-primary"
+            disabled={actionLoading || !triageReason.trim()}
+          >
+            {actionLoading ? 'Saving...' : 'Submit Correction'}
+          </button>
+        </div>
+      </form>
+    );
+  },
+);
+
 const IncidentDetailPane: React.FC<Props> = ({
   incident: initialIncident,
   onClose,
@@ -121,40 +216,36 @@ const IncidentDetailPane: React.FC<Props> = ({
 
   // Triage Correction State
   const [isEditingTriage, setIsEditingTriage] = useState(false);
-  const [triageCategory, setTriageCategory] = useState('');
-  const [triageSeverity, setTriageSeverity] = useState(1);
-  const [triageReason, setTriageReason] = useState('');
 
   useEffect(() => {
     if (incident) {
-      setTriageCategory(incident.category ?? 'OTHER');
-      setTriageSeverity(incident.severityScore ?? 1);
       setIsEditingTriage(false);
-      setTriageReason('');
     }
-  }, [incident]);
+  }, [incident?.id]); // Only reset editing state when a DIFFERENT incident is loaded
 
-  const handleSaveTriage = async () => {
-    if (!incident || !triageReason.trim()) return;
-    setActionLoading(true);
+  const handleSaveTriage = async (category: string, severityScore: number, reason: string) => {
+    if (!incident) return;
     try {
       const res = await api.patch(`/incidents/${incident.id}/triage`, {
-        category: triageCategory,
-        severityScore: triageSeverity,
-        reason: triageReason,
+        category,
+        severityScore,
+        reason,
       });
       setIncident(res.data.incident);
       setIsEditingTriage(false);
-      setTriageReason('');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to update triage');
-    } finally {
-      setActionLoading(false);
+      throw err; // Re-throw so form knows it failed if checking
     }
   };
 
   // Sync prop to state and fetch details
   useEffect(() => {
+    // Lock mechanism: if editing triage, do not refresh the specific incident data from background updates
+    if (isEditingTriage) {
+      return;
+    }
+
     setIncident(initialIncident);
     setShowDeclineInput(false);
     setDeclineReason('');
@@ -164,7 +255,10 @@ const IncidentDetailPane: React.FC<Props> = ({
         try {
           const res = await api.get(`/incidents/${initialIncident.id}`);
           if (res.data.incident) {
-            setIncident((prev) => ({ ...prev, ...res.data.incident }));
+            setIncident((prev) => {
+              if (isEditingTriage) return prev; // check again before setting state
+              return { ...prev, ...res.data.incident };
+            });
           }
         } catch (e) {
           console.error('Failed to fetch incident details', e);
@@ -172,7 +266,7 @@ const IncidentDetailPane: React.FC<Props> = ({
       };
       fetchDetails();
     }
-  }, [initialIncident]);
+  }, [initialIncident, isEditingTriage]);
 
   const [recs, setRecs] = useState<
     Array<{
@@ -487,65 +581,12 @@ const IncidentDetailPane: React.FC<Props> = ({
         {/* Categories / Triage Correction UI */}
         <div className="px-4 pt-4">
           {isEditingTriage ? (
-            <div className="p-3 bg-slate-900 border border-slate-700 rounded-lg space-y-3">
-              <h3 className="text-sm font-semibold text-white">Correct AI Triage</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="form-control">
-                  <label className="label cursor-pointer justify-start gap-2">
-                    <span className="label-text text-xs text-slate-400">Category</span>
-                  </label>
-                  <select
-                    className="select select-bordered select-xs w-full bg-slate-800 text-white"
-                    value={triageCategory}
-                    onChange={(e) => setTriageCategory(e.target.value)}
-                  >
-                    <option value="TRAFFIC_ACCIDENT">Traffic Accident</option>
-                    <option value="FIRE_EMERGENCY">Fire Emergency</option>
-                    <option value="MEDICAL_EMERGENCY">Medical Emergency</option>
-                    <option value="POLLUTION">Pollution</option>
-                    <option value="INFRASTRUCTURE">Infrastructure</option>
-                    <option value="SECURITY">Security</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                <div className="form-control">
-                  <label className="label cursor-pointer justify-start gap-2">
-                    <span className="label-text text-xs text-slate-400">Severity</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="5"
-                    className="input input-bordered input-xs w-full bg-slate-800 text-white"
-                    value={triageSeverity}
-                    onChange={(e) => setTriageSeverity(Number(e.target.value))}
-                  />
-                </div>
-              </div>
-              <textarea
-                className={`textarea textarea-bordered textarea-xs w-full bg-slate-800 text-white ${
-                  !triageReason.trim() && 'textarea-error'
-                }`}
-                placeholder="Reason for correction (required)..."
-                value={triageReason}
-                onChange={(e) => setTriageReason(e.target.value)}
-              />
-              <div className="flex gap-2 justify-end">
-                <button className="btn btn-xs btn-ghost" onClick={() => setIsEditingTriage(false)}>
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-xs btn-primary"
-                  onClick={async () => {
-                    await handleSaveTriage();
-                    alert('Triage correction submitted successfully'); // Simple feedback
-                  }}
-                  disabled={actionLoading || !triageReason.trim()}
-                >
-                  {actionLoading ? 'Saving...' : 'Submit Correction'}
-                </button>
-              </div>
-            </div>
+            <TriageCorrectionForm
+              initialCategory={incident.category ?? 'OTHER'}
+              initialSeverity={incident.severityScore ?? 1}
+              onSave={handleSaveTriage}
+              onCancel={() => setIsEditingTriage(false)}
+            />
           ) : (
             <div className="flex items-center gap-2 mb-2">{/* Original Read-only View */}</div>
           )}

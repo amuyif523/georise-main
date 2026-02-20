@@ -19,23 +19,21 @@ interface StaffMember {
   user?: any; // For backward compat just in case
 }
 
+import { Toaster } from 'react-hot-toast';
+import AddStaffModal from '../../components/modals/AddStaffModal';
+
 const StaffManagementPage: React.FC = () => {
   // const { user } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    staffRole: 'RESPONDER',
-  });
+  // Form state moved to AddStaffModal, except for list refresh trigger
 
   const fetchStaff = async () => {
     try {
-      const res = await api.get('/agency/users'); // Changed from /agency/staff
-      setStaff(res.data.staff || res.data.users || []); // Safety check
+      const res = await api.get('/agency/users');
+      setStaff(res.data.staff || res.data.users || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -46,19 +44,6 @@ const StaffManagementPage: React.FC = () => {
   useEffect(() => {
     fetchStaff();
   }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await api.post('/agency/users', formData); // Changed from /agency/staff
-      alert('Staff added successfully');
-      setIsModalOpen(false);
-      setFormData({ fullName: '', email: '', phone: '', staffRole: 'RESPONDER' });
-      fetchStaff();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to add staff');
-    }
-  };
 
   const toggleStatus = async (userId: number, currentStatus: boolean) => {
     if (currentStatus && !confirm('Are you sure you want to deactivate this staff member?')) return;
@@ -72,6 +57,23 @@ const StaffManagementPage: React.FC = () => {
 
   return (
     <AppLayout>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#1e293b',
+            color: '#fff',
+            border: '1px solid #334155',
+          },
+        }}
+      />
+
+      <AddStaffModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchStaff}
+      />
+
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
@@ -86,70 +88,6 @@ const StaffManagementPage: React.FC = () => {
             Add Staff
           </button>
         </div>
-
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 text-black">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 text-left">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Add New Staff Member</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    className="input input-bordered w-full bg-white text-gray-900 border-gray-300"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    className="input input-bordered w-full bg-white text-gray-900 border-gray-300"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    className="input input-bordered w-full bg-white text-gray-900 border-gray-300"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    className="select select-bordered w-full bg-white text-gray-900 border-gray-300"
-                    value={formData.staffRole}
-                    onChange={(e) => setFormData({ ...formData, staffRole: e.target.value })}
-                  >
-                    <option value="RESPONDER">Responder</option>
-                    <option value="DISPATCHER">Dispatcher</option>
-                    <option value="SUPERVISOR">Supervisor</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-2 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="btn btn-ghost text-gray-500"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Create Account
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         <div className="overflow-x-auto border border-slate-700 rounded-lg">
           <table className="table w-full">
