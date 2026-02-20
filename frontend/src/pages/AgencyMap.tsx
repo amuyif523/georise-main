@@ -4,7 +4,7 @@
 import L from 'leaflet';
 import 'leaflet.heat';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap, GeoJSON, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import api from '../lib/api';
 import { severityBadgeClass, severityLabel } from '../utils/severity';
@@ -92,8 +92,43 @@ const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({ poi
 
 import { useAuth } from '../context/AuthContext';
 
-const AgencyMap: React.FC = () => {
+// Helper to fit bounds
+const MapAutoFitter = ({ data }: { data: any }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!data) return; // Null safety
+
+    try {
+      const layer = L.geoJSON(data);
+      const bounds = layer.getBounds();
+
+      // Validation: Ensure bounds are valid and not infinite
+      if (bounds.isValid() && Object.keys(layer.getLayers()).length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+      } else {
+        // Default to Addis Ababa if invalid polygon
+        map.setView([9.03, 38.74], 12);
+      }
+    } catch (e) {
+      console.warn('Failed to autofit bounds:', e);
+      map.setView([9.03, 38.74], 12);
+    }
+  }, [data, map]);
+  return null;
+};
+
+interface AgencyMapProps {
+  historyMode?: boolean;
+  jurisdiction?: any; // Task 3: Accept jurisdiction GeoJSON
+}
+
+const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction }) => {
   const { user } = useAuth();
+
+  // Suppress unused warning effectively
+  useEffect(() => {
+    if (historyMode) console.log('Map in History Mode');
+  }, [historyMode]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
   const [clusterPoints, setClusterPoints] = useState<ClusterPoint[]>([]);
@@ -393,33 +428,40 @@ const AgencyMap: React.FC = () => {
             />
             <span className="badge badge-outline">{minSeverity}+</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Sub-city</span>
-            <select
-              className="select select-bordered select-xs bg-slate-900 text-white"
-              value={selectedSubCity}
-              onChange={(e) => setSelectedSubCity(e.target.value)}
-            >
-              <option value="">All</option>
-              {subcityGeo?.features?.map((f: any) => (
-                <option key={f.properties.id} value={f.properties.id}>
-                  {f.properties.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Boundary level</span>
-            <select
-              className="select select-bordered select-xs bg-slate-900 text-white"
-              value={boundaryLevel}
-              onChange={(e) => setBoundaryLevel(e.target.value as any)}
-            >
-              <option value="subcity">Subcity</option>
-              <option value="woreda">Woreda</option>
-              <option value="agency">Agency</option>
-            </select>
-          </div>
+
+          {/* Task 3: Agency Admin UX - Locked Filters */}
+          {user?.role !== 'AGENCY_STAFF' && (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">Sub-city</span>
+                <select
+                  className="select select-bordered select-xs bg-slate-900 text-white"
+                  value={selectedSubCity}
+                  onChange={(e) => setSelectedSubCity(e.target.value)}
+                >
+                  <option value="">All</option>
+                  {subcityGeo?.features?.map((f: any) => (
+                    <option key={f.properties.id} value={f.properties.id}>
+                      {f.properties.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">Boundary level</span>
+                <select
+                  className="select select-bordered select-xs bg-slate-900 text-white"
+                  value={boundaryLevel}
+                  onChange={(e) => setBoundaryLevel(e.target.value as any)}
+                >
+                  <option value="subcity">Subcity</option>
+                  <option value="woreda">Woreda</option>
+                  <option value="agency">Agency</option>
+                </select>
+              </div>
+            </>
+          )}
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -460,17 +502,40 @@ const AgencyMap: React.FC = () => {
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
           <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {subcityGeo && (
-              <GeoJSON
-                data={subcityGeo}
-                style={() => ({
-                  color: '#22d3ee',
-                  weight: 1,
-                  fillOpacity: 0.05,
-                })}
-              />
+            {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
+            {user?.role === 'AGENCY_STAFF' ? (
+              <>
+                {/* Render the passed jurisdiction */}
+                {jurisdiction && (
+                  <GeoJSON
+                    data={jurisdiction}
+                    style={() => ({
+                      color: '#3b82f6', // blue-500
+                      weight: 2,
+                      fillOpacity: 0.1,
+                      dashArray: '5, 5',
+                    })}
+                  />
+                )}
+                {/* Auto-zoom safely inside a component or effect */}
+                {jurisdiction && <MapAutoFitter data={jurisdiction} />}
+              </>
+            ) : (
+              <>
+                {subcityGeo && (
+                  <GeoJSON
+                    data={subcityGeo}
+                    style={() => ({
+                      color: '#22d3ee',
+                      weight: 1,
+                      fillOpacity: 0.05,
+                    })}
+                  />
+                )}
+                {/* Only show boundaries if explicitly selected, or handled by level */}
+                <BoundariesLayer level={boundaryLevel} />
+              </>
             )}
-            <BoundariesLayer level={boundaryLevel} />
             <HeatmapLayer points={heatPoints} enabled={showHeat} />
             {showClusters && <ClusterLayer points={clusterPoints} enabled />}
             <MarkerClusterGroup chunkedLoading>

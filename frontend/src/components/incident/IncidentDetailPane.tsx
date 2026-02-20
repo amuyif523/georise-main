@@ -423,13 +423,12 @@ const IncidentDetailPane: React.FC<Props> = ({
   if (!isOpen || !incident) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-end pointer-events-none">
-      <div
-        className="absolute inset-0 bg-black/40 pointer-events-auto"
-        onClick={onClose}
-        aria-label="Close incident detail"
-      />
-      <aside className="relative pointer-events-auto w-full max-w-xl h-full bg-[#0B1220] border-l border-slate-800 shadow-2xl shadow-cyan-500/10 overflow-hidden">
+    <>
+      <aside
+        className={`fixed right-0 top-0 h-full w-[400px] z-[50] bg-slate-900 shadow-2xl transition-transform duration-300 ease-in-out border-l border-slate-700/50 flex flex-col ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         <div
           className={`p-4 bg-gradient-to-r ${headerBg} border-b border-slate-800 flex items-start justify-between`}
         >
@@ -524,7 +523,9 @@ const IncidentDetailPane: React.FC<Props> = ({
                 </div>
               </div>
               <textarea
-                className="textarea textarea-bordered textarea-xs w-full bg-slate-800 text-white"
+                className={`textarea textarea-bordered textarea-xs w-full bg-slate-800 text-white ${
+                  !triageReason.trim() && 'textarea-error'
+                }`}
                 placeholder="Reason for correction (required)..."
                 value={triageReason}
                 onChange={(e) => setTriageReason(e.target.value)}
@@ -535,8 +536,11 @@ const IncidentDetailPane: React.FC<Props> = ({
                 </button>
                 <button
                   className="btn btn-xs btn-primary"
-                  onClick={handleSaveTriage}
-                  disabled={actionLoading || !triageReason}
+                  onClick={async () => {
+                    await handleSaveTriage();
+                    alert('Triage correction submitted successfully'); // Simple feedback
+                  }}
+                  disabled={actionLoading || !triageReason.trim()}
                 >
                   {actionLoading ? 'Saving...' : 'Submit Correction'}
                 </button>
@@ -906,7 +910,7 @@ const IncidentDetailPane: React.FC<Props> = ({
           isLoading={isSharing}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -34,33 +34,50 @@ const AgencyDashboard: React.FC = () => {
   } | null>(null);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
 
+  const [jurisdiction, setJurisdiction] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
   useEffect(() => {
     const load = async () => {
-      const res = await api.get('/incidents', { params: { hours: 48 } });
-      const incs: IncidentListItem[] = res.data.incidents || [];
-      setRecent(incs.slice(0, 5));
-      setStats({
-        active: incs.filter((i) => i.status !== 'RESOLVED').length,
-        resolved: incs.filter((i) => i.status === 'RESOLVED').length,
-        highSeverity: incs.filter((i) => (i.severityScore ?? 0) >= 4).length,
-      });
-
-      const target = incs.find((i) => i.status !== 'RESOLVED');
-      if (target) {
-        setLoadingSuggest(true);
+      setLoadingSuggest(true);
+      setProfileLoading(true);
+      try {
+        // Fetch User Agency to get Jurisdiction
         try {
+          const agencyRes = await api.get('/agency/profile');
+          if (agencyRes.data && agencyRes.data.jurisdiction) {
+            setJurisdiction(agencyRes.data.jurisdiction);
+          }
+        } catch (err) {
+          console.error('Failed to load agency profile:', err);
+          // Non-blocking, continue to load incidents
+        } finally {
+          setProfileLoading(false);
+        }
+
+        // Let's assume we get incidents first as before
+        const res = await api.get('/incidents', { params: { hours: 48 } });
+        const incs: IncidentListItem[] = res.data.incidents || [];
+        setRecent(incs.slice(0, 5));
+        setStats({
+          active: incs.filter((i) => i.status !== 'RESOLVED').length,
+          resolved: incs.filter((i) => i.status === 'RESOLVED').length,
+          highSeverity: incs.filter((i) => (i.severityScore ?? 0) >= 4).length,
+        });
+
+        const target = incs.find((i) => i.status !== 'RESOLVED');
+        if (target) {
           const recRes = await api.get(`/dispatch/recommend/${target.id}`);
           setSuggestion(recRes.data?.[0] || null);
-        } catch {
-          setSuggestion(null);
-        } finally {
-          setLoadingSuggest(false);
         }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingSuggest(false);
       }
     };
     load();
-
-    // Socket Listeners
+    // ... socket listeners ...
     const socket = getSocket();
     if (socket) {
       const handleCreated = (newIncident: IncidentListItem) => {
@@ -74,8 +91,6 @@ const AgencyDashboard: React.FC = () => {
 
       const handleUpdated = (updated: IncidentListItem) => {
         setRecent((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-        // Stats update is complex without full list, but we can approximate or re-fetch active/resolved logic if needed.
-        // For now, assume optimistic update is enough for the list.
         if (updated.status === 'RESOLVED') {
           setStats((s) => ({ ...s, active: Math.max(0, s.active - 1), resolved: s.resolved + 1 }));
         }
@@ -152,11 +167,35 @@ const AgencyDashboard: React.FC = () => {
           </div>
           <p className="text-sm text-slate-500">
             {view === 'live'
-              ? 'Real-time situational awareness with active responders.'
+              ? 'Real-time situational awareness within your operational jurisdiction.'
               : 'AI-generated hotspots based on high-severity clusters over the last 30 days.'}
           </p>
-          <div className="mt-4 h-[calc(100%-100px)] rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden">
-            <IncidentMap historyMode={view === 'history'} />
+          <div className="mt-4 h-[calc(100%-100px)] rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden relative">
+            {/* If stats active is 0, we can show a placeholder or overlay, but keeping the map is better contextually. 
+                 The request says: "If no incidents are found, show a 'Waiting for reports in Bole...' empty state instead of a blank box." 
+             */}
+
+            {/* Ensure map only renders if we're not loading profile to avoid jumpiness, or render anyway */}
+            {profileLoading ? (
+              <div className="flex h-full items-center justify-center text-slate-500 gap-2">
+                <span className="loading loading-spinner loading-md"></span> Loading map
+                configuration...
+              </div>
+            ) : (
+              <IncidentMap historyMode={view === 'history'} jurisdiction={jurisdiction} />
+            )}
+
+            {!loadingSuggest && stats.active === 0 && view === 'live' && !profileLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[1000] pointer-events-none">
+                <div className="text-center p-6 bg-slate-900/90 border border-slate-700 rounded-xl shadow-2xl">
+                  <Activity className="w-10 h-10 text-emerald-500 mx-auto mb-3 opacity-80" />
+                  <h3 className="text-lg font-bold text-white">All Clear</h3>
+                  <p className="text-sm text-slate-400">
+                    Waiting for reports in your jurisdiction...
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -184,7 +223,9 @@ const AgencyDashboard: React.FC = () => {
                 </div>
               ))}
               {!recent.length && (
-                <p className="text-sm text-slate-300">No incidents in the last 48h.</p>
+                <div className="p-6 text-center border border-dashed border-slate-800 rounded-lg">
+                  <p className="text-sm text-slate-500">No active incidents reported recently.</p>
+                </div>
               )}
             </div>
           </div>
