@@ -22,7 +22,7 @@ import AgencySelectionModal from './AgencySelectionModal';
 
 type ActivityLog = {
   id: string;
-  type: 'STATUS_CHANGE' | 'COMMENT' | 'DISPATCH' | 'ASSIGNMENT' | 'SYSTEM';
+  type: 'STATUS_CHANGE' | 'COMMENT' | 'DISPATCH' | 'ASSIGNMENT' | 'SYSTEM' | 'TRIAGE_UPDATE';
   message: string;
   createdAt: string;
   userId?: number | null;
@@ -92,6 +92,8 @@ const typeIcon = (type: ActivityLog['type']) => {
       return <Shield size={16} className="text-purple-300" />;
     case 'DISPATCH':
       return <MapPin size={16} className="text-green-300" />;
+    case 'TRIAGE_UPDATE':
+      return <PenLine size={16} className="text-pink-300" />;
     default:
       return <Clock size={16} className="text-slate-300" />;
   }
@@ -411,6 +413,20 @@ const IncidentDetailPane: React.FC<Props> = ({
       }
     };
     fetchTimeline();
+  }, [incident]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (socket && incident) {
+      // incident room joined in chat effect or globally, but we can ensure listening here
+      socket.on('NEW_TIMELINE_ENTRY', (newLog: ActivityLog) => {
+        // Logs are stored oldest first due to reverse() in fetchTimeline, so append to end
+        setLogs((prev) => [...prev, newLog]);
+      });
+      return () => {
+        socket.off('NEW_TIMELINE_ENTRY');
+      };
+    }
   }, [incident]);
 
   useEffect(() => {
@@ -799,8 +815,19 @@ const IncidentDetailPane: React.FC<Props> = ({
                       >
                         <div className="mt-1">{typeIcon(log.type)}</div>
                         <div className="flex-1">
-                          <p className="text-sm text-white">{log.message}</p>
-                          <p className="text-[11px] text-slate-400">
+                          {log.type === 'TRIAGE_UPDATE' ? (
+                            <div className="text-sm text-white space-y-1">
+                              <p>{log.message.split('Reason:')[0]}</p>
+                              {log.message.includes('Reason:') && (
+                                <p className="italic text-slate-300 text-xs border-l-2 border-slate-600 pl-2">
+                                  Reason: {log.message.split('Reason:')[1]}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-white">{log.message}</p>
+                          )}
+                          <p className="text-[11px] text-slate-400 mt-1">
                             {new Date(log.createdAt).toLocaleString()}
                           </p>
                         </div>

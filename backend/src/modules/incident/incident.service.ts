@@ -816,9 +816,24 @@ export class IncidentService {
         }
       });
 
+      // Log the activity
+      const message = `Triage category manually updated from ${originalCategory || 'None'} to ${data.category}. Reason: ${data.reason || 'None provided'}`;
+      await logActivity(id, 'TRIAGE_UPDATE', message, correctorId);
+
       // Emit update
       const updated = await prisma.incident.findUnique({ where: { id } });
       emitIncidentUpdated(toIncidentPayload(updated as any));
+
+      // Emit timeline entry for real-time UI
+      const io = getIO();
+      const newLog = await prisma.activityLog.findFirst({
+        where: { incidentId: id, type: 'TRIAGE_UPDATE' },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (newLog) {
+        io.to(`incident:${id}`).emit('NEW_TIMELINE_ENTRY', newLog);
+        io.to('role:AGENCY_STAFF').emit('NEW_TIMELINE_ENTRY', newLog);
+      }
     }
 
     return incident;
