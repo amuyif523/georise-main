@@ -193,6 +193,8 @@ const createAgencyWithAdminSchema = z.object({
   description: z.string().optional(),
   isApproved: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  centerLatitude: z.number().min(-90).max(90),
+  centerLongitude: z.number().min(-180).max(180),
   admin: z.object({
     fullName: z.string().min(3),
     email: z.string().email(),
@@ -215,6 +217,8 @@ const updateAgencySchema = z.object({
   description: z.string().optional(),
   isApproved: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  centerLatitude: z.number().min(-90).max(90),
+  centerLongitude: z.number().min(-180).max(180),
 });
 
 router.patch(

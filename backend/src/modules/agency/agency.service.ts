@@ -58,27 +58,27 @@ export const agencyService = {
     const [responderGroups, incidentGroups] = await Promise.all([
       agencyIds.length
         ? prisma.responder.groupBy({
-            by: ['agencyId', 'status'],
-            _count: { _all: true },
-            where: { agencyId: { in: agencyIds } },
-          })
+          by: ['agencyId', 'status'],
+          _count: { _all: true },
+          where: { agencyId: { in: agencyIds } },
+        })
         : [],
       agencyIds.length
         ? prisma.incident.groupBy({
-            by: ['assignedAgencyId'],
-            _count: { _all: true },
-            where: {
-              assignedAgencyId: { in: agencyIds },
-              status: {
-                in: [
-                  IncidentStatus.RECEIVED,
-                  IncidentStatus.UNDER_REVIEW,
-                  IncidentStatus.ASSIGNED,
-                  IncidentStatus.RESPONDING,
-                ],
-              },
+          by: ['assignedAgencyId'],
+          _count: { _all: true },
+          where: {
+            assignedAgencyId: { in: agencyIds },
+            status: {
+              in: [
+                IncidentStatus.RECEIVED,
+                IncidentStatus.UNDER_REVIEW,
+                IncidentStatus.ASSIGNED,
+                IncidentStatus.RESPONDING,
+              ],
             },
-          })
+          },
+        })
         : [],
     ]);
 
@@ -127,6 +127,8 @@ export const agencyService = {
       description?: string;
       isApproved?: boolean;
       isActive?: boolean;
+      centerLatitude: number;
+      centerLongitude: number;
     },
     adminData: {
       fullName: string;
@@ -157,6 +159,8 @@ export const agencyService = {
           description: agencyData.description,
           isApproved: agencyData.isApproved ?? false,
           isActive: agencyData.isActive ?? false,
+          centerLatitude: agencyData.centerLatitude,
+          centerLongitude: agencyData.centerLongitude,
         },
       });
 

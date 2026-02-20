@@ -85,12 +85,19 @@ router.post(
           return res.status(400).json({ message: 'User is already linked to a responder' });
       }
 
+      const agency = await prisma.agency.findUnique({ where: { id: Number(agencyId) }, select: { centerLatitude: true, centerLongitude: true } });
+      if (!agency) return res.status(404).json({ message: 'Target agency not found' });
+
       const created = await prisma.responder.create({
         data: {
           name,
           type,
           agencyId: Number(agencyId),
           userId: userId ? Number(userId) : null,
+          latitude: agency.centerLatitude,
+          longitude: agency.centerLongitude,
+          // @ts-ignore
+          breadcrumbs: [[agency.centerLongitude, agency.centerLatitude]],
         },
       });
       await auditResponder(req.user!.id, 'CREATE_RESPONDER', created.id);

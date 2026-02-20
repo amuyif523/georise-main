@@ -23,14 +23,18 @@ export const getAgencies = async (req: Request, res: Response) => {
 
 export const createAgency = async (req: Request, res: Response) => {
   try {
-    const { name, type, city, description, isApproved, isActive, admin } = req.body;
+    const { name, type, city, description, isApproved, isActive, centerLatitude, centerLongitude, admin } = req.body;
 
     if (!admin || !admin.email || !admin.fullName) {
       return res.status(400).json({ message: 'Admin details (email, fullName) are required' });
     }
 
+    if (centerLatitude === undefined || centerLongitude === undefined) {
+      return res.status(400).json({ message: 'Operational Requirement: Every agency must have a physical headquarters defined for dispatch logistics.' });
+    }
+
     const result = await agencyService.createAgencyWithAdmin(
-      { name, type, city, description, isApproved, isActive },
+      { name, type, city, description, isApproved, isActive, centerLatitude, centerLongitude },
       admin,
     );
 

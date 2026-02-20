@@ -69,6 +69,26 @@ const createIcon = (score: number | null | undefined) =>
     iconAnchor: [9, 9],
   });
 
+const stationIcon = L.divIcon({
+  className: 'station-marker',
+  html: `<div style="
+    background: #0f172a;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 2px solid #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+  ">HQ</div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
 const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({ points, enabled }) => {
   const map = useMap();
 
@@ -153,6 +173,8 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     user?.role === 'AGENCY_STAFF' ? 'agency' : 'subcity',
   );
 
+  const [agencyProfile, setAgencyProfile] = useState<any>(null);
+
   const [responders, setResponders] = useState<any[]>([]); // Task 2: Ensure array init
   const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
@@ -206,7 +228,16 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         /* ignore */
       }
     };
+    const loadProfile = async () => {
+      if (user?.role === 'AGENCY_STAFF') {
+        try {
+          const res = await api.get('/agency/profile');
+          if (res.data) setAgencyProfile(res.data);
+        } catch { /* ignore */ }
+      }
+    };
     loadGeo();
+    loadProfile();
     fetchData();
     const interval = setInterval(fetchData, lowDataMode ? 30000 : 10000);
     const socket = getSocket();
@@ -222,11 +253,11 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           prev.map((r) =>
             r.id === payload.responderId
               ? {
-                  ...r,
-                  latitude: payload.lat,
-                  longitude: payload.lng,
-                  status: payload.status || r.status,
-                }
+                ...r,
+                latitude: payload.lat,
+                longitude: payload.lng,
+                status: payload.status || r.status,
+              }
               : r,
           ),
         );
@@ -549,28 +580,40 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                 pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
               />
             ))}
+            {user?.role === 'AGENCY_STAFF' && agencyProfile?.centerLatitude && agencyProfile?.centerLongitude && (
+              <Marker
+                position={[agencyProfile.centerLatitude, agencyProfile.centerLongitude]}
+                icon={stationIcon}
+                zIndexOffset={100}
+              >
+                <Popup className="cyber-popup">
+                  <div className="font-bold text-cyan-300 mb-1">{agencyProfile.name} HQ</div>
+                  <div className="text-xs text-slate-300">Operational Base</div>
+                </Popup>
+              </Marker>
+            )}
           </MapContainer>
           <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
             <div className="text-sm text-slate-300 mb-2">Live queue</div>
             <div className="space-y-2">
               {listLoading
                 ? Array.from({ length: 4 }).map((_, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20"
-                    />
-                  ))
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20"
+                  />
+                ))
                 : incidents.map((i) => (
-                    <IncidentCard
-                      key={i.id}
-                      title={i.title}
-                      category={i.category}
-                      severity={i.severityScore}
-                      status={i.status}
-                      timestamp={i.createdAt}
-                      onClick={() => setSelectedId(i.id)}
-                    />
-                  ))}
+                  <IncidentCard
+                    key={i.id}
+                    title={i.title}
+                    category={i.category}
+                    severity={i.severityScore}
+                    status={i.status}
+                    timestamp={i.createdAt}
+                    onClick={() => setSelectedId(i.id)}
+                  />
+                ))}
             </div>
           </div>
         </div>
@@ -590,19 +633,19 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           onAssignResponder={
             selectedIncident
               ? async (responderId: number) => {
-                  try {
-                    setActionLoading(selectedIncident.id);
-                    await api.patch('/dispatch/assign-responder', {
-                      incidentId: selectedIncident.id,
-                      responderId,
-                    });
-                    await fetchData();
-                  } catch (err: any) {
-                    setError(err?.response?.data?.message || 'Failed to assign responder');
-                  } finally {
-                    setActionLoading(null);
-                  }
+                try {
+                  setActionLoading(selectedIncident.id);
+                  await api.patch('/dispatch/assign-responder', {
+                    incidentId: selectedIncident.id,
+                    responderId,
+                  });
+                  await fetchData();
+                } catch (err: any) {
+                  setError(err?.response?.data?.message || 'Failed to assign responder');
+                } finally {
+                  setActionLoading(null);
                 }
+              }
               : undefined
           }
         />

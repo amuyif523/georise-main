@@ -160,8 +160,8 @@ model Agency {
   isApproved      Boolean                                @default(false)
   isActive        Boolean                                @default(false)
   boundary        Unsupported("geometry(Polygon,4326)")?
-  centerLatitude  Float?
-  centerLongitude Float?
+  centerLatitude  Float
+  centerLongitude Float
   jurisdiction    Unsupported("geometry(Polygon,4326)")?
   subCityId       Int?
   woredaId        Int?
