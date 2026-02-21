@@ -1,6 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, FeatureGroup, GeoJSON } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  FeatureGroup,
+  GeoJSON,
+  Marker,
+  useMapEvents,
+} from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import api from '../../lib/api';
@@ -98,6 +104,18 @@ const AgenciesPage: React.FC = () => {
     adminPhone: '',
   });
 
+  const [newAgencyPin, setNewAgencyPin] = useState<L.LatLng | null>(null);
+
+  // Helper component to handle map clicks for HQ pinning
+  const LocationMarker = () => {
+    useMapEvents({
+      click(e) {
+        setNewAgencyPin(e.latlng);
+      },
+    });
+    return newAgencyPin === null ? null : <Marker position={newAgencyPin} />;
+  };
+
   const [boundaryGeoJSON, setBoundaryGeoJSON] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +158,7 @@ const AgenciesPage: React.FC = () => {
 
   useEffect(() => {
     fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, search, statusFilter, typeFilter]);
 
   const handleSelectAgency = (id: number) => {
@@ -246,10 +265,15 @@ const AgenciesPage: React.FC = () => {
       adminEmail: '',
       adminPhone: '',
     });
+    setNewAgencyPin(null);
     setCreateModal(true);
   };
 
   const submitCreate = async () => {
+    if (!newAgencyPin) {
+      setError('You must pinpoint the Agency HQ on the map.');
+      return;
+    }
     console.log('SUBMIT TRIGGERED', form);
     try {
       setCreating(true);
@@ -260,6 +284,8 @@ const AgenciesPage: React.FC = () => {
         description: form.description || undefined,
         isApproved: form.isApproved,
         isActive: form.isActive,
+        centerLatitude: newAgencyPin.lat,
+        centerLongitude: newAgencyPin.lng,
         admin: {
           fullName: form.adminName,
           email: form.adminEmail,
@@ -684,6 +710,37 @@ const AgenciesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Mini Map for HQ Selection */}
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">
+                  Headquarters Location <span className="text-error">*</span>
+                </label>
+                <div className="h-40 w-full rounded border border-slate-700 overflow-hidden relative">
+                  <MapContainer
+                    center={[9.0, 38.785]}
+                    zoom={11}
+                    className="w-full h-full"
+                    zoomControl={false}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <LocationMarker />
+                  </MapContainer>
+                  {!newAgencyPin && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/20 z-[400]">
+                      <span className="bg-slate-900/80 px-2 py-1 rounded text-xs text-white">
+                        Click map to drop HQ pin
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {newAgencyPin && (
+                  <div className="text-[10px] text-slate-400 text-right">
+                    Lat: {newAgencyPin.lat.toFixed(5)}, Lng: {newAgencyPin.lng.toFixed(5)}
+                  </div>
+                )}
+              </div>
+
               <div className="divider text-xs text-slate-500 my-1">Initial Admin</div>
               <input
                 className="input input-bordered w-full bg-slate-800 border-slate-700"

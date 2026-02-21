@@ -45,6 +45,16 @@ export const initSocketServer = (server: HttpServer) => {
     try {
       const payload = authService.verifyToken(token);
       const { userId, role, agencyId } = payload;
+
+      // Database Guard: Ensure user still physically exists (Prevents POST-WIPE zombie loops)
+      const userRec = await prisma.user.findUnique({ where: { id: userId } });
+      if (!userRec || !userRec.isActive) {
+        logger.warn({ userId }, 'Socket rejected: User deleted or deactivated from database');
+        socket.emit('auth_error', { message: 'Session invalidated by system' });
+        socket.disconnect(true);
+        return;
+      }
+
       (socket as any).user = { id: userId, role, agencyId };
       socket.join(`user:${userId}`);
       socket.join(`role:${role}`);

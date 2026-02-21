@@ -381,7 +381,7 @@ export const agencyService = {
   },
 
   async deleteStaff(userId: number, requestorId: number) {
-    // 1. "No-Suicide" Rule
+    // 1. "No-Suicide" Rule (Strict Equality)
     if (userId === requestorId) {
       throw new Error('Action Denied: You cannot delete your own administrative account');
     }
