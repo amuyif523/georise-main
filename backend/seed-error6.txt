@@ -1,0 +1,166 @@
+﻿
+> backend@1.0.0 seed
+> npx tsx prisma/seed.ts
+
+--- CLEARING DATABASE ---
+Database cleared natively via deleteMany.
+--- SEEDING NEW ENVIRONMENT ---
+- Created Base User for Admin: admin@georise.com
+- Created Agency: Bole District Command Center at [9.0000, 38.7850]
+- Assigned admin@georise.com as SUPERVISOR to Bole Agency
+node.exe : PrismaClient
+KnownRequestError: 
+At C:\Program Files\nod
+ejs\npm.ps1:29 char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (PrismaClientK   
+ nownRequestError:     
+:String) [], Remot    
+eException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Invalid `prisma.respond
+er.create()` 
+invocation in
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+prisma\seed.ts:121:28
+
+  118   },
+  119 });
+  120 
+ΓåÆ 121 await prisma.re
+sponder.create(
+The column 
+`breadcrumbs` does not 
+exist in the current 
+database.
+    at 
+qr.handleRequestError (
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+node_modules\@prisma\cl
+ient\src\runtime\Reques
+tHandler.ts:228:13)
+    at qr.handleAndLogR
+equestError (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client\src\r
+untime\RequestHandler.t
+s:174:12)
+    at qr.request (C:\U
+sers\Amanuel\Desktop\ge
+orise-main\backend\node
+_modules\@prisma\client
+\src\runtime\RequestHan
+dler.ts:143:12)
+    at process.processT
+icksAndRejections (node
+:internal/process/task_
+queues:105:5)
+    at async 
+Array.$allOperations (C
+:\Users\Amanuel\Desktop
+\georise-main\backend\s
+rc\prisma.ts:24:18)
+    at async a (C:\User
+s\Amanuel\Desktop\geori
+se-main\backend\node_mo
+dules\@prisma\client\sr
+c\runtime\getPrismaClie
+nt.ts:805:24)
+    at async main (C:\U
+sers\Amanuel\Desktop\ge
+orise-main\backend\pris
+ma\seed.ts:121:5) {
+  code: 'P2022',
+  meta: {
+    modelName: 
+'Responder',
+    
+driverAdapterError: 
+DriverAdapterError: 
+ColumnNotFound
+        at PrismaPgAdap
+ter.onError (file:///C:
+/Users/Amanuel/Desktop/
+georise-main/backend/no
+de_modules/@prisma/adap
+ter-pg/dist/index.mjs:6
+51:11)
+        at PrismaPgAdap
+ter.performIO (file:///
+C:/Users/Amanuel/Deskto
+p/georise-main/backend/
+node_modules/@prisma/ad
+apter-pg/dist/index.mjs
+:646:12)
+        at process.proc
+essTicksAndRejections (
+node:internal/process/t
+ask_queues:105:5)
+        at async Prisma
+PgAdapter.queryRaw (fil
+e:///C:/Users/Amanuel/D
+esktop/georise-main/bac
+kend/node_modules/@pris
+ma/adapter-pg/dist/inde
+x.mjs:566:30)
+        at async 
+<anonymous> (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client-engin
+e-runtime\src\tracing.t
+s:68:22)
+        at async fr (C:
+\Users\Amanuel\Desktop\
+georise-main\backend\no
+de_modules\@prisma\clie
+nt-engine-runtime\src\t
+racing.ts:56:10)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:190:26)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:217:41)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:276:41)
+        at async e.run 
+(C:\Users\Amanuel\Deskt
+op\georise-main\backend
+\node_modules\@prisma\c
+lient-engine-runtime\sr
+c\interpreter\query-int
+erpreter.ts:96:23) {
+      cause: [Object]
+    }
+  },
+  clientVersion: 
+'7.2.0'
+}

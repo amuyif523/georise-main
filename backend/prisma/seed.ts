@@ -9,7 +9,6 @@ async function clearDatabase() {
   console.log('--- CLEARING DATABASE ---');
   // Delete many in correct order to respect foreign keys
   await prisma.activityLog.deleteMany({});
-  await prisma.classificationAudit.deleteMany({});
   await prisma.incidentAIOutput.deleteMany({});
   await prisma.incidentPhoto.deleteMany({});
   await prisma.incidentStatusHistory.deleteMany({});
@@ -48,6 +47,13 @@ async function main() {
       role: Role.ADMIN, // Base user role must be ADMIN or AGENCY_STAFF
       isActive: true,
       deletedAt: null,
+      citizenVerification: {
+        create: {
+          nationalId: 'V-ADMIN',
+          status: 'VERIFIED',
+          phone: '+251911000000',
+        },
+      },
     },
   });
   console.log(`- Created Base User for Admin: ${sysAdmin.email}`);
@@ -92,6 +98,13 @@ async function main() {
         role: Role.AGENCY_STAFF,
         isActive: true,
         deletedAt: null,
+        citizenVerification: {
+          create: {
+            nationalId: `V-${rName.toUpperCase()}`,
+            status: 'VERIFIED',
+            phone: `+2519${Math.floor(Math.random() * 100000000)}`,
+          },
+        },
       },
     });
 
@@ -114,8 +127,8 @@ async function main() {
         status: 'AVAILABLE',
         isActive: true,
         deletedAt: null,
-        latitude: boleAgency.centerLatitude,
-        longitude: boleAgency.centerLongitude,
+        latitude: 9.0,
+        longitude: 38.785,
         // @ts-ignore - Prisma JSON array syntax bypass for breadcrumbs
         breadcrumbs: [[38.785, 9.0]],
       },
