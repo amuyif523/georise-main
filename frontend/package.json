@@ -17,8 +17,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "@turf/boolean-point-in-polygon": "^7.3.4",
-    "@turf/helpers": "^7.3.4",
+    "@turf/turf": "^7.3.4",
     "axios": "^1.13.2",
     "chart.js": "^4.4.6",
     "daisyui": "^5.5.8",

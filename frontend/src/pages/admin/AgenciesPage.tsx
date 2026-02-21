@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from 'react';
 import {
   MapContainer,
@@ -10,8 +11,7 @@ import {
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
-import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { point, polygon, multiPolygon } from '@turf/helpers';
+import { booleanPointInPolygon, point, polygon, multiPolygon } from '@turf/turf';
 import api from '../../lib/api';
 import AppLayout from '../../layouts/AppLayout';
 
@@ -213,7 +213,7 @@ const AgenciesPage: React.FC = () => {
           turfPolygon = multiPolygon(boundaryObj.coordinates);
         }
 
-        if (turfPolygon && !booleanPointInPolygon(agencyPoint, turfPolygon)) {
+        if (turfPolygon && !booleanPointInPolygon(agencyPoint, turfPolygon as any)) {
           toast.error('Agency Headquarters must be inside the service boundary.');
           return;
         }
