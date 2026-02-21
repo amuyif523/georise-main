@@ -1,0 +1,172 @@
+﻿
+> backend@1.0.0 seed:ops
+> npx tsx scripts/reseed.ts
+
+--- GEORISE OPERATIONAL RESEED ---
+1. Truncating volatile operational logic [Incident, ActivityLog, Responder]...
+node.exe : PrismaClient
+KnownRequestError: 
+At C:\Program Files\nod
+ejs\npm.ps1:29 char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified: (Pri    
+smaClientKnownRequestE 
+   rror: :String) [], 
+Rem    oteException
+    + 
+FullyQualifiedErrorI   
+ d : NativeCommandError
+ 
+Invalid `prisma.inciden
+t.deleteMany()` 
+invocation in
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+scripts\reseed.ts:11:27
+
+   8 // STEP 1: THE 
+WIPE (Cascading 
+Deletions)
+   9 console.log('1. 
+Truncating volatile 
+operational logic 
+[Incident, 
+ActivityLog, 
+Responder]...');
+  10 await prisma.activ
+ityLog.deleteMany({});
+ΓåÆ 11 await prisma.inc
+ident.deleteMany(
+Foreign key constraint 
+violated on the 
+constraint: `Classifica
+tionAudit_incidentId_fk
+ey`
+    at 
+qr.handleRequestError (
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+node_modules\@prisma\cl
+ient\src\runtime\Reques
+tHandler.ts:228:13)
+    at qr.handleAndLogR
+equestError (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client\src\r
+untime\RequestHandler.t
+s:174:12)
+    at qr.request (C:\U
+sers\Amanuel\Desktop\ge
+orise-main\backend\node
+_modules\@prisma\client
+\src\runtime\RequestHan
+dler.ts:143:12)
+    at process.processT
+icksAndRejections (node
+:internal/process/task_
+queues:105:5)
+    at async 
+Array.$allOperations (C
+:\Users\Amanuel\Desktop
+\georise-main\backend\s
+rc\prisma.ts:24:18)
+    at async a (C:\User
+s\Amanuel\Desktop\geori
+se-main\backend\node_mo
+dules\@prisma\client\sr
+c\runtime\getPrismaClie
+nt.ts:805:24)
+    at async run (C:\Us
+ers\Amanuel\Desktop\geo
+rise-main\backend\scrip
+ts\reseed.ts:11:5) {
+  code: 'P2003',
+  meta: {
+    modelName: 
+'Incident',
+    
+driverAdapterError: 
+DriverAdapterError: For
+eignKeyConstraintViolat
+ion
+        at PrismaPgAdap
+ter.onError (file:///C:
+/Users/Amanuel/Desktop/
+georise-main/backend/no
+de_modules/@prisma/adap
+ter-pg/dist/index.mjs:6
+51:11)
+        at PrismaPgAdap
+ter.performIO (file:///
+C:/Users/Amanuel/Deskto
+p/georise-main/backend/
+node_modules/@prisma/ad
+apter-pg/dist/index.mjs
+:646:12)
+        at process.proc
+essTicksAndRejections (
+node:internal/process/t
+ask_queues:105:5)
+        at async Prisma
+PgAdapter.executeRaw (f
+ile:///C:/Users/Amanuel
+/Desktop/georise-main/b
+ackend/node_modules/@pr
+isma/adapter-pg/dist/in
+dex.mjs:605:13)
+        at async 
+<anonymous> (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client-engin
+e-runtime\src\tracing.t
+s:68:22)
+        at async fr (C:
+\Users\Amanuel\Desktop\
+georise-main\backend\no
+de_modules\@prisma\clie
+nt-engine-runtime\src\t
+racing.ts:56:10)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:172:18)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:276:41)
+        at async e.run 
+(C:\Users\Amanuel\Deskt
+op\georise-main\backend
+\node_modules\@prisma\c
+lient-engine-runtime\sr
+c\interpreter\query-int
+erpreter.ts:96:23)
+        at async 
+e.execute (C:\Users\Ama
+nuel\Desktop\georise-ma
+in\backend\node_modules
+\@prisma\client\src\run
+time\core\engines\clien
+t\LocalExecutor.ts:81:1
+2) {
+      cause: [Object]
+    }
+  },
+  clientVersion: 
+'7.2.0'
+}

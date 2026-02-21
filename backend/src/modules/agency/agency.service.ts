@@ -312,7 +312,21 @@ export const agencyService = {
   },
 
   async setStaffStatus(userId: number, isActive: boolean) {
-    // 1. Check if deactivating and they have an active assignment
+    // 1. Fetch user to check current role and assignments
+    const userToUpdate = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { agencyStaff: true },
+    });
+
+    if (!userToUpdate) throw new Error('User not found');
+
+    // 2. Identity Guard: Cannot deactivate an ADMIN or SUPERVISOR
+    const activeRole = userToUpdate.agencyStaff?.staffRole || userToUpdate.role;
+    if (!isActive && (activeRole === 'SUPERVISOR' || activeRole === 'ADMIN')) {
+      throw new Error('Action Denied: Cannot deactivate a Supervisor or Administrator.');
+    }
+
+    // 3. Check if deactivating and they have an active assignment
     if (!isActive) {
       const responder = await prisma.responder.findFirst({
         where: { userId },
@@ -322,7 +336,7 @@ export const agencyService = {
       }
     }
 
-    // 2. Wrap update in transaction to cascade soft deletion to Responder
+    // 4. Wrap update in transaction to cascade soft deletion to Responder
     const user = await prisma.$transaction(async (tx) => {
       const updatedUser = await tx.user.update({
         where: { id: userId },
@@ -380,6 +394,12 @@ export const agencyService = {
 
     if (!user) throw new Error('Staff member not found');
 
+    // Identity Guard: Cannot delete an ADMIN or SUPERVISOR
+    const activeRole = user.agencyStaff?.staffRole || user.role;
+    if (activeRole === 'SUPERVISOR' || activeRole === 'ADMIN') {
+      throw new Error('Action Denied: Cannot delete a Supervisor or Administrator.');
+    }
+
     if (user.isActive) {
       throw new Error('Staff must be deactivated before they can be deleted');
     }
@@ -389,6 +409,7 @@ export const agencyService = {
       const deletedUser = await tx.user.update({
         where: { id: userId },
         data: {
+          isActive: false, // Ensure loop closure: force isActive to false
           deletedAt: new Date(),
         },
       });
