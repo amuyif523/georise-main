@@ -6,6 +6,7 @@ import {
   getStaff,
   toggleStaffStatus,
   getProfile,
+  deleteStaff,
 } from './agency.controller';
 
 import prisma from '../../prisma';
@@ -36,5 +37,6 @@ router.post('/users', requireAuth, addStaff); // Alias for frontend compatibilit
 router.get('/staff', requireAuth, getStaff);
 router.get('/users', requireAuth, getStaff); // Alias for frontend compatibility
 router.patch('/users/:userId', requireAuth, toggleStaffStatus);
+router.delete('/users/:userId', requireAuth, deleteStaff);
 
 export default router;

@@ -23,14 +23,29 @@ export const getAgencies = async (req: Request, res: Response) => {
 
 export const createAgency = async (req: Request, res: Response) => {
   try {
-    const { name, type, city, description, isApproved, isActive, centerLatitude, centerLongitude, admin } = req.body;
+    const {
+      name,
+      type,
+      city,
+      description,
+      isApproved,
+      isActive,
+      centerLatitude,
+      centerLongitude,
+      admin,
+    } = req.body;
 
     if (!admin || !admin.email || !admin.fullName) {
       return res.status(400).json({ message: 'Admin details (email, fullName) are required' });
     }
 
     if (centerLatitude === undefined || centerLongitude === undefined) {
-      return res.status(400).json({ message: 'Operational Requirement: Every agency must have a physical headquarters defined for dispatch logistics.' });
+      return res
+        .status(400)
+        .json({
+          message:
+            'Operational Requirement: Every agency must have a physical headquarters defined for dispatch logistics.',
+        });
     }
 
     const result = await agencyService.createAgencyWithAdmin(
@@ -97,6 +112,13 @@ export const toggleStaffStatus = async (req: Request, res: Response) => {
 
     if (!requesterAgencyId) return res.status(403).json({ message: 'Unauthorized' });
 
+    // The "No-Suicide" Rule
+    if (!isActive && userId === req.user?.id) {
+      return res
+        .status(403)
+        .json({ message: 'Action Denied: You cannot deactivate your own administrative account' });
+    }
+
     // Verify target user belongs to requester's agency
     const targetStaff = await prisma.agencyStaff.findUnique({
       where: { userId },
@@ -131,5 +153,38 @@ export const getProfile = async (req: Request, res: Response) => {
     console.error('Get agency profile error:', error);
     // Return a generic error to client but log full details
     return res.status(500).json({ message: 'Internal Server Error fetching profile' });
+  }
+};
+
+export const deleteStaff = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.userId);
+    const requesterAgencyId = req.user?.agencyId;
+    const requesterId = req.user?.id;
+
+    if (!requesterAgencyId || !requesterId)
+      return res.status(403).json({ message: 'Unauthorized' });
+
+    // Verify target user belongs to requester's agency
+    const targetStaff = await prisma.agencyStaff.findUnique({
+      where: { userId },
+    });
+
+    if (!targetStaff || targetStaff.agencyId !== requesterAgencyId) {
+      return res.status(404).json({ message: 'Staff member not found in your agency' });
+    }
+
+    await agencyService.deleteStaff(userId, requesterId);
+    return res.json({ message: 'Staff member successfully deleted' });
+  } catch (error: any) {
+    console.error('Delete staff error', error);
+    // Map service layer errors to appropriate HTTP status codes
+    if (error.message.includes('Action Denied')) {
+      return res.status(403).json({ message: error.message });
+    }
+    if (error.message.includes('Staff must be deactivated')) {
+      return res.status(400).json({ message: error.message });
+    }
+    return res.status(400).json({ message: error.message || 'Failed to delete staff' });
   }
 };

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import AppLayout from '../../layouts/AppLayout';
 import api from '../../lib/api';
-import { Users, UserPlus } from 'lucide-react';
+import { Users, UserPlus, Trash2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface StaffMember {
   id: number;
@@ -23,7 +24,7 @@ import { Toaster } from 'react-hot-toast';
 import AddStaffModal from '../../components/modals/AddStaffModal';
 
 const StaffManagementPage: React.FC = () => {
-  // const { user } = useAuth();
+  const { user } = useAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,6 +53,21 @@ const StaffManagementPage: React.FC = () => {
       fetchStaff();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const deleteStaff = async (userId: number) => {
+    if (
+      !confirm(
+        'Are you absolutely sure you want to permanently delete this staff member? This will anonymize their audit history.',
+      )
+    )
+      return;
+    try {
+      await api.delete(`/agency/users/${userId}`);
+      fetchStaff();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to delete staff');
     }
   };
 
@@ -165,12 +181,29 @@ const StaffManagementPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <button
-                        className={`btn btn-xs ${member.isActive ? 'btn-error btn-outline' : 'btn-success btn-outline'}`}
-                        onClick={() => toggleStatus(member.id, member.isActive)}
-                      >
-                        {member.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {member.userId !== user?.id && (
+                          <>
+                            <input
+                              type="checkbox"
+                              className="toggle toggle-success toggle-sm"
+                              checked={member.isActive}
+                              onChange={() => toggleStatus(member.id, member.isActive)}
+                              title={member.isActive ? 'Deactivate User' : 'Activate User'}
+                            />
+
+                            {!member.isActive && (
+                              <button
+                                className="btn btn-xs btn-ghost text-error hover:bg-error/20"
+                                onClick={() => deleteStaff(member.id)}
+                                title="Delete Staff Member"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

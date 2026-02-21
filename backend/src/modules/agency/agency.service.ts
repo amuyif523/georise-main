@@ -352,4 +352,59 @@ export const agencyService = {
 
     return user;
   },
+
+  async deleteStaff(userId: number, requestorId: number) {
+    // 1. "No-Suicide" Rule
+    if (userId === requestorId) {
+      throw new Error('Action Denied: You cannot delete your own administrative account');
+    }
+
+    // 2. Fetch User and enforce 2-stage deletion
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { agencyStaff: true },
+    });
+
+    if (!user) throw new Error('Staff member not found');
+
+    if (user.isActive) {
+      throw new Error('Staff must be deactivated before they can be deleted');
+    }
+
+    // 3. Execute Deep Soft-Delete Transaction
+    return await prisma.$transaction(async (tx) => {
+      const deletedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+
+      if (user.agencyStaff) {
+        await tx.agencyStaff.update({
+          where: { userId: user.id },
+          data: {
+            deactivatedAt: new Date(),
+          },
+        });
+      }
+
+      const responder = await tx.responder.findFirst({
+        where: { userId: user.id },
+      });
+
+      if (responder) {
+        await tx.responder.update({
+          where: { id: responder.id },
+          data: {
+            deletedAt: new Date(),
+            isActive: false,
+            status: 'OFFLINE',
+          },
+        });
+      }
+
+      return deletedUser;
+    });
+  },
 };

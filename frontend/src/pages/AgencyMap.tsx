@@ -409,6 +409,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           <Marker
             key={`resp-${r.id}`}
             position={[r.latitude as number, r.longitude as number]}
+            zIndexOffset={1000}
             icon={L.divIcon({
               className: 'responder-marker',
               html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;opacity:${opacity};"></div>`,
