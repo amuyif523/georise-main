@@ -329,6 +329,31 @@ router.patch(
     const agencyId = parsed.data.id;
     const { geojson } = req.body as { geojson: string };
 
+    const agency = await prisma.agency.findUnique({
+      where: { id: agencyId },
+      select: { centerLatitude: true, centerLongitude: true },
+    });
+
+    if (!agency || agency.centerLatitude === null || agency.centerLongitude === null) {
+      return res
+        .status(400)
+        .json({ message: 'Agency is missing defined headquarters coordinates.' });
+    }
+
+    // Geometric Enforcement: Ensure HQ lies within the proposed jurisdiction
+    const validityCheck: any[] = await prisma.$queryRaw`
+      SELECT ST_Contains(
+        ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326),
+        ST_SetSRID(ST_Point(${agency.centerLongitude}, ${agency.centerLatitude}), 4326)
+      ) as "isInside";
+    `;
+
+    if (!validityCheck || !validityCheck[0] || !validityCheck[0].isInside) {
+      return res
+        .status(400)
+        .json({ message: 'Agency Headquarters is outside the proposed jurisdiction area.' });
+    }
+
     await prisma.$executeRaw`
       UPDATE "Agency"
       SET jurisdiction = ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326)

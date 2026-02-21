@@ -9,6 +9,9 @@ import {
 } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
+import toast from 'react-hot-toast';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { point, polygon, multiPolygon } from '@turf/helpers';
 import api from '../../lib/api';
 import AppLayout from '../../layouts/AppLayout';
 
@@ -33,6 +36,8 @@ type Agency = {
   description?: string | null;
   isApproved: boolean;
   isActive: boolean;
+  centerLatitude?: number | null;
+  centerLongitude?: number | null;
   boundary?: any;
   responderStats?: {
     available: number;
@@ -195,14 +200,32 @@ const AgenciesPage: React.FC = () => {
 
   const saveBoundary = async () => {
     if (!boundaryGeoJSON || !selectedAgency) return;
+
     try {
+      if (selectedAgency.centerLatitude && selectedAgency.centerLongitude) {
+        const agencyPoint = point([selectedAgency.centerLongitude, selectedAgency.centerLatitude]);
+        const boundaryObj = JSON.parse(boundaryGeoJSON);
+        let turfPolygon;
+
+        if (boundaryObj.type === 'Polygon') {
+          turfPolygon = polygon(boundaryObj.coordinates);
+        } else if (boundaryObj.type === 'MultiPolygon') {
+          turfPolygon = multiPolygon(boundaryObj.coordinates);
+        }
+
+        if (turfPolygon && !booleanPointInPolygon(agencyPoint, turfPolygon)) {
+          toast.error('Agency Headquarters must be inside the service boundary.');
+          return;
+        }
+      }
+
       await api.patch(`/admin/agencies/${selectedAgency.id}/boundary`, {
         geojson: boundaryGeoJSON,
       });
       fetchAgencyDetails(selectedAgency.id);
-      alert('Boundary saved successfully!');
+      toast.success('Boundary saved successfully!');
     } catch (err: any) {
-      alert('Failed to save boundary: ' + (err?.response?.data?.message || err.message));
+      toast.error('Failed to save boundary: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -339,6 +362,12 @@ const AgenciesPage: React.FC = () => {
                     key={`boundary-${selectedAgency.id}`}
                     data={selectedAgency.boundary}
                     style={{ color: '#06b6d4', weight: 2, fillOpacity: 0.2 }}
+                  />
+                )}
+
+                {selectedAgency?.centerLatitude && selectedAgency?.centerLongitude && (
+                  <Marker
+                    position={[selectedAgency.centerLatitude, selectedAgency.centerLongitude]}
                   />
                 )}
 
