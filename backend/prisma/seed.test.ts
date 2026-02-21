@@ -21,6 +21,8 @@ async function main() {
       type: AgencyType.POLICE,
       isApproved: true,
       isActive: true,
+      centerLatitude: 9.0,
+      centerLongitude: 38.785,
     },
   });
 

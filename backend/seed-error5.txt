@@ -1,0 +1,127 @@
+﻿
+> backend@1.0.0 seed
+> npx tsx prisma/seed.ts
+
+--- CLEARING DATABASE ---
+Database cleared natively via deleteMany.
+--- SEEDING NEW ENVIRONMENT ---
+- Created Base User for Admin: admin@georise.com
+- Created Agency: Bole District Command Center at [9.0000, 38.7850]
+- Assigned admin@georise.com as SUPERVISOR to Bole Agency
+node.exe : PrismaClientVali
+dationError: 
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Pri  
+  smaClientValidationErr   
+ or: :String) [], Remot    
+eException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Invalid `prisma.responder.c
+reate()` invocation in
+C:\Users\Amanuel\Desktop\ge
+orise-main\backend\prisma\s
+eed.ts:108:28
+
+  105   },
+  106 });
+  107 
+ΓåÆ 108 await 
+prisma.responder.create({
+        data: {
+          name: "Officer 
+Bole-Alpha",
+          type: "UNIT",
+          agencyId: 3,
+          userId: 8,
+          status: 
+"AVAILABLE",
+          isActive: true,
+          deletedAt: null,
+          latitude: 9,
+          longitude: 
+38.785,
+          breadcrumbs: [
+          ~~~~~~~~~~~
+            [
+              38.785,
+              9
+            ]
+          ],
+      ?   id?: Int,
+      ?   incidentId?: Int 
+| Null,
+      ?   lastSeenAt?: 
+DateTime | Null,
+      ?   isDemo?: Boolean,
+      ?   
+demoScenarioCode?: String 
+| Null,
+      ?   createdAt?: 
+DateTime,
+      ?   updatedAt?: 
+DateTime,
+      ?   
+assignedIncidents?: Inciden
+tUncheckedCreateNestedManyW
+ithoutAssignedResponderInpu
+t
+        }
+      })
+
+Unknown argument 
+`breadcrumbs`. Available 
+options are marked with ?.
+    at 
+throwValidationException (C
+:\Users\Amanuel\Desktop\geo
+rise-main\backend\node_modu
+les\@prisma\client\src\runt
+ime\core\errorRendering\thr
+owValidationException.ts:46
+:9)
+    at 
+qr.handleRequestError (C:\U
+sers\Amanuel\Desktop\georis
+e-main\backend\node_modules
+\@prisma\client\src\runtime
+\RequestHandler.ts:202:7)
+    at qr.handleAndLogReque
+stError (C:\Users\Amanuel\D
+esktop\georise-main\backend
+\node_modules\@prisma\clien
+t\src\runtime\RequestHandle
+r.ts:174:12)
+    at qr.request (C:\Users
+\Amanuel\Desktop\georise-ma
+in\backend\node_modules\@pr
+isma\client\src\runtime\Req
+uestHandler.ts:143:12)
+    at process.processTicks
+AndRejections (node:interna
+l/process/task_queues:105:5
+)
+    at async 
+Array.$allOperations (C:\Us
+ers\Amanuel\Desktop\georise
+-main\backend\src\prisma.ts
+:24:18)
+    at async a (C:\Users\Am
+anuel\Desktop\georise-main\
+backend\node_modules\@prism
+a\client\src\runtime\getPri
+smaClient.ts:805:24)
+    at async main (C:\Users
+\Amanuel\Desktop\georise-ma
+in\backend\prisma\seed.ts:1
+08:5) {
+  clientVersion: '7.2.0'
+}

@@ -408,6 +408,7 @@ model Responder {
   userId           Int?
   latitude         Float?
   longitude        Float?
+  breadcrumbs      Json?           @default("[]")
   lastSeenAt       DateTime?
   isDemo           Boolean         @default(false)
   demoScenarioCode String?
