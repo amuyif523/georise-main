@@ -227,6 +227,15 @@ export const agencyService = {
       });
 
       if (data.staffRole === 'RESPONDER') {
+        const agency = await tx.agency.findUnique({
+          where: { id: agencyId },
+          select: { centerLatitude: true, centerLongitude: true },
+        });
+
+        // Fallback to Addis Ababa center if HQ coordinates are magically null
+        const lat = agency?.centerLatitude ?? 9.0192;
+        const lng = agency?.centerLongitude ?? 38.7525;
+
         await tx.responder.create({
           data: {
             name: user.fullName,
@@ -234,6 +243,10 @@ export const agencyService = {
             userId: user.id,
             status: 'OFFLINE',
             type: 'General',
+            latitude: lat,
+            longitude: lng,
+            // @ts-ignore - Prisma JSON array syntax bypass for breadcrumbs
+            breadcrumbs: [[lng, lat]],
           },
         });
       }

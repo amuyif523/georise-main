@@ -20,7 +20,7 @@ interface StaffMember {
   user?: any; // For backward compat just in case
 }
 
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import AddStaffModal from '../../components/modals/AddStaffModal';
 
 const StaffManagementPage: React.FC = () => {
@@ -48,11 +48,28 @@ const StaffManagementPage: React.FC = () => {
 
   const toggleStatus = async (userId: number, currentStatus: boolean) => {
     if (currentStatus && !confirm('Are you sure you want to deactivate this staff member?')) return;
+
+    // Store original copy to revert on failure
+    const previousStaff = [...staff];
+
+    // Optmistically toggle local state
+    setStaff((prev) =>
+      prev.map((member) =>
+        member.id === userId ? { ...member, isActive: !currentStatus } : member,
+      ),
+    );
+
     try {
       await api.patch(`/agency/users/${userId}`, { isActive: !currentStatus });
-      fetchStaff();
+      toast.success(
+        currentStatus ? 'Staff deactivated successfully' : 'Staff activated successfully',
+      );
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to update status');
+      // Revert optimism
+      setStaff(previousStaff);
+      const msg = error.response?.data?.message || 'Failed to update status';
+      toast.error(msg);
+      console.error(error);
     }
   };
 
