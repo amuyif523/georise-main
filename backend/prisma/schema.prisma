@@ -411,8 +411,10 @@ model Responder {
   lastSeenAt       DateTime?
   isDemo           Boolean         @default(false)
   demoScenarioCode String?
+  isActive         Boolean         @default(true)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
 
   agency            Agency     @relation(fields: [agencyId], references: [id])
   incident          Incident?  @relation("IncidentResponders", fields: [incidentId], references: [id])

@@ -22,6 +22,8 @@ export const ensureTestAgency = async () => {
           city: 'Addis Ababa',
           isApproved: true,
           isActive: true,
+          centerLatitude: 9.03,
+          centerLongitude: 38.74,
         },
       });
       console.log('Test Agency Seeded.');

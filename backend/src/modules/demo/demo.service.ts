@@ -275,6 +275,8 @@ export class DemoService {
         description: 'Demo agency for simulation.',
         isApproved: true,
         isActive: true,
+        centerLatitude: 9.03,
+        centerLongitude: 38.74,
       },
     });
   }

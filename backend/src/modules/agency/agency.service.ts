@@ -58,27 +58,27 @@ export const agencyService = {
     const [responderGroups, incidentGroups] = await Promise.all([
       agencyIds.length
         ? prisma.responder.groupBy({
-          by: ['agencyId', 'status'],
-          _count: { _all: true },
-          where: { agencyId: { in: agencyIds } },
-        })
+            by: ['agencyId', 'status'],
+            _count: { _all: true },
+            where: { agencyId: { in: agencyIds } },
+          })
         : [],
       agencyIds.length
         ? prisma.incident.groupBy({
-          by: ['assignedAgencyId'],
-          _count: { _all: true },
-          where: {
-            assignedAgencyId: { in: agencyIds },
-            status: {
-              in: [
-                IncidentStatus.RECEIVED,
-                IncidentStatus.UNDER_REVIEW,
-                IncidentStatus.ASSIGNED,
-                IncidentStatus.RESPONDING,
-              ],
+            by: ['assignedAgencyId'],
+            _count: { _all: true },
+            where: {
+              assignedAgencyId: { in: agencyIds },
+              status: {
+                in: [
+                  IncidentStatus.RECEIVED,
+                  IncidentStatus.UNDER_REVIEW,
+                  IncidentStatus.ASSIGNED,
+                  IncidentStatus.RESPONDING,
+                ],
+              },
             },
-          },
-        })
+          })
         : [],
     ]);
 
@@ -299,17 +299,51 @@ export const agencyService = {
   },
 
   async setStaffStatus(userId: number, isActive: boolean) {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { isActive },
-      include: { agencyStaff: true },
+    // 1. Check if deactivating and they have an active assignment
+    if (!isActive) {
+      const responder = await prisma.responder.findFirst({
+        where: { userId },
+      });
+      if (responder && responder.incidentId) {
+        throw new Error('Operation Blocked: Staff is currently assigned to an active incident.');
+      }
+    }
+
+    // 2. Wrap update in transaction to cascade soft deletion to Responder
+    const user = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          isActive,
+          deletedAt: isActive ? null : new Date(),
+        },
+        include: { agencyStaff: true },
+      });
+
+      // Update linked responder if it exists
+      const responder = await tx.responder.findFirst({
+        where: { userId },
+      });
+
+      if (responder) {
+        await tx.responder.update({
+          where: { id: responder.id },
+          data: {
+            isActive,
+            deletedAt: isActive ? null : new Date(),
+            // Ensure status drops offline if deactivated
+            status: isActive ? responder.status : 'OFFLINE',
+          },
+        });
+      }
+
+      return updatedUser;
     });
 
     // If deactivating, disconnect socket and revoke session
     if (!isActive) {
       try {
         const io = getIO();
-        // Assuming we join users to a room 'user:{id}' or similar upon connection
         io.in(`user:${userId}`).disconnectSockets(true);
       } catch (e) {
         console.error('Failed to disconnect socket for user', userId, e);

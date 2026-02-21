@@ -32,6 +32,9 @@ router.get(
         where.agencyId = staff.agencyId;
       }
 
+      // Globally exclude soft-deleted/deactivated responders
+      where.isActive = true;
+
       const page = Math.max(Number(req.query.page) || 1, 1);
       const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
       const skip = (page - 1) * limit;
@@ -85,7 +88,10 @@ router.post(
           return res.status(400).json({ message: 'User is already linked to a responder' });
       }
 
-      const agency = await prisma.agency.findUnique({ where: { id: Number(agencyId) }, select: { centerLatitude: true, centerLongitude: true } });
+      const agency = await prisma.agency.findUnique({
+        where: { id: Number(agencyId) },
+        select: { centerLatitude: true, centerLongitude: true },
+      });
       if (!agency) return res.status(404).json({ message: 'Target agency not found' });
 
       const created = await prisma.responder.create({
@@ -163,7 +169,12 @@ router.delete(
           .status(400)
           .json({ message: 'Responder has an active assignment; unassign first.' });
       }
-      const data = { status: 'OFFLINE' as any, incidentId: null };
+      const data = {
+        isActive: false,
+        deletedAt: new Date(),
+        status: 'OFFLINE' as any,
+        incidentId: null,
+      };
 
       if (req.user!.role === Role.AGENCY_STAFF) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
@@ -177,7 +188,7 @@ router.delete(
         data,
       });
       await auditResponder(req.user!.id, 'DEACTIVATE_RESPONDER', responderId);
-      res.json({ message: 'Responder deactivated', responder: updated });
+      res.json({ message: 'Responder deactivated (soft delete)', responder: updated });
     } catch (err: any) {
       logger.error({ err }, 'Deactivate responder error');
       res.status(400).json({ message: 'Failed to deactivate responder' });

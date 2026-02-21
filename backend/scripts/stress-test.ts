@@ -81,6 +81,8 @@ async function main() {
         city: 'Addis Ababa',
         isApproved: true,
         isActive: true,
+        centerLatitude: BASE_LAT,
+        centerLongitude: BASE_LNG,
       },
     });
     agencyId = agency.id;

@@ -233,7 +233,9 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         try {
           const res = await api.get('/agency/profile');
           if (res.data) setAgencyProfile(res.data);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     };
     loadGeo();
@@ -253,11 +255,11 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           prev.map((r) =>
             r.id === payload.responderId
               ? {
-                ...r,
-                latitude: payload.lat,
-                longitude: payload.lng,
-                status: payload.status || r.status,
-              }
+                  ...r,
+                  latitude: payload.lat,
+                  longitude: payload.lng,
+                  status: payload.status || r.status,
+                }
               : r,
           ),
         );
@@ -401,13 +403,15 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       .filter((r) => r.latitude != null && r.longitude != null)
       .map((r) => {
         const color = getResponderColor(r.status);
+        const isOffline = r.status === 'OFFLINE';
+        const opacity = isOffline ? '0.4' : '1';
         return (
           <Marker
             key={`resp-${r.id}`}
             position={[r.latitude as number, r.longitude as number]}
             icon={L.divIcon({
               className: 'responder-marker',
-              html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;"></div>`,
+              html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;opacity:${opacity};"></div>`,
               iconSize: [14, 14],
               iconAnchor: [7, 7],
             })}
@@ -580,40 +584,42 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                 pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
               />
             ))}
-            {user?.role === 'AGENCY_STAFF' && agencyProfile?.centerLatitude && agencyProfile?.centerLongitude && (
-              <Marker
-                position={[agencyProfile.centerLatitude, agencyProfile.centerLongitude]}
-                icon={stationIcon}
-                zIndexOffset={100}
-              >
-                <Popup className="cyber-popup">
-                  <div className="font-bold text-cyan-300 mb-1">{agencyProfile.name} HQ</div>
-                  <div className="text-xs text-slate-300">Operational Base</div>
-                </Popup>
-              </Marker>
-            )}
+            {user?.role === 'AGENCY_STAFF' &&
+              agencyProfile?.centerLatitude &&
+              agencyProfile?.centerLongitude && (
+                <Marker
+                  position={[agencyProfile.centerLatitude, agencyProfile.centerLongitude]}
+                  icon={stationIcon}
+                  zIndexOffset={100}
+                >
+                  <Popup className="cyber-popup">
+                    <div className="font-bold text-cyan-300 mb-1">{agencyProfile.name} HQ</div>
+                    <div className="text-xs text-slate-300">Operational Base</div>
+                  </Popup>
+                </Marker>
+              )}
           </MapContainer>
           <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
             <div className="text-sm text-slate-300 mb-2">Live queue</div>
             <div className="space-y-2">
               {listLoading
                 ? Array.from({ length: 4 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20"
-                  />
-                ))
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20"
+                    />
+                  ))
                 : incidents.map((i) => (
-                  <IncidentCard
-                    key={i.id}
-                    title={i.title}
-                    category={i.category}
-                    severity={i.severityScore}
-                    status={i.status}
-                    timestamp={i.createdAt}
-                    onClick={() => setSelectedId(i.id)}
-                  />
-                ))}
+                    <IncidentCard
+                      key={i.id}
+                      title={i.title}
+                      category={i.category}
+                      severity={i.severityScore}
+                      status={i.status}
+                      timestamp={i.createdAt}
+                      onClick={() => setSelectedId(i.id)}
+                    />
+                  ))}
             </div>
           </div>
         </div>
@@ -633,19 +639,19 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           onAssignResponder={
             selectedIncident
               ? async (responderId: number) => {
-                try {
-                  setActionLoading(selectedIncident.id);
-                  await api.patch('/dispatch/assign-responder', {
-                    incidentId: selectedIncident.id,
-                    responderId,
-                  });
-                  await fetchData();
-                } catch (err: any) {
-                  setError(err?.response?.data?.message || 'Failed to assign responder');
-                } finally {
-                  setActionLoading(null);
+                  try {
+                    setActionLoading(selectedIncident.id);
+                    await api.patch('/dispatch/assign-responder', {
+                      incidentId: selectedIncident.id,
+                      responderId,
+                    });
+                    await fetchData();
+                  } catch (err: any) {
+                    setError(err?.response?.data?.message || 'Failed to assign responder');
+                  } finally {
+                    setActionLoading(null);
+                  }
                 }
-              }
               : undefined
           }
         />
