@@ -28,7 +28,11 @@ router.get(
 
       if (user.role === Role.AGENCY_STAFF) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
-        if (!staff) return res.status(403).json({ message: 'No agency context' });
+        // Instead of hard-failing (403) for e.g. supervisors without linked agencyStaff yet:
+        // just return empty if they attempt to list responders but have no agency context.
+        if (!staff || !staff.agencyId) {
+          return res.json({ total: 0, page: 1, limit: 100, responders: [] });
+        }
         where.agencyId = staff.agencyId;
       }
 
@@ -64,6 +68,7 @@ router.get(
       ]);
       res.json({ total, page, limit, responders });
     } catch (err: any) {
+      console.error('Responder fetch error:', err);
       logger.error({ err }, 'List responders error');
       res.status(400).json({ message: 'Failed to list responders' });
     }

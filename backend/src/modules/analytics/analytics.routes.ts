@@ -128,19 +128,50 @@ router.get('/utilization/resource', requireAuth, async (req, res) => {
 
 // K-means clustering (default k=5) for last 30 days
 router.get('/clusters', requireAuth, async (_req, res) => {
-  const rows = await prisma.$queryRawUnsafe<any[]>(`
-    SELECT
-      ST_ClusterKMeans(location, 5) OVER () AS cluster_id,
-      id,
-      title,
-      COALESCE("severityScore", 0) AS severity,
-      ST_Y(location) AS lat,
-      ST_X(location) AS lng
-    FROM "Incident"
-    WHERE location IS NOT NULL
-      AND "reportedAt" > NOW() - INTERVAL '30 days'
-  `);
-  res.json(rows);
+  try {
+    // 1. Safety Guard: Check count of valid locations
+    const [{ count }] = await prisma.$queryRawUnsafe<[{ count: bigint }]>(`
+      SELECT COUNT(*) as count
+      FROM "Incident"
+      WHERE location IS NOT NULL
+        AND "reportedAt" > NOW() - INTERVAL '30 days'
+    `);
+
+    if (Number(count) < 5) {
+      // 2. Return raw points with hardcoded cluster_id if not enough data
+      const rows = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT
+          0 AS cluster_id,
+          id,
+          title,
+          COALESCE("severityScore", 0) AS severity,
+          ST_Y(location) AS lat,
+          ST_X(location) AS lng
+        FROM "Incident"
+        WHERE location IS NOT NULL
+          AND "reportedAt" > NOW() - INTERVAL '30 days'
+      `);
+      return res.json(rows);
+    }
+
+    // 3. Normal clustering
+    const rows = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT
+        ST_ClusterKMeans(location, 5) OVER () AS cluster_id,
+        id,
+        title,
+        COALESCE("severityScore", 0) AS severity,
+        ST_Y(location) AS lat,
+        ST_X(location) AS lng
+      FROM "Incident"
+      WHERE location IS NOT NULL
+        AND "reportedAt" > NOW() - INTERVAL '30 days'
+    `);
+    res.json(rows);
+  } catch (err: any) {
+    console.error('Cluster Error:', err);
+    res.status(500).json({ message: 'Failed to generate clusters.' });
+  }
 });
 
 // KPI cards: avg dispatch/arrival/resolution rate

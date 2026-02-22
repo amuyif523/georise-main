@@ -181,26 +181,43 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const fetchData = useCallback(async () => {
     try {
       setListLoading(true);
-      const [incRes, heatRes, respRes, clusterRes] = await Promise.all([
-        api.get('/incidents', {
-          params: { status: 'RECEIVED', hours },
+
+      // Parallel fetches without failing the whole map if one fails
+      const requests = [
+        api.get('/incidents', { params: { status: 'RECEIVED', hours } }).catch((err) => {
+          console.error('Failed to load incidents', err);
+          return { data: { incidents: [] } };
         }),
-        api.get('/analytics/heatmap', { params: { hours, minSeverity } }),
-        api.get('/responders'),
-        api.get('/analytics/clusters'),
-      ]);
-      let incs = incRes.data.incidents || [];
+        api.get('/analytics/heatmap', { params: { hours, minSeverity } }).catch((err) => {
+          console.error('Failed to load heatmap', err);
+          return { data: { points: [] } };
+        }),
+        api.get('/responders').catch((err) => {
+          console.error('Failed to load responders', err);
+          return { data: [] };
+        }),
+        api.get('/analytics/clusters').catch((err) => {
+          console.error('Failed to load clusters', err);
+          return { data: [] };
+        }),
+      ];
+
+      const [incRes, heatRes, respRes, clusterRes] = await Promise.all(requests);
+
+      let incs = incRes?.data?.incidents || [];
       if (selectedSubCity) {
         incs = incs.filter((i: any) => i.subCityId === Number(selectedSubCity));
       }
       setIncidents(incs);
-      const rawHeat = heatRes.data.points || heatRes.data || [];
+
+      const rawHeat = heatRes?.data?.points || heatRes?.data || [];
       const filteredHeat = (rawHeat as any[]).filter(
         (p) => p != null && Number.isFinite(p.lat) && Number.isFinite(p.lng),
       );
       setHeatPoints(filteredHeat as HeatPoint[]);
+
       setClusterPoints(
-        (clusterRes.data || []).map((c: any) => ({
+        (clusterRes?.data || []).map((c: any) => ({
           id: c.id || c.cluster_id || Math.random(),
           cluster_id: c.cluster_id ?? 0,
           lat: c.lat,
@@ -209,10 +226,13 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           title: c.title ?? undefined,
         })),
       );
-      setResponders(respRes.data || []);
+
+      const rawResps = respRes?.data;
+      setResponders(Array.isArray(rawResps) ? rawResps : rawResps?.responders || []);
+
       setError(null);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to load incidents');
+      setError(err?.message || 'Failed to update map features');
     } finally {
       setLoading(false);
       setListLoading(false);
