@@ -70,9 +70,12 @@ const UsersPage: React.FC = () => {
   });
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
-  const isAgencyAdmin = useMemo(() => user?.role === 'AGENCY_STAFF', [user?.role]);
+  const isAgencyAdmin = useMemo(
+    () => user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER',
+    [user?.role],
+  );
   const roleOptions = useMemo(
-    () => (isAgencyAdmin ? ['AGENCY_STAFF'] : ['ADMIN', 'AGENCY_STAFF', 'CITIZEN']),
+    () => (isAgencyAdmin ? ['AGENCY_STAFF'] : ['ADMIN', 'AGENCY_MANAGER', 'CITIZEN']),
     [isAgencyAdmin],
   );
 
@@ -270,7 +273,7 @@ const UsersPage: React.FC = () => {
                   <td>{u.phone ?? '-'}</td>
                   <td>{badge(u.role, 'blue')}</td>
                   <td>
-                    {u.role === 'AGENCY_STAFF' ? (
+                    {u.role === 'AGENCY_STAFF' || u.role === 'AGENCY_MANAGER' ? (
                       <select
                         className="select select-xs bg-slate-900 border-slate-700 text-white"
                         value={u.agencyStaff?.staffRole || 'DISPATCHER'}
@@ -501,12 +504,13 @@ const UsersPage: React.FC = () => {
                   onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
                 >
                   <option value="ADMIN">ADMIN</option>
+                  <option value="AGENCY_MANAGER">AGENCY_MANAGER</option>
                   <option value="AGENCY_STAFF">AGENCY_STAFF</option>
                   <option value="CITIZEN">CITIZEN</option>
                 </select>
               </div>
             )}
-            {editForm.role === 'AGENCY_STAFF' && (
+            {(editForm.role === 'AGENCY_STAFF' || editForm.role === 'AGENCY_MANAGER') && (
               <>
                 <div className="form-control">
                   <label className="label">
@@ -562,7 +566,7 @@ const UsersPage: React.FC = () => {
                       role: editForm.role,
                     };
 
-                    if (editForm.role === 'AGENCY_STAFF') {
+                    if (editForm.role === 'AGENCY_STAFF' || editForm.role === 'AGENCY_MANAGER') {
                       payload.staffRole = editForm.staffRole;
                       if (!isAgencyAdmin && editForm.agencyId) {
                         payload.agencyId = Number(editForm.agencyId);

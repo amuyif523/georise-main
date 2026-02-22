@@ -171,7 +171,7 @@ export const agencyService = {
           email: adminData.email,
           phone: adminData.phone, // Phone might be optional in UI but schema check? Schema says optional string?
           passwordHash,
-          role: Role.AGENCY_STAFF, // Use enum
+          role: Role.AGENCY_MANAGER, // Updated to AGENCY_MANAGER
           isActive: true,
         },
       });
@@ -181,7 +181,7 @@ export const agencyService = {
         data: {
           userId: user.id,
           agencyId: agency.id,
-          staffRole: StaffRole.SUPERVISOR,
+          staffRole: StaffRole.MANAGER,
           isActive: true,
         },
       });
