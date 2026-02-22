@@ -52,7 +52,7 @@ const AppSidebar: React.FC = () => {
           { to: '/admin/audit', icon: <FileText size={16} />, label: 'Audit Logs' },
           { to: '/admin/analytics', icon: <BarChart3 size={16} />, label: t('analytics.title') },
         ]
-      : role === 'AGENCY_STAFF'
+      : role === 'AGENCY_STAFF' || role === 'AGENCY_MANAGER'
         ? [
             { to: '/agency', icon: <LayoutDashboard size={16} />, label: t('nav.dashboard') },
             { to: '/agency/map', icon: <Map size={16} />, label: t('nav.map') },

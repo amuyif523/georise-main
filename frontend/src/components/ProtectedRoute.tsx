@@ -2,12 +2,12 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-interface Props {
-  children: React.ReactElement;
-  allowedRoles?: ('CITIZEN' | 'AGENCY_STAFF' | 'ADMIN')[];
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: ('CITIZEN' | 'AGENCY_STAFF' | 'AGENCY_MANAGER' | 'ADMIN')[];
 }
 
-const ProtectedRoute: React.FC<Props> = ({ children, allowedRoles }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
   if (loading) {

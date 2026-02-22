@@ -3,7 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import api from '../lib/api';
 import { connectSocket, disconnectSocket, resetSocketGuard } from '../lib/socket';
 
-type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'ADMIN';
+type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'AGENCY_MANAGER' | 'ADMIN';
 
 interface User {
   id: number;
