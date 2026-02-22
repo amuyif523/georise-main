@@ -11,7 +11,7 @@ import { metrics } from '../metrics/metrics.service';
 export const aiWorker = new Worker(
   'incident-ai',
   async (job: Job) => {
-    const { incidentId, title, description, reporterId } = job.data;
+    const { incidentId, title, description, reporterId, initialTrustScore } = job.data;
     logger.info({ incidentId }, 'Processing AI classification job');
 
     const start = process.hrtime.bigint();
@@ -43,11 +43,16 @@ export const aiWorker = new Worker(
 
     // 2. Update Database
     try {
+      // Apply Triage Weighting
+      const trustWeight = initialTrustScore ?? 0.5;
+      const rawSeverity = aiOutput.severity_score ?? 1;
+      const finalPriority = Math.max(1, Math.round(rawSeverity * trustWeight));
+
       const updated = await prisma.incident.update({
         where: { id: incidentId },
         data: {
           category: aiOutput.predicted_category,
-          severityScore: aiOutput.severity_score,
+          severityScore: finalPriority,
           aiOutput: {
             upsert: {
               create: {

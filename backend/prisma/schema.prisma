@@ -255,6 +255,7 @@ model Incident {
   createdAt            DateTime                 @default(now())
   updatedAt            DateTime                 @updatedAt
   deletedAt            DateTime?
+  initialTrustScore    Float                    @default(0.5)
 
   reporter             User?                   @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency       Agency?                 @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
@@ -274,6 +275,7 @@ model Incident {
 
   @@index([location], name: "incident_location_idx", type: Gist)
   @@index([id, deletedAt])
+  @@index([initialTrustScore])
 }
 
 model SharedIncident {

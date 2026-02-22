@@ -142,6 +142,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 class ClassifyRequest(BaseModel):
     title: str
     description: str
+    metadata: Optional[dict] = None
 
 
 class ClassifyResponse(BaseModel):

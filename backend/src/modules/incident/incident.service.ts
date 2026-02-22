@@ -58,7 +58,7 @@ export class IncidentService {
         throw new Error('User not found');
       }
 
-      // Security Hardening (Sprint 6): Block Unverified Ghost Reporters
+      // Security Hardening (Sprint 6): Rate limit untrusted users
       const isStaff = user.role === 'AGENCY_STAFF' || user.role === 'ADMIN';
 
       if (!isStaff && user?.lastReportAt) {
@@ -66,23 +66,6 @@ export class IncidentService {
         if (diffMinutes < 2 && (user.trustScore ?? 0) <= 0) {
           throw new Error('You are sending reports too frequently. Please wait a few minutes.');
         }
-      }
-      if (
-        !isStaff &&
-        user?.citizenVerification?.status !== 'VERIFIED' &&
-        (user?.trustScore ?? 0) < 50
-      ) {
-        logger.warn(
-          {
-            userId: reporterId,
-            trustScore: user?.trustScore,
-            verificationStatus: user?.citizenVerification?.status,
-          },
-          'Security blocks report: Unverified ghost reporter',
-        );
-        throw new Error(
-          'Account Verification Required: You must verify your account (National ID/Phone) before reporting incidents to ensure system integrity.',
-        );
       }
     } else {
       // Guest Logic
@@ -109,23 +92,32 @@ export class IncidentService {
     }
 
     let reviewStatus: any = 'NOT_REQUIRED';
+    let initialTrustScore = 0.5;
+
+    const isStaff = user?.role === 'AGENCY_STAFF' || user?.role === 'ADMIN';
 
     if (reporterId && user) {
       if (user.isShadowBanned) {
         reviewStatus = 'REJECTED';
+        initialTrustScore = 0.0;
       } else {
         const tier = await reputationService.getTier(reporterId);
-        // Tier 3 (Gold/Trusted) bypasses review (FR-01)
-        if (tier >= 3) {
+
+        if (tier >= 3 || isStaff) {
           reviewStatus = 'APPROVED';
-        } else if (tier === 0) {
-          // Tier 0 (Unverified) always requires review
+        } else {
           reviewStatus = 'PENDING_REVIEW';
+        }
+
+        if (user.citizenVerification?.status === 'VERIFIED') {
+          initialTrustScore = 0.8;
+        } else {
+          initialTrustScore = 0.5;
         }
       }
     } else {
-      // Guest submissions always require review
       reviewStatus = 'PENDING_REVIEW';
+      initialTrustScore = 0.3;
     }
 
     const incident = await prisma.incident.create({
@@ -139,6 +131,7 @@ export class IncidentService {
         woredaId,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
+        initialTrustScore,
         isReporterAtScene: data.isReporterAtScene ?? true,
         severityScore: reporterId ? undefined : 1, // Default low severity for guests
       } as any,
@@ -168,6 +161,7 @@ export class IncidentService {
               title: incident.title,
               description: incident.description,
               reporterId: reporterId || 0,
+              initialTrustScore,
             });
           } else {
             const aiOutput = {
@@ -206,6 +200,7 @@ export class IncidentService {
             title: incident.title,
             description: incident.description,
             reporterId: 0,
+            initialTrustScore,
           });
         } else {
           // manual infrastructure logic for guest... (omitted to keep diff clean, focusing on reporterId block)
