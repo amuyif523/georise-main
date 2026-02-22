@@ -17,7 +17,7 @@ async function getAgencyContext(userId: number) {
 router.get(
   '/subcities',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (_req, res) => {
     const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, name, code, ST_AsGeoJSON(jurisdiction) AS geojson
@@ -36,7 +36,7 @@ router.get(
 router.get(
   '/boundaries',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const level = (req.query.level as string) || 'subcity';
     const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
@@ -102,7 +102,7 @@ router.get(
 router.get(
   '/boundaries/:id/incidents',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const id = Number(req.params.id);
     const level = (req.query.level as string) || 'subcity';
@@ -129,7 +129,7 @@ router.get(
 router.get(
   '/incident/:id/context',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const id = Number(req.params.id);
     const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
@@ -163,7 +163,7 @@ router.get(
 router.get(
   '/incidents',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN, Role.CITIZEN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN, Role.CITIZEN]),
   async (req: any, res) => {
     const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`

@@ -82,7 +82,7 @@ router.get('/:id/photos', requireAuth, getIncidentPhotos);
 router.get(
   '/resources/agencies',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     const agencies = await prisma.agency.findMany({
       where: { isActive: true, isApproved: true },
@@ -95,19 +95,19 @@ router.get(
 router.post(
   '/:incidentId/collaborate',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   shareIncident,
 );
 router.get(
   '/:incidentId/chat',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   getIncidentChat,
 );
 router.post(
   '/:incidentId/chat',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   postChatMessage,
 );
 
@@ -165,7 +165,7 @@ router.get('/:id/timeline', requireAuth, async (req, res) => {
 router.post(
   '/:id/comment',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const incidentId = Number(req.params.id);
@@ -183,7 +183,7 @@ router.post(
 router.patch(
   '/:id/status',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const incidentId = Number(req.params.id);
@@ -241,13 +241,18 @@ router.get('/activity/feed', requireAuth, requireRole([Role.ADMIN]), async (req,
 });
 
 // List/filter for agencies/admins with pagination/search
-router.get('/', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), getIncidents);
+router.get(
+  '/',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  getIncidents,
+);
 
 // Nearby search using PostGIS location
 router.get(
   '/nearby',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const { lat, lng, radius = 1000 } = req.query;
@@ -309,13 +314,18 @@ router.get(
   },
 );
 
-router.get('/:id', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), getIncidentDetails);
+router.get(
+  '/:id',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  getIncidentDetails,
+);
 
 // Assign/respond/resolve workflow for agencies
 router.patch(
   '/:id/assign',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -368,7 +378,7 @@ router.patch(
 router.patch(
   '/:id/respond',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -408,7 +418,7 @@ router.patch(
 router.patch(
   '/:id/resolve',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -482,7 +492,7 @@ router.patch(
 router.post(
   '/:id/collaborate',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   shareIncident,
 );
 
@@ -490,7 +500,7 @@ router.post(
 router.post(
   '/:id/review',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -544,7 +554,7 @@ router.post(
 router.patch(
   '/:id/triage',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   updateIncidentTriage,
 );
 
