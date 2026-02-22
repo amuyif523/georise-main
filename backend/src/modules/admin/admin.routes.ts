@@ -380,7 +380,7 @@ router.get('/users', requireAuth, requireRole([Role.ADMIN]), async (req, res) =>
   const { page, limit, search, role, staffRole, status } = parsed.data;
   const skip = (Number(page) - 1) * Number(limit);
 
-  const where: any = {};
+  const where: any = { role: { not: Role.AGENCY_STAFF } };
   if (role) where.role = role;
   if (status === 'active') {
     where.isActive = true;
@@ -450,8 +450,11 @@ router.post(
   async (req: any, res) => {
     try {
       const data = req.body as z.infer<typeof createUserSchema>;
-      if (data.role === Role.AGENCY_STAFF && !data.agencyId) {
-        return res.status(400).json({ message: 'agencyId required for agency staff' });
+      if (
+        (data.role === Role.AGENCY_STAFF || data.role === Role.AGENCY_MANAGER) &&
+        !data.agencyId
+      ) {
+        return res.status(400).json({ message: 'agencyId required for agency staff or manager' });
       }
       const tempPassword = crypto.randomBytes(6).toString('hex');
       const passwordHash = await bcrypt.hash(tempPassword, 10);
@@ -466,12 +469,17 @@ router.post(
           deactivatedAt: data.isActive === false ? new Date() : null,
         },
       });
-      if (data.role === Role.AGENCY_STAFF && data.agencyId) {
+      if ((data.role === Role.AGENCY_STAFF || data.role === Role.AGENCY_MANAGER) && data.agencyId) {
+        let defaultStaffRole = data.staffRole ?? StaffRole.DISPATCHER;
+        if (data.role === Role.AGENCY_MANAGER && !data.staffRole) {
+          defaultStaffRole = StaffRole.MANAGER;
+        }
+
         await prisma.agencyStaff.create({
           data: {
             userId: user.id,
             agencyId: data.agencyId,
-            staffRole: data.staffRole ?? StaffRole.DISPATCHER,
+            staffRole: defaultStaffRole,
             isActive: data.isActive ?? true,
             deactivatedAt: data.isActive === false ? new Date() : null,
           },
@@ -530,11 +538,13 @@ router.patch(
 
       const nextRole = body.role ?? current.role;
       const targetAgencyId = body.agencyId ?? current.agencyStaff?.agencyId ?? null;
-      if (nextRole === Role.AGENCY_STAFF && !targetAgencyId) {
-        return res.status(400).json({ message: 'agencyId required for agency staff' });
+      if ((nextRole === Role.AGENCY_STAFF || nextRole === Role.AGENCY_MANAGER) && !targetAgencyId) {
+        return res.status(400).json({ message: 'agencyId required for agency staff or manager' });
       }
-      if (body.staffRole && nextRole !== Role.AGENCY_STAFF) {
-        return res.status(400).json({ message: 'staffRole only valid for agency staff' });
+      if (body.staffRole && nextRole !== Role.AGENCY_STAFF && nextRole !== Role.AGENCY_MANAGER) {
+        return res
+          .status(400)
+          .json({ message: 'staffRole only valid for agency staff or manager' });
       }
 
       const updates: any = {};
@@ -548,10 +558,16 @@ router.patch(
         data: updates,
       });
 
-      if (nextRole === Role.AGENCY_STAFF) {
+      if (nextRole === Role.AGENCY_STAFF || nextRole === Role.AGENCY_MANAGER) {
+        let defaultStaffRole =
+          body.staffRole ?? current.agencyStaff?.staffRole ?? StaffRole.DISPATCHER;
+        if (nextRole === Role.AGENCY_MANAGER && !body.staffRole && !current.agencyStaff) {
+          defaultStaffRole = StaffRole.MANAGER;
+        }
+
         const payload: any = {
           agencyId: targetAgencyId!,
-          staffRole: body.staffRole ?? current.agencyStaff?.staffRole ?? StaffRole.DISPATCHER,
+          staffRole: defaultStaffRole,
           isActive: body.isActive ?? current.agencyStaff?.isActive ?? true,
           deactivatedAt: body.isActive === false ? new Date() : null,
         };
@@ -566,8 +582,11 @@ router.patch(
           },
         });
       } else {
-        // If role changed FROM agency staff TO something else, remove staff record
-        if ((current.role as any) === Role.AGENCY_STAFF) {
+        // If role changed FROM agency staff/manager TO something else, remove staff record
+        if (
+          (current.role as any) === Role.AGENCY_STAFF ||
+          (current.role as any) === Role.AGENCY_MANAGER
+        ) {
           await prisma.agencyStaff.deleteMany({ where: { userId } });
         }
       }

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { agencyService } from './agency.service'; // Ensure correct import path?
 import prisma from '../../prisma';
+import { Role } from '@prisma/client';
 
 export const getAgencies = async (req: Request, res: Response) => {
   try {
@@ -40,12 +41,10 @@ export const createAgency = async (req: Request, res: Response) => {
     }
 
     if (centerLatitude === undefined || centerLongitude === undefined) {
-      return res
-        .status(400)
-        .json({
-          message:
-            'Operational Requirement: Every agency must have a physical headquarters defined for dispatch logistics.',
-        });
+      return res.status(400).json({
+        message:
+          'Operational Requirement: Every agency must have a physical headquarters defined for dispatch logistics.',
+      });
     }
 
     const result = await agencyService.createAgencyWithAdmin(
@@ -76,6 +75,10 @@ export const addStaff = async (req: Request, res: Response) => {
 
     if (!agencyId) {
       return res.status(403).json({ message: 'Only agency staff can add members' });
+    }
+
+    if (req.user?.role !== Role.AGENCY_MANAGER) {
+      return res.status(403).json({ message: 'Only Agency Managers can add staff members' });
     }
 
     // Basic validation
@@ -111,6 +114,10 @@ export const toggleStaffStatus = async (req: Request, res: Response) => {
     const requesterAgencyId = req.user?.agencyId;
 
     if (!requesterAgencyId) return res.status(403).json({ message: 'Unauthorized' });
+
+    if (req.user?.role !== Role.AGENCY_MANAGER) {
+      return res.status(403).json({ message: 'Only Agency Managers can toggle staff status' });
+    }
 
     // The "No-Suicide" Rule
     if (!isActive && userId === req.user?.id) {
@@ -164,6 +171,10 @@ export const deleteStaff = async (req: Request, res: Response) => {
 
     if (!requesterAgencyId || !requesterId)
       return res.status(403).json({ message: 'Unauthorized' });
+
+    if (req.user?.role !== Role.AGENCY_MANAGER) {
+      return res.status(403).json({ message: 'Only Agency Managers can delete staff members' });
+    }
 
     // Verify target user belongs to requester's agency
     const targetStaff = await prisma.agencyStaff.findUnique({

@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "Role" ADD VALUE 'AGENCY_MANAGER';
+
+-- AlterEnum
+ALTER TYPE "StaffRole" ADD VALUE 'MANAGER';

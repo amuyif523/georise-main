@@ -65,6 +65,7 @@ export class AuthService {
         phone: data.phone,
         passwordHash,
         role: dbRole,
+        trustScore: dbRole === 'CITIZEN' ? 10 : 0, // Set initial trust score to 10 for better demo experience
       },
       select: {
         id: true,

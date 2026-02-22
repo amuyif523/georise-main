@@ -1,0 +1,168 @@
+﻿--- CLEARING DATABASE (TRUNCATE CASCADE) ---
+Database cleared completely.
+--- SEEDING NEW ENVIRONMENT ---
+- Created Main Admin: admin@georise.com
+- Created Agency: Bole District Command Center at [9.0000, 38.7850]
+node.exe : PrismaClient
+KnownRequestError: 
+At C:\Program Files\nod
+ejs\npx.ps1:29 char:3
++   & $NODE_EXE 
+$NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (PrismaClientK   
+ nownRequestError:     
+:String) [], Remot    
+eException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Invalid 
+`prisma.user.create()` 
+invocation in
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+prisma\seed.ts:85:41
+
+  82 console.log(`- 
+Created Agency: 
+${boleAgency.name} at 
+[9.0000, 38.7850]`);
+  83 
+  84 // 3. Agency 
+Manager for Bole
+ΓåÆ 85 const 
+boleManager = await 
+prisma.user.create(
+Invalid input value: 
+invalid input value 
+for enum "Role": 
+"AGENCY_MANAGER"
+    at 
+qr.handleRequestError (
+C:\Users\Amanuel\Deskto
+p\georise-main\backend\
+node_modules\@prisma\cl
+ient\src\runtime\Reques
+tHandler.ts:228:13)
+    at qr.handleAndLogR
+equestError (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client\src\r
+untime\RequestHandler.t
+s:174:12)
+    at qr.request (C:\U
+sers\Amanuel\Desktop\ge
+orise-main\backend\node
+_modules\@prisma\client
+\src\runtime\RequestHan
+dler.ts:143:12)
+    at process.processT
+icksAndRejections (node
+:internal/process/task_
+queues:105:5)
+    at async 
+Array.$allOperations (C
+:\Users\Amanuel\Desktop
+\georise-main\backend\s
+rc\prisma.ts:24:18)
+    at async a (C:\User
+s\Amanuel\Desktop\geori
+se-main\backend\node_mo
+dules\@prisma\client\sr
+c\runtime\getPrismaClie
+nt.ts:805:24)
+    at async main (C:\U
+sers\Amanuel\Desktop\ge
+orise-main\backend\pris
+ma\seed.ts:85:23) {
+  code: 'P2007',
+  meta: {
+    modelName: 'User',
+    
+driverAdapterError: 
+DriverAdapterError: 
+invalid input value 
+for enum "Role": 
+"AGENCY_MANAGER"
+        at 
+PgTransaction.onError (
+file:///C:/Users/Amanue
+l/Desktop/georise-main/
+backend/node_modules/@p
+risma/adapter-pg/dist/i
+ndex.mjs:651:11)
+        at PgTransactio
+n.performIO (file:///C:
+/Users/Amanuel/Desktop/
+georise-main/backend/no
+de_modules/@prisma/adap
+ter-pg/dist/index.mjs:6
+46:12)
+        at process.proc
+essTicksAndRejections (
+node:internal/process/t
+ask_queues:105:5)
+        at async 
+PgTransaction.queryRaw 
+(file:///C:/Users/Amanu
+el/Desktop/georise-main
+/backend/node_modules/@
+prisma/adapter-pg/dist/
+index.mjs:566:30)
+        at async 
+<anonymous> (C:\Users\A
+manuel\Desktop\georise-
+main\backend\node_modul
+es\@prisma\client-engin
+e-runtime\src\tracing.t
+s:68:22)
+        at async fr (C:
+\Users\Amanuel\Desktop\
+georise-main\backend\no
+de_modules\@prisma\clie
+nt-engine-runtime\src\t
+racing.ts:56:10)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:190:26)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:217:41)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:132:29)
+        at async 
+e.interpretNode (C:\Use
+rs\Amanuel\Desktop\geor
+ise-main\backend\node_m
+odules\@prisma\client-e
+ngine-runtime\src\inter
+preter\query-interprete
+r.ts:276:41) {
+      cause: [Object]
+    }
+  },
+  clientVersion: 
+'7.2.0'
+}

@@ -6,29 +6,35 @@ import prisma from '../src/prisma';
 const SEED_PASSWORD = 'password123';
 
 async function clearDatabase() {
-  console.log('--- CLEARING DATABASE ---');
-  // Delete many in correct order to respect foreign keys
-  await prisma.activityLog.deleteMany({});
-  await prisma.incidentAIOutput.deleteMany({});
-  await prisma.incidentPhoto.deleteMany({});
-  await prisma.incidentStatusHistory.deleteMany({});
-  await prisma.sharedIncident.deleteMany({});
-  await prisma.incident.deleteMany({});
-  await prisma.responder.deleteMany({});
-  await prisma.auditLog.deleteMany({});
-  await prisma.passwordResetToken.deleteMany({});
-  await prisma.incidentChat.deleteMany({});
-  await prisma.pushSubscription.deleteMany({});
-  await prisma.notification.deleteMany({});
-  await prisma.citizenVerification.deleteMany({});
-  await prisma.agencyStaff.deleteMany({});
-  await prisma.agencyJurisdiction.deleteMany({});
-  await prisma.agency.deleteMany({});
-  await prisma.dispatchRule.deleteMany({});
-  await prisma.woreda.deleteMany({});
-  await prisma.subCity.deleteMany({});
-  await prisma.user.deleteMany({});
-  console.log('Database cleared natively via deleteMany.');
+  console.log('--- CLEARING DATABASE (TRUNCATE CASCADE) ---');
+  // Use raw SQL to truncate all tables safely ignoring foreign keys during the operation
+  const tableNames = [
+    'ActivityLog',
+    'IncidentAIOutput',
+    'IncidentPhoto',
+    'IncidentStatusHistory',
+    'SharedIncident',
+    'Incident',
+    'Responder',
+    'AuditLog',
+    'PasswordResetToken',
+    'IncidentChat',
+    'PushSubscription',
+    'Notification',
+    'CitizenVerification',
+    'AgencyStaff',
+    'AgencyJurisdiction',
+    'Agency',
+    'DispatchRule',
+    'Woreda',
+    'SubCity',
+    'User',
+  ];
+
+  for (const tableName of tableNames) {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tableName}" CASCADE;`);
+  }
+  console.log('Database cleared completely.');
 }
 
 async function main() {
@@ -37,14 +43,15 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
 
-  // 1. Super Admin as SUPERVISOR
+  // 1. Super Admin
   const sysAdmin = await prisma.user.create({
     data: {
       email: 'admin@georise.com',
       fullName: 'GeoRise Systems Administrator',
       phone: '+251911000000',
       passwordHash: passwordHash,
-      role: Role.ADMIN, // Base user role must be ADMIN or AGENCY_STAFF
+      role: Role.ADMIN,
+      trustScore: 100, // Trust Score: 100 for admin
       isActive: true,
       deletedAt: null,
       citizenVerification: {
@@ -56,7 +63,7 @@ async function main() {
       },
     },
   });
-  console.log(`- Created Base User for Admin: ${sysAdmin.email}`);
+  console.log(`- Created Main Admin: ${sysAdmin.email}`);
 
   // 2. Bole Agency
   const boleAgency = await prisma.agency.create({
@@ -74,20 +81,41 @@ async function main() {
   });
   console.log(`- Created Agency: ${boleAgency.name} at [9.0000, 38.7850]`);
 
-  // Assign Admin as a SUPERVISOR for Bole Agency
+  // 3. Agency Manager for Bole
+  const boleManager = await prisma.user.create({
+    data: {
+      email: 'manager.bole@georise.com',
+      fullName: 'Bole Agency Manager',
+      phone: '+251911000001',
+      passwordHash: passwordHash,
+      role: Role.AGENCY_MANAGER,
+      trustScore: 50,
+      isActive: true,
+      deletedAt: null,
+      citizenVerification: {
+        create: {
+          nationalId: 'V-MANAGER-BOLE',
+          status: 'VERIFIED',
+          phone: '+251911000001',
+        },
+      },
+    },
+  });
+
   await prisma.agencyStaff.create({
     data: {
-      userId: sysAdmin.id,
+      userId: boleManager.id,
       agencyId: boleAgency.id,
-      staffRole: StaffRole.SUPERVISOR,
+      staffRole: StaffRole.MANAGER,
       isActive: true,
       deactivatedAt: null,
     },
   });
-  console.log(`- Assigned admin@georise.com as SUPERVISOR to Bole Agency`);
+  console.log(`- Created Agency Manager: ${boleManager.email}`);
 
-  // 3. Responders
+  // 4. Responders
   const responderNames = ['Bole-Alpha', 'Bole-Bravo', 'Bole-Charlie'];
+  let phoneCounter = 2;
   for (const rName of responderNames) {
     const userHash = await bcrypt.hash(`${rName.toLowerCase()}123`, 10);
     const user = await prisma.user.create({
@@ -96,13 +124,14 @@ async function main() {
         fullName: `Officer ${rName}`,
         passwordHash: userHash,
         role: Role.AGENCY_STAFF,
+        trustScore: 50,
         isActive: true,
         deletedAt: null,
         citizenVerification: {
           create: {
             nationalId: `V-${rName.toUpperCase()}`,
             status: 'VERIFIED',
-            phone: `+2519${Math.floor(Math.random() * 100000000)}`,
+            phone: `+25191100000${phoneCounter++}`,
           },
         },
       },

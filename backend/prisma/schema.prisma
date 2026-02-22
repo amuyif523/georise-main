@@ -11,6 +11,7 @@ datasource db {
 enum Role {
   CITIZEN
   AGENCY_STAFF
+  AGENCY_MANAGER
   ADMIN
 }
 
@@ -48,6 +49,7 @@ enum StaffRole {
   DISPATCHER
   RESPONDER
   SUPERVISOR
+  MANAGER
 }
 
 enum ActivityType {
