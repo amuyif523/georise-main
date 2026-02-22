@@ -643,7 +643,7 @@ const agencyUserUpdateSchema = z.object({
 router.get(
   '/agency/users',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const staff = await prisma.agencyStaff.findUnique({
       where: { userId: req.user!.id },
@@ -656,7 +656,7 @@ router.get(
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {
-      role: Role.AGENCY_STAFF,
+      role: { in: [Role.AGENCY_STAFF, Role.AGENCY_MANAGER] },
       agencyStaff: { agencyId: staff.agencyId, ...(staffRole ? { staffRole } : {}) },
     };
     if (status === 'active') {
@@ -699,7 +699,7 @@ router.get(
 router.post(
   '/agency/users',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   userCrudLimiter,
   validateBody(agencyUserCreateSchema),
   async (req: any, res) => {
@@ -743,7 +743,7 @@ router.post(
 router.patch(
   '/agency/users/:id',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   userCrudLimiter,
   validateBody(agencyUserUpdateSchema),
   async (req: any, res) => {
@@ -796,7 +796,7 @@ router.patch(
 router.post(
   '/agency/users/:id/force-reset',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   userCrudLimiter,
   async (req: any, res) => {
     const parsed = idSchema.safeParse(req.params);

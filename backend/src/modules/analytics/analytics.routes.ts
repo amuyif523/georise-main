@@ -65,8 +65,8 @@ router.get('/overview/admin', requireAuth, requireRole([Role.ADMIN]), async (req
 router.get(
   '/overview/agency',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF]),
-  async (req: any, res) => {
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
+  async (req: any, res: any) => {
     try {
       // Derive agencyId from agencyStaff
       const staff = await prisma.agencyStaff.findUnique({

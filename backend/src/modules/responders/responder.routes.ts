@@ -20,7 +20,7 @@ async function auditResponder(actorId: number, action: string, targetId: number,
 router.get(
   '/',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     try {
       const user = req.user!;
@@ -79,7 +79,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     try {
       const { name, type, agencyId, userId } = req.body;
@@ -124,7 +124,7 @@ router.post(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     try {
       const responderId = Number(req.params.id);
@@ -163,7 +163,7 @@ router.patch(
 router.delete(
   '/:id',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     try {
       const responderId = Number(req.params.id);
