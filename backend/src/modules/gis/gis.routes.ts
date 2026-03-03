@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../../prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { Role } from '@prisma/client';
+import { routingService } from '../../services/routing.service';
 
 const router = Router();
 
@@ -189,6 +190,32 @@ router.get(
       include: { agency: true },
     });
     res.json(rows);
+  },
+);
+
+router.get(
+  '/route',
+  requireAuth,
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
+  async (req, res) => {
+    try {
+      const { startLat, startLon, endLat, endLon } = req.query;
+      if (!startLat || !startLon || !endLat || !endLon) {
+        return res.status(400).json({ message: 'Missing coordinates for routing' });
+      }
+
+      const route = await routingService.calculateRoute(
+        Number(startLat),
+        Number(startLon),
+        Number(endLat),
+        Number(endLon),
+      );
+
+      res.json(route);
+    } catch (err: any) {
+      console.error('Route calculation failed', err);
+      res.status(500).json({ message: 'Routing failed' });
+    }
   },
 );
 

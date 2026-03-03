@@ -17,10 +17,10 @@ export class RoutingService {
     startLon: number,
     endLat: number,
     endLon: number,
-  ): Promise<{ distanceKm: number | null; durationMin: number }> {
+  ): Promise<{ distanceKm: number | null; durationMin: number; geometry?: any }> {
     try {
       // OSRM expects: /startLon,startLat;endLon,endLat
-      const url = `${OSRM_BASE_URL}/${startLon},${startLat};${endLon},${endLat}?overview=false`;
+      const url = `${OSRM_BASE_URL}/${startLon},${startLat};${endLon},${endLat}?overview=full&geometries=geojson`;
 
       const response = await axios.get(url, { timeout: 3000 });
 
@@ -30,6 +30,7 @@ export class RoutingService {
         return {
           distanceKm: route.distance / 1000,
           durationMin: route.duration / 60,
+          geometry: route.geometry,
         };
       }
     } catch (error) {

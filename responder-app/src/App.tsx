@@ -6,7 +6,16 @@ import { useLocationTracker } from './hooks/useLocationTracker';
 import NetworkBanner from './components/NetworkBanner';
 import InstallAppBanner from './components/InstallAppBanner';
 import LoginForm from './components/LoginForm';
-import { MapPin, Navigation2, CheckCircle, AlertCircle } from 'lucide-react';
+import IncidentMap from './components/IncidentMap';
+import { MapPin, Navigation2, CheckCircle, AlertCircle, Camera } from 'lucide-react';
+import * as turf from '@turf/turf';
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+};
 
 type Incident = {
   id: number;
@@ -25,6 +34,19 @@ const App: React.FC = () => {
   const online = useNetworkStatus();
   const coords = useLocationTracker();
 
+  const [routeDist, setRouteDist] = useState<number | null>(null);
+  const [routeEta, setRouteEta] = useState<number | null>(null);
+  const [following, setFollowing] = useState(true);
+  const [closingPhoto, setClosingPhoto] = useState<File | null>(null);
+
+  let distToTarget = Infinity;
+  if (coords && activeIncident?.latitude && activeIncident?.longitude) {
+    const from = turf.point([coords.lng, coords.lat]);
+    const to = turf.point([activeIncident.longitude, activeIncident.latitude]);
+    distToTarget = turf.distance(from, to, { units: 'kilometers' });
+  }
+  const canResolve = distToTarget <= 0.05; // 50 meters
+
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
@@ -40,6 +62,27 @@ const App: React.FC = () => {
       localStorage.setItem('responder_token', t);
       setToken(t);
       setMessage('Connected as responder.');
+
+      // Push subscription
+      try {
+        if (
+          'serviceWorker' in navigator &&
+          'PushManager' in window &&
+          import.meta.env.VITE_VAPID_PUBLIC_KEY
+        ) {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
+            });
+            await api.post('/notifications/subscribe', subscription.toJSON());
+          }
+        }
+      } catch (pushErr) {
+        console.warn('Silent failure on push subscription:', pushErr);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || 'Login failed');
     } finally {
@@ -95,11 +138,25 @@ const App: React.FC = () => {
 
   const markResolved = async () => {
     if (!activeIncident) return;
+    if (!canResolve) {
+      setError('You are too far from the incident site.');
+      return;
+    }
     if (!confirm('Mark incident resolved?')) return;
     try {
-      await api.patch(`/incidents/${activeIncident.id}/resolve`, { note: 'Resolved by responder' });
+      // Create FormData to upload photo (Evidence Bridge)
+      const fd = new FormData();
+      fd.append('note', 'Resolved by responder');
+      if (closingPhoto) {
+        fd.append('photo', closingPhoto);
+      }
+
+      await api.patch(`/incidents/${activeIncident.id}/resolve`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setActiveIncident({ ...activeIncident, status: 'RESOLVED' });
       setMessage('Incident marked resolved.');
+      setClosingPhoto(null);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to resolve');
     }
@@ -149,10 +206,54 @@ const App: React.FC = () => {
             </div>
 
             <div className="card p-4 space-y-3">
-              <div className="text-xs text-slate-400">Active incident</div>
+              <div className="text-xs text-slate-400">Active mission</div>
               {activeIncident ? (
                 <>
                   <div className="text-sm font-semibold">{activeIncident.title}</div>
+
+                  {coords && (
+                    <div className="h-64 rounded-xl overflow-hidden relative border border-slate-700 shadow-inner">
+                      <IncidentMap
+                        responderLat={coords.lat}
+                        responderLng={coords.lng}
+                        incidentLat={activeIncident.latitude}
+                        incidentLng={activeIncident.longitude}
+                        following={following}
+                        onRouteData={(d, t) => {
+                          setRouteDist(d);
+                          setRouteEta(t);
+                        }}
+                      />
+                      <div className="absolute top-2 right-2 bg-slate-900/90 text-white p-2 rounded-lg text-xs z-[1000] border border-slate-700 backdrop-blur shadow-lg">
+                        <div className="font-bold text-slate-300 mb-1">MISSION HUD</div>
+                        {routeDist !== null ? (
+                          <>
+                            <div>
+                              Distance:{' '}
+                              <span className="font-mono text-cyan-300">
+                                {routeDist.toFixed(2)} km
+                              </span>
+                            </div>
+                            <div>
+                              ETA:{' '}
+                              <span className="font-mono text-emerald-400">
+                                {Math.ceil(routeEta!)} min
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-slate-500">Calculating...</div>
+                        )}
+                      </div>
+                      <button
+                        className="absolute bottom-2 right-2 btn btn-xs btn-neutral z-[1000]"
+                        onClick={() => setFollowing(!following)}
+                      >
+                        {following ? 'Free Pan' : 'Follow Me'}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <AlertCircle className="w-4 h-4 text-orange-400" />
                     <span>Status: {activeIncident.status || 'ASSIGNED'}</span>
@@ -161,7 +262,27 @@ const App: React.FC = () => {
                     {(!activeIncident.status ||
                       ['ASSIGNED', 'EN_ROUTE'].includes(activeIncident.status)) && (
                       <button
-                        className="btn btn-warning btn-lg w-full h-20 text-lg shadow-lg"
+                        className="btn btn-warning w-full h-16 text-lg shadow-lg font-bold"
+                        onClick={async () => {
+                          const socket = getSocket();
+                          if (socket && coords) {
+                            socket.emit('responder:locationUpdate', {
+                              lat: coords.lat,
+                              lng: coords.lng,
+                              status: 'RESPONDING',
+                            });
+                            setActiveIncident({ ...activeIncident, status: 'RESPONDING' });
+                            setMessage('Mission Started: Status is now RESPONDING');
+                          }
+                        }}
+                      >
+                        <MapPin className="w-5 h-5" /> START MISSION
+                      </button>
+                    )}
+
+                    {activeIncident.status === 'RESPONDING' && (
+                      <button
+                        className="btn btn-primary w-full h-16 text-lg shadow-lg font-bold"
                         onClick={async () => {
                           const socket = getSocket();
                           if (socket && coords) {
@@ -175,22 +296,41 @@ const App: React.FC = () => {
                           }
                         }}
                       >
-                        <MapPin className="w-6 h-6" /> I HAVE ARRIVED
+                        <MapPin className="w-5 h-5" /> I HAVE ARRIVED
                       </button>
                     )}
 
-                    <div className="flex gap-2">
-                      <button className="btn btn-primary btn-lg flex-1 h-16" onClick={openMaps}>
-                        <Navigation2 className="w-5 h-5" /> Navigate
+                    <div className="flex flex-col gap-2">
+                      <button className="btn btn-outline btn-info w-full" onClick={openMaps}>
+                        <Navigation2 className="w-4 h-4" /> Export to Google Maps
                       </button>
 
                       {activeIncident.status === 'ON_SCENE' && (
-                        <button
-                          className="btn btn-success btn-lg flex-1 h-16"
-                          onClick={markResolved}
-                        >
-                          <CheckCircle className="w-5 h-5" /> Resolve
-                        </button>
+                        <div className="flex flex-col gap-3 mt-4 border-t border-slate-700 pt-4">
+                          <div className="text-xs text-slate-400">Resolution & Evidence</div>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={(e) => setClosingPhoto(e.target.files?.[0] || null)}
+                              className="file-input file-input-bordered file-input-sm file-input-success w-full"
+                            />
+                            {!closingPhoto && (
+                              <Camera className="absolute right-3 top-2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            )}
+                          </div>
+                          <button
+                            className="btn btn-success w-full h-14 font-bold"
+                            disabled={!canResolve}
+                            onClick={markResolved}
+                          >
+                            <CheckCircle className="w-5 h-5" />
+                            {canResolve
+                              ? 'MARK AS RESOLVED'
+                              : `GPS Lock Required (${Math.round(distToTarget * 1000)}m away)`}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

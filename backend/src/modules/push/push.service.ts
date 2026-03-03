@@ -61,10 +61,9 @@ class PushService {
       };
 
       try {
-        const result = (await webpush.sendNotification(
-          subscription,
-          JSON.stringify(payload),
-        )) as SendResult;
+        const result = (await webpush.sendNotification(subscription, JSON.stringify(payload), {
+          urgency: 'high',
+        })) as SendResult;
         return result;
       } catch (err: unknown) {
         logger.warn({ err, endpoint: sub.endpoint }, 'Push send failed');
@@ -87,15 +86,25 @@ class PushService {
 
   async notifyAssignment(incident: any, responderId: number) {
     try {
+      const responder = await prisma.responder.findUnique({
+        where: { id: responderId },
+        select: { userId: true },
+      });
+      if (!responder || !responder.userId) {
+        logger.warn({ responderId }, 'Cannot send push: responder has no linked userId');
+        return;
+      }
+
       const payload = {
-        title: 'New Incident Assigned',
+        title: 'EMERGENCY: New Mission Assigned',
         body: `You have been assigned to: ${incident.title}`,
         data: {
-          url: `/agency/map?incidentId=${incident.id}`,
+          url: `/`, // The responder app is at root
           incidentId: incident.id,
+          action: 'accept_mission',
         },
       };
-      await this.sendToUsers([responderId], payload);
+      await this.sendToUsers([responder.userId], payload);
     } catch (error) {
       console.error('Failed to send assignment push:', error);
     }
