@@ -168,3 +168,20 @@ npx tsx scripts/test-resolve-incident.ts
 1. **Setup**: Ensure a responder is active and moving (simulate via scripts or manual updates).
 2. **Action**: Select the responder on the Agency Map.
 3. **Verify**: A blue dotted line (breadcrumb trail) should appear behind the marker, showing the last 5 locations.
+
+### Active Mission HUD & VAPID Notifications
+
+1. **Setup**: Login as a Dispatcher on Frontend (`http://localhost:5173`) and open the Agency Map.
+2. **Setup**: Open Responder App (`http://localhost:5174`) in a separate, supported browser (like Chrome/Edge) and login as a responder. Accept the browser's "Show Notifications" prompt if asked.
+3. **Action (Dispatch)**: As a Dispatcher, find an unassigned incident on the map and manually assign it to the logged-in responder.
+4. **Verify (VAPID Push)**: The responder device/browser should receive a high-priority system **Push Notification** with an "ACCEPT MISSION" button. Clicking the notification should pull the responder app into focus.
+5. **Verify (Mission HUD & Route)**: In the Responder App, the "Active Mission" card will appear. Click **START MISSION**.
+   - The map should display a blue-dotted OSRM route bridging the responder's current location to the incident location.
+   - The top-right **MISSION HUD** overlay should display the continuously calculated ETA and Distance.
+   - The status updates to `RESPONDING`.
+6. **Action (Arrival)**: Click **I HAVE ARRIVED**. The status changes to `ON_SCENE` and the resolution controls appear.
+7. **Verify (Geofenced Resolution)**:
+   - Observe the green resolution button. If the simulated GPS distance is > 50 meters, the button will be disabled, stating "GPS Lock Required (X meters away)".
+   - _Simulation_: To pass the geofence locally, open Chrome DevTools > Sensors, and mock your geolocation to exactly match the coordinates of the assigned incident.
+   - Once the distance calculates `< 50 meters`, the **MARK AS RESOLVED** button will enable.
+8. **Action (Evidence Bridge)**: Use the Camera input to attach a mock closing photo, then click **MARK AS RESOLVED**. The incident should formally resolve and clear from the Active Mission HUD.

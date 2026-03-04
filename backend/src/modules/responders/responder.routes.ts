@@ -26,7 +26,7 @@ router.get(
       const user = req.user!;
       const where: Record<string, unknown> = {};
 
-      if (user.role === Role.AGENCY_STAFF) {
+      if (user.role === Role.AGENCY_STAFF || user.role === Role.AGENCY_MANAGER) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
         // Instead of hard-failing (403) for e.g. supervisors without linked agencyStaff yet:
         // just return empty if they attempt to list responders but have no agency context.
@@ -138,7 +138,7 @@ router.patch(
       if (longitude !== undefined) data.longitude = Number(longitude);
 
       // Enforce agency scoping for staff
-      if (req.user!.role === Role.AGENCY_STAFF) {
+      if (req.user!.role === Role.AGENCY_STAFF || req.user!.role === Role.AGENCY_MANAGER) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
         if (!staff) return res.status(403).json({ message: 'No agency context' });
         const target = await prisma.responder.findUnique({ where: { id: responderId } });
@@ -181,7 +181,7 @@ router.delete(
         incidentId: null,
       };
 
-      if (req.user!.role === Role.AGENCY_STAFF) {
+      if (req.user!.role === Role.AGENCY_STAFF || req.user!.role === Role.AGENCY_MANAGER) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user!.id } });
         if (!staff) return res.status(403).json({ message: 'No agency context' });
         if (!current || current.agencyId !== staff.agencyId)

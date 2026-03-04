@@ -74,7 +74,7 @@ export const getIncidentDetails = async (req: Request, res: Response) => {
     if (!incident) return res.status(404).json({ message: 'Incident not found' });
 
     // Basic isolation check for Agency Staff
-    if (req.user?.role === Role.AGENCY_STAFF) {
+    if (req.user?.role === Role.AGENCY_STAFF || req.user?.role === Role.AGENCY_MANAGER) {
       const staff = await prisma.agencyStaff.findUnique({ where: { userId: req.user.id } });
       if (staff) {
         const isAssigned = incident.assignedAgencyId === staff.agencyId;

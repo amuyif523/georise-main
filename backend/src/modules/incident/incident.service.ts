@@ -59,7 +59,8 @@ export class IncidentService {
       }
 
       // Security Hardening (Sprint 6): Rate limit untrusted users
-      const isStaff = user.role === 'AGENCY_STAFF' || user.role === 'ADMIN';
+      const isStaff =
+        user.role === 'AGENCY_STAFF' || user.role === 'AGENCY_MANAGER' || user.role === 'ADMIN';
 
       if (!isStaff && user?.lastReportAt) {
         const diffMinutes = (Date.now() - user.lastReportAt.getTime()) / (60 * 1000);
@@ -94,7 +95,8 @@ export class IncidentService {
     let reviewStatus: any = 'NOT_REQUIRED';
     let initialTrustScore = 0.5;
 
-    const isStaff = user?.role === 'AGENCY_STAFF' || user?.role === 'ADMIN';
+    const isStaff =
+      user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' || user?.role === 'ADMIN';
 
     if (reporterId && user) {
       if (user.isShadowBanned) {
@@ -672,7 +674,8 @@ export class IncidentService {
     }
 
     // Role-based Isolation (Critical)
-    const isAgencyStaff = user.role === 'AGENCY_STAFF' && user.agencyId;
+    const isAgencyStaff =
+      (user.role === 'AGENCY_STAFF' || user.role === 'AGENCY_MANAGER') && user.agencyId;
     let jurisdictionIds: number[] | null = null;
     const agencyId = user.agencyId;
 

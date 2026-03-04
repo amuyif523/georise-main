@@ -12,13 +12,13 @@ self.addEventListener('push', (event) => {
     | { title?: string; body?: string; data?: Record<string, unknown> }
     | undefined;
 
-  const title = data?.title || 'Emergency Mission Assigned';
+  const title = data?.title || '🚨 New Emergency Assignment';
   const options: NotificationOptions & { vibrate?: number[]; actions?: any[] } = {
     body: data?.body || 'You have been dispatched to a new incident.',
     data: data?.data || {},
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    vibrate: [200, 100, 200, 100, 200, 100, 400],
+    vibrate: [200, 100, 200],
     requireInteraction: true,
     actions: [
       {

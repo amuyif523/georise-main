@@ -170,7 +170,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
   // Task 3: Default to 'agency' for AGENCY_STAFF to prevent 403s on load
   const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>(
-    user?.role === 'AGENCY_STAFF' ? 'agency' : 'subcity',
+    user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' ? 'agency' : 'subcity',
   );
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
@@ -249,7 +249,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       }
     };
     const loadProfile = async () => {
-      if (user?.role === 'AGENCY_STAFF') {
+      if (user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER') {
         try {
           const res = await api.get('/agency/profile');
           if (res.data) setAgencyProfile(res.data);
@@ -486,7 +486,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           </div>
 
           {/* Task 3: Agency Admin UX - Locked Filters */}
-          {user?.role !== 'AGENCY_STAFF' && (
+          {user?.role !== 'AGENCY_STAFF' && user?.role !== 'AGENCY_MANAGER' && (
             <>
               <div className="flex items-center gap-2">
                 <span className="text-slate-400">Sub-city</span>
@@ -559,7 +559,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
-            {user?.role === 'AGENCY_STAFF' ? (
+            {user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' ? (
               <>
                 {/* Render the passed jurisdiction */}
                 {jurisdiction && (
@@ -605,7 +605,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                 pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
               />
             ))}
-            {user?.role === 'AGENCY_STAFF' &&
+            {(user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER') &&
               agencyProfile?.centerLatitude &&
               agencyProfile?.centerLongitude && (
                 <Marker

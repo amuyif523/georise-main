@@ -40,7 +40,10 @@ router.get(
   requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const level = (req.query.level as string) || 'subcity';
-    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
+    const agencyId =
+      req.user?.role === Role.AGENCY_STAFF || req.user?.role === Role.AGENCY_MANAGER
+        ? req.user.agencyId
+        : null;
 
     if (level === 'agency') {
       if (agencyId) {
@@ -107,7 +110,10 @@ router.get(
   async (req: any, res) => {
     const id = Number(req.params.id);
     const level = (req.query.level as string) || 'subcity';
-    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
+    const agencyId =
+      req.user?.role === Role.AGENCY_STAFF || req.user?.role === Role.AGENCY_MANAGER
+        ? req.user.agencyId
+        : null;
     if (agencyId) {
       if (level !== 'agency' || id !== agencyId) {
         return res.status(403).json({ message: 'Forbidden for this agency boundary' });
@@ -133,7 +139,10 @@ router.get(
   requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
   async (req: any, res) => {
     const id = Number(req.params.id);
-    const staff = req.user?.role === Role.AGENCY_STAFF ? await getAgencyContext(req.user.id) : null;
+    const staff =
+      req.user?.role === Role.AGENCY_STAFF || req.user?.role === Role.AGENCY_MANAGER
+        ? await getAgencyContext(req.user.id)
+        : null;
     const context = await prisma.$queryRawUnsafe<any[]>(`
     SELECT
       i.id,
@@ -166,7 +175,10 @@ router.get(
   requireAuth,
   requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN, Role.CITIZEN]),
   async (req: any, res) => {
-    const agencyId = req.user?.role === Role.AGENCY_STAFF ? req.user.agencyId : null;
+    const agencyId =
+      req.user?.role === Role.AGENCY_STAFF || req.user?.role === Role.AGENCY_MANAGER
+        ? req.user.agencyId
+        : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`
       SELECT id, title, category, "severityScore",
              ST_Y(location) AS lat,
