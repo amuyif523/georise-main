@@ -163,6 +163,31 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
+export const updateHQ = async (req: Request, res: Response) => {
+  try {
+    const agencyId = req.user?.agencyId;
+    if (!agencyId) return res.status(401).json({ message: 'Unauthorized: No agency context' });
+    if (req.user?.role !== Role.AGENCY_MANAGER) {
+      return res.status(403).json({ message: 'Only Agency Managers can update HQ location' });
+    }
+    const { centerLatitude, centerLongitude } = req.body;
+    if (centerLatitude === undefined || centerLongitude === undefined) {
+      return res.status(400).json({ message: 'Latitude and longitude required' });
+    }
+    const updated = await prisma.agency.update({
+      where: { id: agencyId },
+      data: {
+        centerLatitude: parseFloat(centerLatitude),
+        centerLongitude: parseFloat(centerLongitude),
+      },
+    });
+    return res.json(updated);
+  } catch (error: any) {
+    console.error('Update HQ error', error);
+    return res.status(500).json({ message: 'Failed to update HQ location' });
+  }
+};
+
 export const deleteStaff = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);

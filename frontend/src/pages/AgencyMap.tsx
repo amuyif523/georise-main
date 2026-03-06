@@ -4,7 +4,16 @@
 import L from 'leaflet';
 import 'leaflet.heat';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON, Polyline } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  GeoJSON,
+  Polyline,
+  useMapEvents,
+} from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import api from '../lib/api';
 import { severityBadgeClass, severityLabel } from '../utils/severity';
@@ -139,6 +148,14 @@ const MapAutoFitter = ({ data }: { data: any }) => {
   }, [data, map]);
   return null;
 };
+const MapEvents = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
 
 interface AgencyMapProps {
   historyMode?: boolean;
@@ -178,6 +195,29 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
   const [isGisReady, setIsGisReady] = useState(false);
+
+  const [isPlacingHQ, setIsPlacingHQ] = useState(false);
+  const [tempHQ, setTempHQ] = useState<[number, number] | null>(null);
+
+  const handleMapClick = useCallback(
+    (lat: number, lng: number) => {
+      if (isPlacingHQ) setTempHQ([lat, lng]);
+    },
+    [isPlacingHQ],
+  );
+
+  const saveHQLocation = async () => {
+    if (!tempHQ) return;
+    try {
+      await api.patch('/agency/hq', { centerLatitude: tempHQ[0], centerLongitude: tempHQ[1] });
+      alert('HQ Location updated successfully!');
+      setIsPlacingHQ(false);
+      setTempHQ(null);
+      window.location.reload();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to save HQ location');
+    }
+  };
 
   console.log('[Forensics] User Role:', user?.role);
   console.log('[Forensics] Agency Data:', agencyProfile);
@@ -291,16 +331,26 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           const res = await api.get('/agency/profile');
           if (res.data) {
             setAgencyProfile(res.data);
-            const isValidData =
-              !isNaN(parseFloat(res.data.centerLatitude)) &&
-              !isNaN(parseFloat(res.data.centerLongitude));
+            const latToCheck =
+              (user as any)?.agencyStaff?.agency?.centerLatitude ??
+              res.data.centerLatitude ??
+              9.0197;
+            const lngToCheck =
+              (user as any)?.agencyStaff?.agency?.centerLongitude ??
+              res.data.centerLongitude ??
+              38.7525;
+            const isValidData = !isNaN(parseFloat(latToCheck)) && !isNaN(parseFloat(lngToCheck));
             if (isValidData) {
               setIsGisReady(true);
             }
             console.log('[GIS Debug] Agency Profile Loaded:', res.data);
           }
         } catch {
-          /* ignore */
+          const latToCheck = (user as any)?.agencyStaff?.agency?.centerLatitude ?? 9.0197;
+          const lngToCheck = (user as any)?.agencyStaff?.agency?.centerLongitude ?? 38.7525;
+          if (!isNaN(parseFloat(latToCheck as any)) && !isNaN(parseFloat(lngToCheck as any))) {
+            setIsGisReady(true);
+          }
         }
       }
     };
@@ -514,8 +564,12 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   });
 
   if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isGisReady) {
+    const fallbackLat =
+      (user as any)?.agencyStaff?.agency?.centerLatitude ?? agencyProfile?.centerLatitude;
+    const fallbackLng =
+      (user as any)?.agencyStaff?.agency?.centerLongitude ?? agencyProfile?.centerLongitude;
     console.error(
-      `[GIS ERROR] Map Gate blocked render: Agency coords are [${agencyProfile?.centerLatitude}, ${agencyProfile?.centerLongitude}]`,
+      `[GIS ERROR] Map Gate blocked render: Agency coords are [${fallbackLat}, ${fallbackLng}]`,
     );
     return (
       <AppLayout>
@@ -631,12 +685,21 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
           <MapContainer
             center={[
-              parseFloat(agencyProfile?.centerLatitude || '9.03'),
-              parseFloat(agencyProfile?.centerLongitude || '38.74'),
+              parseFloat(
+                (user as any)?.agencyStaff?.agency?.centerLatitude ??
+                  agencyProfile?.centerLatitude ??
+                  '9.0197',
+              ),
+              parseFloat(
+                (user as any)?.agencyStaff?.agency?.centerLongitude ??
+                  agencyProfile?.centerLongitude ??
+                  '38.7525',
+              ),
             ]}
             zoom={12}
             className="w-full h-full"
           >
+            <MapEvents onMapClick={handleMapClick} />
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
             {['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) ? (
@@ -702,8 +765,55 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                   </Popup>
                 </Marker>
               )}
+
+            {tempHQ && (
+              <Marker position={tempHQ} icon={HQIcon} zIndexOffset={1000}>
+                <Popup>New HQ Target</Popup>
+              </Marker>
+            )}
           </MapContainer>
           <div className="hidden lg:block border-l border-slate-800 bg-[#0D1117] p-3 overflow-y-auto">
+            {['AGENCY_MANAGER', 'AGENCY_STAFF'].includes(user?.role as string) && (
+              <div className="mb-4 p-3 rounded-xl border border-dashed border-cyan-500/30 bg-cyan-500/5">
+                <h4 className="font-semibold text-cyan-300 mb-2">Agency Setup</h4>
+                {isPlacingHQ ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-300">Click on the map to place your HQ.</p>
+                    {tempHQ && (
+                      <p className="text-xs text-cyan-400">
+                        Selected: {tempHQ[0].toFixed(4)}, {tempHQ[1].toFixed(4)}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        className="btn btn-xs btn-primary flex-1"
+                        onClick={saveHQLocation}
+                        disabled={!tempHQ}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="btn btn-xs btn-ghost flex-1"
+                        onClick={() => {
+                          setIsPlacingHQ(false);
+                          setTempHQ(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-xs btn-outline btn-info w-full"
+                    onClick={() => setIsPlacingHQ(true)}
+                  >
+                    Update Station Location
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="text-sm text-slate-300 mb-2">Live queue</div>
             <div className="space-y-2">
               {listLoading
