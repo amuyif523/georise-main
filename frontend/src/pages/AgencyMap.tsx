@@ -416,7 +416,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         .filter((i) => {
           if (!i.latitude || !i.longitude)
             console.error('[GIS Debug] Corrupted Incident Found:', i.id);
-          return isValid(i.latitude, i.longitude);
+          return i.latitude !== null && i.longitude !== null && isValid(i.latitude, i.longitude);
         })
         .map((i) => (
           <Marker
@@ -466,7 +466,9 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const responderMarkers = useMemo(() => {
     if (!Array.isArray(responders)) return []; // Task 2: Critical safety guard
     return responders
-      .filter((r) => isValid(r.latitude, r.longitude))
+      .filter(
+        (r) => r.latitude !== null && r.longitude !== null && isValid(r.latitude, r.longitude),
+      )
       .map((r) => {
         const color = getResponderColor(r.status);
         const isOffline = r.status === 'OFFLINE';
@@ -505,16 +507,26 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     responderCount: responders?.length,
   });
 
-  const hasValidCoords =
-    typeof agencyProfile?.centerLatitude === 'number' &&
-    typeof agencyProfile?.centerLongitude === 'number';
+  // 1. Pre-computation (Outside of any hooks)
+  const lat = parseFloat(agencyProfile?.centerLatitude);
+  const lng = parseFloat(agencyProfile?.centerLongitude);
+  const isMapDataValid = !isNaN(lat) && !isNaN(lng);
 
-  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !hasValidCoords) {
+  // 2. THE HARD GATE: If this is false, the <MapContainer> is NEVER created.
+  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isMapDataValid) {
     return (
       <AppLayout>
-        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-white">
-          <p className="animate-pulse">🛰️ Synchronizing GIS Engine...</p>
-          <p className="text-xs text-slate-500 mt-2">Waiting for valid Agency Coordinates</p>
+        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-white p-8 text-center">
+          <div className="mb-4 text-4xl">🛰️</div>
+          <h2 className="text-xl font-bold mb-2">GIS Engine Initializing</h2>
+          <p className="text-slate-400 text-sm max-w-md">
+            Waiting for valid Agency coordinates from the server. If this persists, verify that the
+            agency has a location set in the database.
+          </p>
+          <div className="mt-4 text-xs font-mono text-slate-600">
+            Status: lat={String(agencyProfile?.centerLatitude)}, lng=
+            {String(agencyProfile?.centerLongitude)}
+          </div>
         </div>
       </AppLayout>
     );
@@ -623,11 +635,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         </div>
         {loading && <div className="p-4 text-slate-300">Loading map…</div>}
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
-          <MapContainer
-            center={[Number(agencyProfile?.centerLatitude), Number(agencyProfile?.centerLongitude)]}
-            zoom={12}
-            className="w-full h-full"
-          >
+          <MapContainer center={[lat, lng]} zoom={12} className="w-full h-full">
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
             {['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) ? (
