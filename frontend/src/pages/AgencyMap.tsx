@@ -178,6 +178,32 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const [responders, setResponders] = useState<any[]>([]); // Task 2: Ensure array init
   const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
+  // Deep-Trace Debugging
+  useEffect(() => {
+    incidents.forEach((i: any) => {
+      if (
+        typeof i.latitude !== 'number' ||
+        typeof i.longitude !== 'number' ||
+        !isFinite(i.latitude) ||
+        !isFinite(i.longitude)
+      ) {
+        console.error('DEEP-TRACE Incident Invalid Coordinate:', i);
+        console.error('Keys present:', Object.keys(i));
+      }
+    });
+    responders.forEach((r: any) => {
+      if (
+        typeof r.latitude !== 'number' ||
+        typeof r.longitude !== 'number' ||
+        !isFinite(r.latitude) ||
+        !isFinite(r.longitude)
+      ) {
+        console.error('DEEP-TRACE Responder Invalid Coordinate:', r);
+        console.error('Keys present:', Object.keys(r));
+      }
+    });
+  }, [incidents, responders]);
+
   const fetchData = useCallback(async () => {
     try {
       setListLoading(true);
@@ -284,6 +310,14 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           ),
         );
         setTrajectories((prev) => {
+          if (
+            typeof payload.lat !== 'number' ||
+            typeof payload.lng !== 'number' ||
+            !isFinite(payload.lat) ||
+            !isFinite(payload.lng)
+          ) {
+            return prev;
+          }
           const currentPath = prev[payload.responderId] || [];
           const newPath = [...currentPath, [payload.lat, payload.lng] as [number, number]].slice(
             -10,
@@ -371,7 +405,13 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const markers = useMemo(
     () =>
       incidents
-        .filter((i) => i.latitude != null && i.longitude != null)
+        .filter(
+          (i) =>
+            typeof i.latitude === 'number' &&
+            typeof i.longitude === 'number' &&
+            isFinite(i.latitude) &&
+            isFinite(i.longitude),
+        )
         .map((i) => (
           <Marker
             key={i.id}
@@ -420,7 +460,13 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const responderMarkers = useMemo(() => {
     if (!Array.isArray(responders)) return []; // Task 2: Critical safety guard
     return responders
-      .filter((r) => r.latitude != null && r.longitude != null)
+      .filter(
+        (r) =>
+          typeof r.latitude === 'number' &&
+          typeof r.longitude === 'number' &&
+          isFinite(r.latitude) &&
+          isFinite(r.longitude),
+      )
       .map((r) => {
         const color = getResponderColor(r.status);
         const isOffline = r.status === 'OFFLINE';

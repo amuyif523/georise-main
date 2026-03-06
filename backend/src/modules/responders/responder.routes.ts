@@ -39,6 +39,10 @@ router.get(
       // Globally exclude soft-deleted/deactivated responders
       where.isActive = true;
 
+      // Ensure no corrupted/null coordinates are transmitted to clients
+      where.latitude = { not: null };
+      where.longitude = { not: null };
+
       const page = Math.max(Number(req.query.page) || 1, 1);
       const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
       const skip = (page - 1) * limit;
