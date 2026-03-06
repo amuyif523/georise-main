@@ -329,12 +329,40 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const updated = await prisma.incident.update({
-        where: { id: Number(id) },
-        data: {
-          status: IncidentStatus.ASSIGNED,
-          assignedAgencyId: req.body.assignedAgencyId ?? null,
-        },
+      const incidentId = Number(id);
+      if (isNaN(incidentId)) {
+        return res.status(400).json({ message: 'Invalid incident ID' });
+      }
+
+      const { assignedAgencyId, assignedResponderId } = req.body;
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const inc = await tx.incident.update({
+          where: { id: incidentId },
+          data: {
+            status: IncidentStatus.ASSIGNED,
+            assignedAgencyId: assignedAgencyId ?? null,
+            assignedResponderId: assignedResponderId ?? null,
+          },
+        });
+
+        if (assignedResponderId) {
+          await tx.responder.update({
+            where: { id: assignedResponderId },
+            data: { status: 'ASSIGNED' },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorId: req.user!.id,
+            action: 'ASSIGN_INCIDENT',
+            targetType: 'Incident',
+            targetId: incidentId,
+          },
+        });
+
+        return inc;
       });
 
       await logActivity(
@@ -358,14 +386,11 @@ router.patch(
           data: { incidentId: updated.id, url: '/citizen/my-reports' },
         });
       }
-      await prisma.auditLog.create({
-        data: {
-          actorId: req.user!.id,
-          action: 'ASSIGN_INCIDENT',
-          targetType: 'Incident',
-          targetId: Number(id),
-        },
-      });
+
+      // Also notify responder explicitly
+      if (updated.assignedResponderId) {
+        await pushService.notifyAssignment(updated, updated.assignedResponderId);
+      }
 
       res.json({ incident: updated });
     } catch (err: unknown) {

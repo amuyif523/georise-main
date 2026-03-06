@@ -69,7 +69,7 @@ const createIcon = (score: number | null | undefined) =>
     iconAnchor: [9, 9],
   });
 
-const stationIcon = L.divIcon({
+const HQIcon = L.divIcon({
   className: 'station-marker',
   html: `<div style="
     background: #0f172a;
@@ -610,7 +610,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
               agencyProfile?.centerLongitude && (
                 <Marker
                   position={[agencyProfile.centerLatitude, agencyProfile.centerLongitude]}
-                  icon={stationIcon}
+                  icon={HQIcon}
                   zIndexOffset={100}
                 >
                   <Popup className="cyber-popup">
@@ -662,9 +662,8 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
               ? async (responderId: number) => {
                   try {
                     setActionLoading(selectedIncident.id);
-                    await api.patch('/dispatch/assign-responder', {
-                      incidentId: selectedIncident.id,
-                      responderId,
+                    await api.patch(`/incidents/${selectedIncident.id}/assign`, {
+                      assignedResponderId: responderId,
                     });
                     await fetchData();
                   } catch (err: any) {

@@ -180,14 +180,17 @@ router.get(
         ? req.user.agencyId
         : null;
     const rows = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT id, title, category, "severityScore",
-             ST_Y(location) AS lat,
-             ST_X(location) AS lon,
+      SELECT id, title, category, "severityScore", status,
+             ST_Y(location) AS latitude,
+             ST_X(location) AS longitude,
              "assignedAgencyId"
       FROM "Incident"
       WHERE location IS NOT NULL
+        AND status IN ('RECEIVED', 'ASSIGNED', 'RESPONDING')
     `);
-    const scoped = agencyId ? rows.filter((r) => r.assignedAgencyId === agencyId) : rows;
+    const scoped = agencyId
+      ? rows.filter((r) => r.assignedAgencyId === agencyId || r.assignedAgencyId === null)
+      : rows;
     res.json(scoped);
   },
 );

@@ -708,10 +708,9 @@ const IncidentDetailPane: React.FC<Props> = ({
                             className="btn btn-xs btn-accent mt-2"
                             onClick={async () => {
                               try {
-                                await api.post('/dispatch/assign', {
-                                  incidentId: incident.id,
-                                  agencyId: rec.agencyId,
-                                  unitId: rec.unitId,
+                                await api.patch(`/incidents/${incident.id}/assign`, {
+                                  assignedAgencyId: rec.agencyId,
+                                  assignedResponderId: rec.unitId,
                                 });
                                 alert('Suggestion accepted.');
                               } catch {

@@ -124,10 +124,9 @@ const AgencyDashboard: React.FC = () => {
     const target = recent.find((i) => i.status !== 'RESOLVED');
     if (!target) return;
     try {
-      await api.post('/dispatch/assign', {
-        incidentId: target.id,
-        agencyId: suggestion.agencyId,
-        unitId: suggestion.unitId,
+      await api.patch(`/incidents/${target.id}/assign`, {
+        assignedAgencyId: suggestion.agencyId,
+        assignedResponderId: suggestion.unitId,
       });
       alert('Suggestion accepted and assignment created.');
     } catch {
