@@ -281,7 +281,10 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string)) {
         try {
           const res = await api.get('/agency/profile');
-          if (res.data) setAgencyProfile(res.data);
+          if (res.data) {
+            setAgencyProfile(res.data);
+            console.log('[GIS Debug] Agency Profile Loaded:', res.data);
+          }
         } catch {
           /* ignore */
         }
@@ -403,7 +406,11 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const markers = useMemo(
     () =>
       incidents
-        .filter((i) => isValid(i.latitude, i.longitude))
+        .filter((i) => {
+          if (!i.latitude || !i.longitude)
+            console.error('[GIS Debug] Corrupted Incident Found:', i.id);
+          return isValid(i.latitude, i.longitude);
+        })
         .map((i) => (
           <Marker
             key={i.id}
@@ -491,11 +498,23 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     responderCount: responders?.length,
   });
 
-  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !agencyProfile) {
+  const isMapDataReady =
+    typeof agencyProfile?.centerLatitude === 'number' &&
+    typeof agencyProfile?.centerLongitude === 'number' &&
+    !isNaN(agencyProfile.centerLatitude) &&
+    !isNaN(agencyProfile.centerLongitude);
+
+  console.warn('[GIS Debug] Map Gate Status:', {
+    isMapDataReady,
+    lat: agencyProfile?.centerLatitude,
+    lng: agencyProfile?.centerLongitude,
+  });
+
+  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isMapDataReady) {
     return (
       <AppLayout>
         <div className="h-full bg-[#0A0F1A] text-slate-100 flex items-center justify-center">
-          <div className="p-4 text-slate-300">Loading Agency Map...</div>
+          <div className="p-4 text-slate-300">Initializing GIS Engine...</div>
         </div>
       </AppLayout>
     );
@@ -606,8 +625,8 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
           <MapContainer
             center={[
-              agencyProfile?.centerLatitude ?? 9.03,
-              agencyProfile?.centerLongitude ?? 38.74,
+              Number(agencyProfile?.centerLatitude ?? 9.03),
+              Number(agencyProfile?.centerLongitude ?? 38.74),
             ]}
             zoom={12}
             className="w-full h-full"
@@ -656,7 +675,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
             {Object.entries(trajectories).map(([id, path]) => (
               <Polyline
                 key={`trail-${id}`}
-                positions={path}
+                positions={path.filter((p) => isValid(p[0], p[1]))}
                 pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
               />
             ))}
@@ -665,8 +684,8 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
               agencyProfile?.centerLongitude != null && (
                 <Marker
                   position={[
-                    agencyProfile.centerLatitude as number,
-                    agencyProfile.centerLongitude as number,
+                    Number(agencyProfile.centerLatitude),
+                    Number(agencyProfile.centerLongitude),
                   ]}
                   icon={HQIcon}
                   zIndexOffset={100}
