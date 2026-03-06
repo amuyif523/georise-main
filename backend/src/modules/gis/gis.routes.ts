@@ -129,7 +129,12 @@ router.get(
       ON ST_Contains(b.${geomColumn}, i.location)
     WHERE b.id = ${id} ${agencyId ? `AND (i."assignedAgencyId" = ${agencyId} OR i."assignedAgencyId" IS NULL)` : ''}
   `);
-    res.json(incidents);
+    const formatted = incidents.map((i: any) => ({
+      ...i,
+      latitude: parseFloat(i.latitude),
+      longitude: parseFloat(i.longitude),
+    }));
+    res.json(formatted);
   },
 );
 
@@ -191,7 +196,14 @@ router.get(
     const scoped = agencyId
       ? rows.filter((r) => r.assignedAgencyId === agencyId || r.assignedAgencyId === null)
       : rows;
-    res.json(scoped);
+
+    const formatted = scoped.map((r: any) => ({
+      ...r,
+      latitude: parseFloat(r.latitude),
+      longitude: parseFloat(r.longitude),
+    }));
+
+    res.json(formatted);
   },
 );
 

@@ -112,6 +112,9 @@ const HeatmapLayer: React.FC<{ points: HeatPoint[]; enabled: boolean }> = ({ poi
 
 import { useAuth } from '../context/AuthContext';
 
+const isValid = (lat: any, lng: any) =>
+  !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng)) && lat !== null && lng !== null;
+
 // Helper to fit bounds
 const MapAutoFitter = ({ data }: { data: any }) => {
   const map = useMap();
@@ -310,12 +313,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           ),
         );
         setTrajectories((prev) => {
-          if (
-            typeof payload.lat !== 'number' ||
-            typeof payload.lng !== 'number' ||
-            !isFinite(payload.lat) ||
-            !isFinite(payload.lng)
-          ) {
+          if (!isValid(payload.lat, payload.lng)) {
             return prev;
           }
           const currentPath = prev[payload.responderId] || [];
@@ -405,13 +403,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const markers = useMemo(
     () =>
       incidents
-        .filter(
-          (i) =>
-            typeof i.latitude === 'number' &&
-            typeof i.longitude === 'number' &&
-            isFinite(i.latitude) &&
-            isFinite(i.longitude),
-        )
+        .filter((i) => isValid(i.latitude, i.longitude))
         .map((i) => (
           <Marker
             key={i.id}
@@ -460,13 +452,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const responderMarkers = useMemo(() => {
     if (!Array.isArray(responders)) return []; // Task 2: Critical safety guard
     return responders
-      .filter(
-        (r) =>
-          typeof r.latitude === 'number' &&
-          typeof r.longitude === 'number' &&
-          isFinite(r.latitude) &&
-          isFinite(r.longitude),
-      )
+      .filter((r) => isValid(r.latitude, r.longitude))
       .map((r) => {
         const color = getResponderColor(r.status);
         const isOffline = r.status === 'OFFLINE';
@@ -498,6 +484,22 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   }, [responders]);
 
   const selectedIncident = incidents.find((i) => i.id === selectedId) || null;
+
+  console.table({
+    agencyCenter: [agencyProfile?.centerLatitude, agencyProfile?.centerLongitude],
+    incidentCount: incidents?.length,
+    responderCount: responders?.length,
+  });
+
+  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !agencyProfile) {
+    return (
+      <AppLayout>
+        <div className="h-full bg-[#0A0F1A] text-slate-100 flex items-center justify-center">
+          <div className="p-4 text-slate-300">Loading Agency Map...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
