@@ -178,6 +178,13 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
 
+  console.log('[Forensics] User Role:', user?.role);
+  console.log('[Forensics] Agency Data:', agencyProfile);
+  console.log('[Forensics] Raw Coords:', {
+    lat: agencyProfile?.centerLatitude,
+    lng: agencyProfile?.centerLongitude,
+  });
+
   const [responders, setResponders] = useState<any[]>([]); // Task 2: Ensure array init
   const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
@@ -498,23 +505,16 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     responderCount: responders?.length,
   });
 
-  const isMapDataReady =
+  const hasValidCoords =
     typeof agencyProfile?.centerLatitude === 'number' &&
-    typeof agencyProfile?.centerLongitude === 'number' &&
-    !isNaN(agencyProfile.centerLatitude) &&
-    !isNaN(agencyProfile.centerLongitude);
+    typeof agencyProfile?.centerLongitude === 'number';
 
-  console.warn('[GIS Debug] Map Gate Status:', {
-    isMapDataReady,
-    lat: agencyProfile?.centerLatitude,
-    lng: agencyProfile?.centerLongitude,
-  });
-
-  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isMapDataReady) {
+  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !hasValidCoords) {
     return (
       <AppLayout>
-        <div className="h-full bg-[#0A0F1A] text-slate-100 flex items-center justify-center">
-          <div className="p-4 text-slate-300">Initializing GIS Engine...</div>
+        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-white">
+          <p className="animate-pulse">🛰️ Synchronizing GIS Engine...</p>
+          <p className="text-xs text-slate-500 mt-2">Waiting for valid Agency Coordinates</p>
         </div>
       </AppLayout>
     );
@@ -624,10 +624,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         {loading && <div className="p-4 text-slate-300">Loading map…</div>}
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
           <MapContainer
-            center={[
-              Number(agencyProfile?.centerLatitude ?? 9.03),
-              Number(agencyProfile?.centerLongitude ?? 38.74),
-            ]}
+            center={[Number(agencyProfile?.centerLatitude), Number(agencyProfile?.centerLongitude)]}
             zoom={12}
             className="w-full h-full"
           >
