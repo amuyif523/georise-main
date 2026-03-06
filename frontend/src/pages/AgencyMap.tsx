@@ -556,7 +556,14 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         </div>
         {loading && <div className="p-4 text-slate-300">Loading map…</div>}
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
-          <MapContainer center={[9.03, 38.74]} zoom={12} className="w-full h-full">
+          <MapContainer
+            center={[
+              agencyProfile?.centerLatitude ?? 9.03,
+              agencyProfile?.centerLongitude ?? 38.74,
+            ]}
+            zoom={12}
+            className="w-full h-full"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
             {user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' ? (
@@ -606,10 +613,13 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
               />
             ))}
             {(user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER') &&
-              agencyProfile?.centerLatitude &&
-              agencyProfile?.centerLongitude && (
+              agencyProfile?.centerLatitude != null &&
+              agencyProfile?.centerLongitude != null && (
                 <Marker
-                  position={[agencyProfile.centerLatitude, agencyProfile.centerLongitude]}
+                  position={[
+                    agencyProfile.centerLatitude as number,
+                    agencyProfile.centerLongitude as number,
+                  ]}
                   icon={HQIcon}
                   zIndexOffset={100}
                 >
