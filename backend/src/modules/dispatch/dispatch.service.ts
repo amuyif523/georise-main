@@ -59,7 +59,10 @@ const categoryPreferred = (category?: string | null, agencyType?: string | null)
 };
 
 export class DispatchService {
-  async recommendForIncident(incidentId: number): Promise<DispatchCandidate[]> {
+  async recommendForIncident(
+    incidentId: number,
+    scopedAgencyId?: number | null,
+  ): Promise<DispatchCandidate[]> {
     const incidentRows: any[] = await prisma.$queryRaw`
       SELECT id,
              "severityScore",
@@ -125,7 +128,11 @@ export class DispatchService {
 
     const candidates: DispatchCandidate[] = [];
 
-    for (const agency of agencies) {
+    const targetAgencies = scopedAgencyId
+      ? agencies.filter((a) => a.id === scopedAgencyId)
+      : agencies;
+
+    for (const agency of targetAgencies) {
       // jurisdiction check if geometry available
       let inJurisdiction = false;
       if (agency.jurisdiction && incident.location) {

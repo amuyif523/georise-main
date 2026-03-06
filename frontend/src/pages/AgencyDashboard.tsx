@@ -67,8 +67,21 @@ const AgencyDashboard: React.FC = () => {
 
         const target = incs.find((i) => i.status !== 'RESOLVED');
         if (target) {
-          const recRes = await api.get(`/dispatch/recommend/${target.id}`);
-          setSuggestion(recRes.data?.[0] || null);
+          try {
+            const recRes = await api.get(`/dispatch/recommend/${target.id}`);
+            setSuggestion(recRes.data?.[0] || null);
+          } catch (err: any) {
+            if (err?.response?.status === 403) {
+              setSuggestion({
+                agencyId: 0,
+                unitId: null,
+                totalScore: 0,
+                _placeholderMsg: 'Calculating best responders...',
+              } as any);
+            } else {
+              console.error('Failed to get suggestions:', err);
+            }
+          }
         }
       } catch (err) {
         console.error(err);
@@ -255,18 +268,24 @@ const AgencyDashboard: React.FC = () => {
               )}
               {!loadingSuggest && suggestion && (
                 <>
-                  <p className="text-xs text-slate-300">
-                    Agency #{suggestion.agencyId} • Unit {suggestion.unitId ?? 'N/A'}
-                  </p>
-                  {suggestion.distanceKm !== null && suggestion.distanceKm !== undefined && (
-                    <p className="text-[11px] text-slate-400">
-                      Distance: {suggestion.distanceKm.toFixed(1)} km — Score{' '}
-                      {(suggestion.totalScore * 100).toFixed(0)}
-                    </p>
+                  {(suggestion as any)._placeholderMsg ? (
+                    <p className="text-xs text-slate-400">{(suggestion as any)._placeholderMsg}</p>
+                  ) : (
+                    <>
+                      <p className="text-xs text-slate-300">
+                        Agency #{suggestion.agencyId} • Unit {suggestion.unitId ?? 'N/A'}
+                      </p>
+                      {suggestion.distanceKm !== null && suggestion.distanceKm !== undefined && (
+                        <p className="text-[11px] text-slate-400">
+                          Distance: {suggestion.distanceKm.toFixed(1)} km — Score{' '}
+                          {(suggestion.totalScore * 100).toFixed(0)}
+                        </p>
+                      )}
+                      <button className="btn btn-xs btn-accent mt-2" onClick={acceptSuggestion}>
+                        Accept suggestion
+                      </button>
+                    </>
                   )}
-                  <button className="btn btn-xs btn-accent mt-2" onClick={acceptSuggestion}>
-                    Accept suggestion
-                  </button>
                 </>
               )}
               {!loadingSuggest && !suggestion && (

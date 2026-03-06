@@ -15,12 +15,17 @@ const router = Router();
 router.get(
   '/recommend/:incidentId',
   requireAuth,
-  requireRole(['AGENCY_STAFF', 'ADMIN']),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   getRecommendations,
 );
 
 // POST /api/dispatch/assign
-router.post('/assign', requireAuth, requireRole(['AGENCY_STAFF', 'ADMIN']), assignIncident);
+router.post(
+  '/assign',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  assignIncident,
+);
 
 // Responder Actions
 router.post(
@@ -41,7 +46,7 @@ router.post('/decline', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]
 router.post(
   '/auto-assign/:incidentId',
   requireAuth,
-  requireRole(['AGENCY_STAFF', 'ADMIN']),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   autoAssignIncident,
 );
 

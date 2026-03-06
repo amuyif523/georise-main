@@ -2,14 +2,15 @@ import type { Request, Response } from 'express';
 import prisma from '../../prisma';
 import { dispatchService } from './dispatch.service';
 import { pushService } from '../push/push.service';
-import { IncidentStatus } from '@prisma/client';
+import { IncidentStatus, Role } from '@prisma/client';
 import logger from '../../logger';
 import type { Prisma } from '@prisma/client';
 
 export const getRecommendations = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.incidentId);
-    const recs = await dispatchService.recommendForIncident(id);
+    const agencyId = req.user?.role === Role.ADMIN ? null : req.user?.agencyId;
+    const recs = await dispatchService.recommendForIncident(id, agencyId);
     res.json(recs);
   } catch (err: any) {
     logger.error({ err }, 'Recommendation error');
@@ -46,7 +47,8 @@ export const assignIncident = async (req: Request, res: Response) => {
 export const autoAssignIncident = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.incidentId);
-    const recs = await dispatchService.recommendForIncident(id);
+    const agencyId = req.user?.role === Role.ADMIN ? null : req.user?.agencyId;
+    const recs = await dispatchService.recommendForIncident(id, agencyId);
     if (!recs.length) return res.status(400).json({ message: 'No candidates found' });
 
     const top = recs[0];
