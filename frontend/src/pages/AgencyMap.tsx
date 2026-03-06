@@ -177,6 +177,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   );
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
+  const [isGisReady, setIsGisReady] = useState(false);
 
   console.log('[Forensics] User Role:', user?.role);
   console.log('[Forensics] Agency Data:', agencyProfile);
@@ -290,6 +291,12 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           const res = await api.get('/agency/profile');
           if (res.data) {
             setAgencyProfile(res.data);
+            const isValidData =
+              !isNaN(parseFloat(res.data.centerLatitude)) &&
+              !isNaN(parseFloat(res.data.centerLongitude));
+            if (isValidData) {
+              setIsGisReady(true);
+            }
             console.log('[GIS Debug] Agency Profile Loaded:', res.data);
           }
         } catch {
@@ -410,123 +417,110 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     }
   };
 
+  const sanitizedIncidents = incidents.filter(
+    (i) =>
+      typeof i.latitude === 'number' && typeof i.longitude === 'number' && isFinite(i.latitude),
+  );
+
+  const sanitizedResponders = (Array.isArray(responders) ? responders : []).filter(
+    (r) =>
+      typeof r.latitude === 'number' && typeof r.longitude === 'number' && isFinite(r.latitude),
+  );
+
   const markers = useMemo(
     () =>
-      incidents
-        .filter((i) => {
-          if (!i.latitude || !i.longitude)
-            console.error('[GIS Debug] Corrupted Incident Found:', i.id);
-          return i.latitude !== null && i.longitude !== null && isValid(i.latitude, i.longitude);
-        })
-        .map((i) => (
-          <Marker
-            key={i.id}
-            position={[i.latitude as number, i.longitude as number]}
-            icon={createIcon(i.severityScore)}
-            eventHandlers={{ click: () => setSelectedId(i.id) }}
-          >
-            <Popup>
-              <div className="text-sm space-y-1">
-                <p className="font-semibold">{i.title}</p>
-                <p className="text-xs text-slate-500">{new Date(i.createdAt).toLocaleString()}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Severity</span>
-                  <span className={severityBadgeClass(i.severityScore)}>
-                    {severityLabel(i.severityScore)}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">Status: {i.status}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <button
-                    className={`btn btn-xs ${actionLoading === i.id ? 'loading' : ''}`}
-                    onClick={() => updateStatus(i.id, 'assign')}
-                  >
-                    Assign
-                  </button>
-                  <button
-                    className={`btn btn-xs btn-primary ${actionLoading === i.id ? 'loading' : ''}`}
-                    onClick={() => updateStatus(i.id, 'respond')}
-                  >
-                    Responding
-                  </button>
-                  <button
-                    className={`btn btn-xs btn-success ${actionLoading === i.id ? 'loading' : ''}`}
-                    onClick={() => updateStatus(i.id, 'resolve')}
-                  >
-                    Resolve
-                  </button>
-                </div>
+      sanitizedIncidents.map((i) => (
+        <Marker
+          key={i.id}
+          position={[i.latitude as number, i.longitude as number]}
+          icon={createIcon(i.severityScore)}
+          eventHandlers={{ click: () => setSelectedId(i.id) }}
+        >
+          <Popup>
+            <div className="text-sm space-y-1">
+              <p className="font-semibold">{i.title}</p>
+              <p className="text-xs text-slate-500">{new Date(i.createdAt).toLocaleString()}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">Severity</span>
+                <span className={severityBadgeClass(i.severityScore)}>
+                  {severityLabel(i.severityScore)}
+                </span>
               </div>
-            </Popup>
-          </Marker>
-        )),
+              <p className="text-xs text-slate-400">Status: {i.status}</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  className={`btn btn-xs ${actionLoading === i.id ? 'loading' : ''}`}
+                  onClick={() => updateStatus(i.id, 'assign')}
+                >
+                  Assign
+                </button>
+                <button
+                  className={`btn btn-xs btn-primary ${actionLoading === i.id ? 'loading' : ''}`}
+                  onClick={() => updateStatus(i.id, 'respond')}
+                >
+                  Responding
+                </button>
+                <button
+                  className={`btn btn-xs btn-success ${actionLoading === i.id ? 'loading' : ''}`}
+                  onClick={() => updateStatus(i.id, 'resolve')}
+                >
+                  Resolve
+                </button>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      )),
     [incidents, actionLoading],
   );
 
   const responderMarkers = useMemo(() => {
-    if (!Array.isArray(responders)) return []; // Task 2: Critical safety guard
-    return responders
-      .filter(
-        (r) => r.latitude !== null && r.longitude !== null && isValid(r.latitude, r.longitude),
-      )
-      .map((r) => {
-        const color = getResponderColor(r.status);
-        const isOffline = r.status === 'OFFLINE';
-        const opacity = isOffline ? '0.4' : '1';
-        return (
-          <Marker
-            key={`resp-${r.id}`}
-            position={[r.latitude as number, r.longitude as number]}
-            zIndexOffset={1000}
-            icon={L.divIcon({
-              className: 'responder-marker',
-              html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;opacity:${opacity};"></div>`,
-              iconSize: [14, 14],
-              iconAnchor: [7, 7],
-            })}
-          >
-            <Popup>
-              <div className="text-sm space-y-1">
-                <p className="font-semibold">{r.name}</p>
-                <p className="text-xs text-slate-500">{r.type}</p>
-                <p className="text-xs">
-                  Status: <span style={{ color }}>{r.status}</span>
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      });
+    return sanitizedResponders.map((r) => {
+      const color = getResponderColor(r.status);
+      const isOffline = r.status === 'OFFLINE';
+      const opacity = isOffline ? '0.4' : '1';
+      return (
+        <Marker
+          key={`resp-${r.id}`}
+          position={[r.latitude as number, r.longitude as number]}
+          zIndexOffset={1000}
+          icon={L.divIcon({
+            className: 'responder-marker',
+            html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;box-shadow:0 0 12px ${color}80;border:2px solid #0f172a;opacity:${opacity};"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+          })}
+        >
+          <Popup>
+            <div className="text-sm space-y-1">
+              <p className="font-semibold">{r.name}</p>
+              <p className="text-xs text-slate-500">{r.type}</p>
+              <p className="text-xs">
+                Status: <span style={{ color }}>{r.status}</span>
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    });
   }, [responders]);
 
   const selectedIncident = incidents.find((i) => i.id === selectedId) || null;
 
   console.table({
-    agencyCenter: [agencyProfile?.centerLatitude, agencyProfile?.centerLongitude],
+    agencyProfile,
     incidentCount: incidents?.length,
     responderCount: responders?.length,
   });
 
-  // 1. Pre-computation (Outside of any hooks)
-  const lat = parseFloat(agencyProfile?.centerLatitude);
-  const lng = parseFloat(agencyProfile?.centerLongitude);
-  const isMapDataValid = !isNaN(lat) && !isNaN(lng);
-
-  // 2. THE HARD GATE: If this is false, the <MapContainer> is NEVER created.
-  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isMapDataValid) {
+  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isGisReady) {
+    console.error(
+      `[GIS ERROR] Map Gate blocked render: Agency coords are [${agencyProfile?.centerLatitude}, ${agencyProfile?.centerLongitude}]`,
+    );
     return (
       <AppLayout>
-        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-white p-8 text-center">
-          <div className="mb-4 text-4xl">🛰️</div>
-          <h2 className="text-xl font-bold mb-2">GIS Engine Initializing</h2>
-          <p className="text-slate-400 text-sm max-w-md">
-            Waiting for valid Agency coordinates from the server. If this persists, verify that the
-            agency has a location set in the database.
-          </p>
-          <div className="mt-4 text-xs font-mono text-slate-600">
-            Status: lat={String(agencyProfile?.centerLatitude)}, lng=
-            {String(agencyProfile?.centerLongitude)}
-          </div>
+        <div className="h-full w-full flex items-center justify-center bg-slate-900 text-white">
+          📡 Initializing Command Center GIS...
         </div>
       </AppLayout>
     );
@@ -635,7 +629,14 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         </div>
         {loading && <div className="p-4 text-slate-300">Loading map…</div>}
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
-          <MapContainer center={[lat, lng]} zoom={12} className="w-full h-full">
+          <MapContainer
+            center={[
+              parseFloat(agencyProfile?.centerLatitude || '9.03'),
+              parseFloat(agencyProfile?.centerLongitude || '38.74'),
+            ]}
+            zoom={12}
+            className="w-full h-full"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
             {['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) ? (

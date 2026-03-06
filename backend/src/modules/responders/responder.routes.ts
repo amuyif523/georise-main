@@ -70,7 +70,14 @@ router.get(
           },
         }),
       ]);
-      res.json({ total, page, limit, responders });
+
+      const formattedResponders = responders.map((r) => ({
+        ...r,
+        latitude: r.latitude !== null ? parseFloat(r.latitude as any) : null,
+        longitude: r.longitude !== null ? parseFloat(r.longitude as any) : null,
+      }));
+
+      res.json({ total, page, limit, responders: formattedResponders });
     } catch (err: any) {
       console.error('Responder fetch error:', err);
       logger.error({ err }, 'List responders error');
