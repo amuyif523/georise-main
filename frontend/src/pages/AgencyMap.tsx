@@ -168,9 +168,9 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const [subcityGeo, setSubcityGeo] = useState<any | null>(null);
   const [selectedSubCity, setSelectedSubCity] = useState<string>('');
 
-  // Task 3: Default to 'agency' for AGENCY_STAFF to prevent 403s on load
+  // Task 3: Default to 'agency' for AGENCY_STAFF and AGENCY_MANAGER to prevent 403s on load
   const [boundaryLevel, setBoundaryLevel] = useState<'subcity' | 'woreda' | 'agency'>(
-    user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' ? 'agency' : 'subcity',
+    ['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) ? 'agency' : 'subcity',
   );
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
@@ -249,7 +249,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       }
     };
     const loadProfile = async () => {
-      if (user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER') {
+      if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string)) {
         try {
           const res = await api.get('/agency/profile');
           if (res.data) setAgencyProfile(res.data);
@@ -486,7 +486,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           </div>
 
           {/* Task 3: Agency Admin UX - Locked Filters */}
-          {user?.role !== 'AGENCY_STAFF' && user?.role !== 'AGENCY_MANAGER' && (
+          {!['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && (
             <>
               <div className="flex items-center gap-2">
                 <span className="text-slate-400">Sub-city</span>
@@ -566,7 +566,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
-            {user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER' ? (
+            {['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) ? (
               <>
                 {/* Render the passed jurisdiction */}
                 {jurisdiction && (
@@ -612,7 +612,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                 pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.4, dashArray: '1, 6' }}
               />
             ))}
-            {(user?.role === 'AGENCY_STAFF' || user?.role === 'AGENCY_MANAGER') &&
+            {['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) &&
               agencyProfile?.centerLatitude != null &&
               agencyProfile?.centerLongitude != null && (
                 <Marker
