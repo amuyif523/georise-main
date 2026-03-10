@@ -3,6 +3,7 @@ import { Marker, Popup, TileLayer, MapContainer, useMap, GeoJSON } from 'react-l
 import L from 'leaflet';
 import 'leaflet.heat';
 import api from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
 type IncidentPoint = {
   id: number;
@@ -144,14 +145,31 @@ const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
   );
 };
 
-const MapWrapper: React.FC<Props> = (props) => (
-  <MapContainer
-    center={[9.03, 38.75]}
-    zoom={12}
-    className="w-full h-full rounded-xl overflow-hidden"
-  >
-    <IncidentMap {...props} />
-  </MapContainer>
-);
+const MapWrapper: React.FC<Props> = (props) => {
+  const { user } = useAuth();
+  const lat = Number((user as any)?.agencyStaff?.agency?.centerLatitude);
+  const lng = Number((user as any)?.agencyStaff?.agency?.centerLongitude);
+
+  if (
+    ['AGENCY_STAFF', 'AGENCY_MANAGER'].includes((user as any)?.role) &&
+    (!lat || !lng || isNaN(lat))
+  ) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400 rounded-xl">
+        📡 Synchronizing GIS Anchor...
+      </div>
+    );
+  }
+
+  return (
+    <MapContainer
+      center={[lat || 9.03, lng || 38.75]}
+      zoom={12}
+      className="w-full h-full rounded-xl overflow-hidden"
+    >
+      <IncidentMap {...props} />
+    </MapContainer>
+  );
+};
 
 export default MapWrapper;

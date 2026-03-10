@@ -529,10 +529,18 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       const color = getResponderColor(r.status);
       const isOffline = r.status === 'OFFLINE';
       const opacity = isOffline ? '0.4' : '1';
+      const hqLat = Number(agencyProfile?.centerLatitude || 0);
+      const hqLng = Number(agencyProfile?.centerLongitude || 0);
+
+      const displayPos: [number, number] =
+        r.latitude === hqLat && r.longitude === hqLng
+          ? [r.latitude + 0.00005, r.longitude + 0.00005]
+          : [r.latitude as number, r.longitude as number];
+
       return (
         <Marker
           key={`resp-${r.id}`}
-          position={[r.latitude as number, r.longitude as number]}
+          position={displayPos}
           zIndexOffset={1000}
           icon={L.divIcon({
             className: 'responder-marker',
@@ -564,20 +572,22 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   });
 
   if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isGisReady) {
-    const fallbackLat =
-      (user as any)?.agencyStaff?.agency?.centerLatitude ?? agencyProfile?.centerLatitude;
-    const fallbackLng =
-      (user as any)?.agencyStaff?.agency?.centerLongitude ?? agencyProfile?.centerLongitude;
-    console.error(
-      `[GIS ERROR] Map Gate blocked render: Agency coords are [${fallbackLat}, ${fallbackLng}]`,
+    const lat = Number(
+      (user as any)?.agencyStaff?.agency?.centerLatitude || agencyProfile?.centerLatitude,
     );
-    return (
-      <AppLayout>
-        <div className="h-full w-full flex items-center justify-center bg-slate-900 text-white">
-          📡 Initializing Command Center GIS...
-        </div>
-      </AppLayout>
+    const lng = Number(
+      (user as any)?.agencyStaff?.agency?.centerLongitude || agencyProfile?.centerLongitude,
     );
+
+    if (!lat || !lng || isNaN(lat)) {
+      return (
+        <AppLayout>
+          <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400">
+            📡 Synchronizing GIS Anchor...
+          </div>
+        </AppLayout>
+      );
+    }
   }
 
   return (
