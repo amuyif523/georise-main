@@ -103,57 +103,74 @@ const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
       )}
 
       {!historyMode &&
-        incidents.map((i) => (
-          <Marker
-            key={i.id}
-            position={[i.lat, i.lng]}
-            icon={L.divIcon({
-              className: 'custom-marker',
-              html: `<div style="background:${
-                (i.severityScore || 0) >= 4 ? '#ef4444' : '#3b82f6'
-              }; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>`,
-            })}
-          >
-            <Popup>
-              <strong>{i.title}</strong>
-              <br />
-              Severity: {i.severityScore ?? '?'}
-            </Popup>
-          </Marker>
-        ))}
+        incidents
+          .filter(
+            (i) =>
+              typeof i.lat === 'number' &&
+              isFinite(i.lat) &&
+              typeof i.lng === 'number' &&
+              isFinite(i.lng),
+          )
+          .map((i) => (
+            <Marker
+              key={i.id}
+              position={[i.lat, i.lng]}
+              icon={L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background:${
+                  (i.severityScore || 0) >= 4 ? '#ef4444' : '#3b82f6'
+                }; width:12px; height:12px; border-radius:50%; border:2px solid white;"></div>`,
+              })}
+            >
+              <Popup>
+                <strong>{i.title}</strong>
+                <br />
+                Severity: {i.severityScore ?? '?'}
+              </Popup>
+            </Marker>
+          ))}
 
       {historyMode &&
-        clusters.map((c, idx) => (
-          <Marker
-            key={idx}
-            position={[c.lat, c.lng]}
-            icon={L.divIcon({
-              className: 'cluster-point',
-              html: `<div style="background:rgba(234, 179, 8, 0.4); border: 2px solid #eab308; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold;">C-${c.cluster_id}</div>`,
-              iconSize: [40, 40],
-              iconAnchor: [20, 20],
-            })}
-          >
-            <Popup>
-              <strong>Hotspot Cluster #{c.cluster_id}</strong>
-              <br />
-              Predictive risk factor based on historical density.
-            </Popup>
-          </Marker>
-        ))}
+        clusters
+          .filter(
+            (c) =>
+              typeof c.lat === 'number' &&
+              isFinite(c.lat) &&
+              typeof c.lng === 'number' &&
+              isFinite(c.lng),
+          )
+          .map((c, idx) => (
+            <Marker
+              key={idx}
+              position={[c.lat, c.lng]}
+              icon={L.divIcon({
+                className: 'cluster-point',
+                html: `<div style="background:rgba(234, 179, 8, 0.4); border: 2px solid #eab308; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold;">C-${c.cluster_id}</div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+              })}
+            >
+              <Popup>
+                <strong>Hotspot Cluster #{c.cluster_id}</strong>
+                <br />
+                Predictive risk factor based on historical density.
+              </Popup>
+            </Marker>
+          ))}
     </>
   );
 };
 
 const MapWrapper: React.FC<Props> = (props) => {
   const { user } = useAuth();
-  const lat = Number((user as any)?.agencyStaff?.agency?.centerLatitude);
-  const lng = Number((user as any)?.agencyStaff?.agency?.centerLongitude);
 
-  if (
-    ['AGENCY_STAFF', 'AGENCY_MANAGER'].includes((user as any)?.role) &&
-    (!lat || !lng || isNaN(lat))
-  ) {
+  const rawLat = (user as any)?.agencyStaff?.agency?.centerLatitude;
+  const rawLng = (user as any)?.agencyStaff?.agency?.centerLongitude;
+  const safeLat = Number(rawLat) || 9.0197;
+  const safeLng = Number(rawLng) || 38.7525;
+  const isDataValid = !isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined';
+
+  if (!isDataValid) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400 rounded-xl">
         📡 Synchronizing GIS Anchor...
@@ -163,7 +180,7 @@ const MapWrapper: React.FC<Props> = (props) => {
 
   return (
     <MapContainer
-      center={[lat || 9.03, lng || 38.75]}
+      center={[safeLat, safeLng]}
       zoom={12}
       className="w-full h-full rounded-xl overflow-hidden"
     >

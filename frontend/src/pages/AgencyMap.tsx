@@ -194,7 +194,6 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   );
 
   const [agencyProfile, setAgencyProfile] = useState<any>(null);
-  const [isGisReady, setIsGisReady] = useState(false);
 
   const [isPlacingHQ, setIsPlacingHQ] = useState(false);
   const [tempHQ, setTempHQ] = useState<[number, number] | null>(null);
@@ -331,26 +330,10 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           const res = await api.get('/agency/profile');
           if (res.data) {
             setAgencyProfile(res.data);
-            const latToCheck =
-              (user as any)?.agencyStaff?.agency?.centerLatitude ??
-              res.data.centerLatitude ??
-              9.0197;
-            const lngToCheck =
-              (user as any)?.agencyStaff?.agency?.centerLongitude ??
-              res.data.centerLongitude ??
-              38.7525;
-            const isValidData = !isNaN(parseFloat(latToCheck)) && !isNaN(parseFloat(lngToCheck));
-            if (isValidData) {
-              setIsGisReady(true);
-            }
             console.log('[GIS Debug] Agency Profile Loaded:', res.data);
           }
         } catch {
-          const latToCheck = (user as any)?.agencyStaff?.agency?.centerLatitude ?? 9.0197;
-          const lngToCheck = (user as any)?.agencyStaff?.agency?.centerLongitude ?? 38.7525;
-          if (!isNaN(parseFloat(latToCheck as any)) && !isNaN(parseFloat(lngToCheck as any))) {
-            setIsGisReady(true);
-          }
+          console.warn('[GIS Debug] loadProfile failed or user not agency staff');
         }
       }
     };
@@ -469,12 +452,18 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
   const sanitizedIncidents = incidents.filter(
     (i) =>
-      typeof i.latitude === 'number' && typeof i.longitude === 'number' && isFinite(i.latitude),
+      typeof i.latitude === 'number' &&
+      isFinite(i.latitude) &&
+      typeof i.longitude === 'number' &&
+      isFinite(i.longitude),
   );
 
   const sanitizedResponders = (Array.isArray(responders) ? responders : []).filter(
     (r) =>
-      typeof r.latitude === 'number' && typeof r.longitude === 'number' && isFinite(r.latitude),
+      typeof r.latitude === 'number' &&
+      isFinite(r.latitude) &&
+      typeof r.longitude === 'number' &&
+      isFinite(r.longitude),
   );
 
   const markers = useMemo(
@@ -571,23 +560,22 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     responderCount: responders?.length,
   });
 
-  if (['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(user?.role as string) && !isGisReady) {
-    const lat = Number(
-      (user as any)?.agencyStaff?.agency?.centerLatitude || agencyProfile?.centerLatitude,
-    );
-    const lng = Number(
-      (user as any)?.agencyStaff?.agency?.centerLongitude || agencyProfile?.centerLongitude,
-    );
+  const rawLat =
+    (user as any)?.agencyStaff?.agency?.centerLatitude ?? agencyProfile?.centerLatitude;
+  const rawLng =
+    (user as any)?.agencyStaff?.agency?.centerLongitude ?? agencyProfile?.centerLongitude;
+  const safeLat = Number(rawLat) || 9.0197;
+  const safeLng = Number(rawLng) || 38.7525;
+  const isDataValid = !isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined';
 
-    if (!lat || !lng || isNaN(lat)) {
-      return (
-        <AppLayout>
-          <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400">
-            📡 Synchronizing GIS Anchor...
-          </div>
-        </AppLayout>
-      );
-    }
+  if (!isDataValid) {
+    return (
+      <AppLayout>
+        <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400">
+          📡 Synchronizing GIS Anchor...
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
@@ -693,22 +681,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         </div>
         {loading && <div className="p-4 text-slate-300">Loading map…</div>}
         <div className="grid lg:grid-cols-[2fr,1fr] h-[calc(100vh-140px)]">
-          <MapContainer
-            center={[
-              parseFloat(
-                (user as any)?.agencyStaff?.agency?.centerLatitude ??
-                  agencyProfile?.centerLatitude ??
-                  '9.0197',
-              ),
-              parseFloat(
-                (user as any)?.agencyStaff?.agency?.centerLongitude ??
-                  agencyProfile?.centerLongitude ??
-                  '38.7525',
-              ),
-            ]}
-            zoom={12}
-            className="w-full h-full"
-          >
+          <MapContainer center={[safeLat, safeLng]} zoom={12} className="w-full h-full">
             <MapEvents onMapClick={handleMapClick} />
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {/* Agency Logic: Show specific agency polygon if available logic is handled by BoundariesLayer with 'agency' level, but simpler to just use it if user is restricted */}
