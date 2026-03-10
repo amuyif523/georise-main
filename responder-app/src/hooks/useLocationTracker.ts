@@ -62,12 +62,33 @@ export function useLocationTracker() {
 
       if (shouldEmit) {
         const socket = getSocket();
+
+        // 1. WebSocket Emit (Realtime map update)
         if (online && socket?.connected) {
-          // Emit location update to backend (FR-06)
           socket.emit('responder:locationUpdate', { lat: latitude, lng: longitude });
           lastEmitted.current = { lat: latitude, lng: longitude, time: now };
         } else {
           addLocationToQueue(latitude, longitude);
+        }
+
+        // 2. Surgical Auth Fix (Direct database update)
+        if (online) {
+          import('axios').then((axiosModule) => {
+            const axios = axiosModule.default;
+            const token = localStorage.getItem('responder_token');
+            const payload = { latitude, longitude, status: 'IDLE' }; // Will be overwritten by other states if active
+
+            axios
+              .patch(
+                (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api') +
+                  '/responders/me/location',
+                payload,
+                {
+                  headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                },
+              )
+              .catch((err) => console.warn('Axios location sync failed', err));
+          });
         }
       }
     };
