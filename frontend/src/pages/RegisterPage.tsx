@@ -97,17 +97,20 @@ const RegisterPage: React.FC = () => {
             <ShieldCheck className="w-16 h-16 text-secondary animate-pulse" />
           </motion.div>
           <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
-            JOIN THE NETWORK
+            {t('auth.join_network', 'JOIN THE NETWORK')}
           </h1>
           <p className="text-base-content/70 text-xl font-light mb-8">
-            Join as a Citizen. Verify your identity to become a Responder.
+            {t(
+              'auth.join_citizen_desc',
+              'Join as a Citizen. Verify your identity to become a Responder.',
+            )}
           </p>
           <div className="flex gap-4 text-xs font-mono text-secondary/60 uppercase tracking-widest">
             <span className="flex items-center gap-1">
-              <Activity className="w-3 h-3" /> Registration Open
+              <Activity className="w-3 h-3" /> {t('auth.registration_open', 'Registration Open')}
             </span>
             <span>•</span>
-            <span>Encrypted Channel</span>
+            <span>{t('auth.encrypted_channel', 'Encrypted Channel')}</span>
           </div>
         </div>
       </div>
@@ -120,8 +123,12 @@ const RegisterPage: React.FC = () => {
 
           <div className="card-body p-8 lg:p-10">
             <div className="mb-6 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-base-content mb-2">Initialize Profile</h2>
-              <p className="text-base-content/60 text-sm">Create your secure access identity.</p>
+              <h2 className="text-3xl font-bold text-base-content mb-2">
+                {t('auth.initialize_profile', 'Initialize Profile')}
+              </h2>
+              <p className="text-base-content/60 text-sm">
+                {t('auth.create_secure_identity', 'Create your secure access identity.')}
+              </p>
             </div>
 
             <AnimatePresence>
@@ -251,7 +258,8 @@ const RegisterPage: React.FC = () => {
                     <span className="loading loading-spinner"></span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      Authorize Protocol <ArrowRight className="w-5 h-5" />
+                      {t('auth.authorize_protocol', 'Authorize Protocol')}{' '}
+                      <ArrowRight className="w-5 h-5" />
                     </span>
                   )}
                 </button>
@@ -260,12 +268,12 @@ const RegisterPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t border-base-content/10 text-center">
               <p className="text-sm text-base-content/60">
-                Already have credentials?{' '}
+                {t('auth.have_credentials', 'Already have credentials?')}{' '}
                 <Link
                   to="/login"
                   className="text-secondary font-semibold hover:underline decoration-2 underline-offset-4"
                 >
-                  Access Terminal
+                  {t('auth.access_terminal', 'Access Terminal')}
                 </Link>
               </p>
             </div>
