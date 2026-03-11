@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
@@ -71,6 +74,11 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-base-200 font-sans">
+      {/* Absolute Language Switcher */}
+      <div className="absolute top-6 right-6 z-50">
+        <LanguageSwitcher />
+      </div>
+
       {/* Left Side: Hero Visual (Reused for consistency) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-neutral overflow-hidden items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-t from-neutral to-transparent z-10 opacity-90"></div>
@@ -142,7 +150,7 @@ const RegisterPage: React.FC = () => {
                   htmlFor="fullName"
                   className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
                 >
-                  Full Name
+                  {t('auth.full_name', 'Full Name')}
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <User className="w-5 h-5 text-base-content/40" />
@@ -164,7 +172,7 @@ const RegisterPage: React.FC = () => {
                   htmlFor="email"
                   className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
                 >
-                  Email Address
+                  {t('auth.email')}
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Mail className="w-5 h-5 text-base-content/40" />
@@ -185,7 +193,7 @@ const RegisterPage: React.FC = () => {
                   htmlFor="phone"
                   className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
                 >
-                  Phone (Optional)
+                  {t('auth.phone')} (Optional)
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Smartphone className="w-5 h-5 text-base-content/40" />
@@ -205,7 +213,7 @@ const RegisterPage: React.FC = () => {
                   htmlFor="password"
                   className="label text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-1"
                 >
-                  Password
+                  {t('auth.password')}
                 </label>
                 <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-secondary/50 transition-all border-none h-12">
                   <Lock className="w-5 h-5 text-base-content/40" />

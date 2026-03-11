@@ -187,22 +187,36 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Custom Tabs */}
-            <div className="flex p-1 bg-base-200/50 rounded-xl mb-8 relative">
-              <div
-                className="absolute inset-y-1 w-1/2 bg-white/10 shadow-sm rounded-lg transition-all duration-300 ease-in-out"
-                style={{ transform: mode === 'EMAIL' ? 'translateX(0)' : 'translateX(100%)' }}
-              ></div>
+            <div className="flex p-1 bg-base-200/50 rounded-xl mb-8 relative overflow-hidden">
               <button
                 onClick={() => setMode('EMAIL')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium relative z-10 transition-colors ${mode === 'EMAIL' ? 'text-primary' : 'text-base-content/60'}`}
+                className={`flex-1 relative flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium transition-colors min-w-max ${mode === 'EMAIL' ? 'text-primary' : 'text-base-content/60'}`}
               >
-                <Mail className="w-4 h-4" /> {t('auth.email')}
+                {mode === 'EMAIL' && (
+                  <motion.div
+                    layoutId="loginTab"
+                    className="absolute inset-0 bg-white/10 shadow-sm rounded-lg z-0"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> {t('auth.email')}
+                </span>
               </button>
               <button
                 onClick={() => setMode('OTP')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium relative z-10 transition-colors ${mode === 'OTP' ? 'text-primary' : 'text-base-content/60'}`}
+                className={`flex-1 relative flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium transition-colors min-w-max ${mode === 'OTP' ? 'text-primary' : 'text-base-content/60'}`}
               >
-                <Smartphone className="w-4 h-4" /> {t('auth.phone')}
+                {mode === 'OTP' && (
+                  <motion.div
+                    layoutId="loginTab"
+                    className="absolute inset-0 bg-white/10 shadow-sm rounded-lg z-0"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" /> {t('auth.phone')}
+                </span>
               </button>
             </div>
 
