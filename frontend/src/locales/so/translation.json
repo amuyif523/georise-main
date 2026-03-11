@@ -57,6 +57,11 @@
     "wrong_number_change": "Nambar khaldan? Bedel",
     "enter_code_sent": "Geli koodka loo diray ",
     "new_to_georise": "Ku cusub GEORISE?",
+    "resend_code": "Mar Kale Dir",
+    "resend_code_timer": "Koodka cusub {{seconds}} ilbidhiqsi",
+    "password_weak": "Aad u Liita",
+    "password_medium": "Dhexdhexaad",
+    "password_strong": "Xoogan",
     "placeholders": {
       "fullname": "Abebe Bikila",
       "email": "magaca@georise.com",

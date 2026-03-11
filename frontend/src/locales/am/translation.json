@@ -57,6 +57,11 @@
     "wrong_number_change": "ስህተት ቁጥር? ቀይር",
     "enter_code_sent": "የተላከውን ኮድ ያስገቡ ",
     "new_to_georise": "በGEORISE አዲስ ነዎት?",
+    "resend_code": "ኮድ እንደገና ላክ",
+    "resend_code_timer": "በ {{seconds}} ሰከንዶች ውስጥ እንደገና ላክ",
+    "password_weak": "ደካማ",
+    "password_medium": "መካከለኛ",
+    "password_strong": "ጠንካራ",
     "placeholders": {
       "fullname": "አበበ ቢቂላ",
       "email": "name@georise.com",

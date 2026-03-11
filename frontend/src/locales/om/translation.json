@@ -57,6 +57,11 @@
     "wrong_number_change": "Lakkofsi dogoggora? Jijjiiri",
     "enter_code_sent": "Koodii ergame galchi ",
     "new_to_georise": "GEORISE haaraadhaa?",
+    "resend_code": "Irra Deebiin Ergi",
+    "resend_code_timer": "Sekoondii {{seconds}} keessatti ergi",
+    "password_weak": "Laafaa",
+    "password_medium": "Giddugaleessa",
+    "password_strong": "Cimaa",
     "placeholders": {
       "fullname": "Abebe Bikila",
       "email": "maqaa@georise.com",

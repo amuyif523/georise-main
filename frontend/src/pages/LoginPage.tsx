@@ -38,6 +38,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rateLimitedUntil, setRateLimitedUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [resendTimer, setResendTimer] = useState(0);
 
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
@@ -55,6 +56,13 @@ const LoginPage: React.FC = () => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [rateLimitedUntil]);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const t = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(t);
+    }
+  }, [resendTimer]);
 
   const rateLimitRemainingMs =
     rateLimitedUntil && rateLimitedUntil > now ? rateLimitedUntil - now : 0;
@@ -99,6 +107,7 @@ const LoginPage: React.FC = () => {
       await api.post('/auth/otp/request', { phone });
       setOtpSent(true);
       setSuccess(t('auth.success.otp_sent', 'OTP sent to your phone.'));
+      setResendTimer(60);
     } catch (err: any) {
       handleError(err);
     } finally {
@@ -422,13 +431,25 @@ const LoginPage: React.FC = () => {
                           t('auth.verify_engine', 'Verify Engine')
                         )}
                       </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs w-full text-base-content/50 hover:text-base-content"
-                        onClick={() => setOtpSent(false)}
-                      >
-                        {t('auth.wrong_number_change', 'Wrong number? Change')}
-                      </button>
+                      <div className="flex justify-between items-center mt-4">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs text-base-content/50 hover:text-base-content"
+                          onClick={() => setOtpSent(false)}
+                        >
+                          {t('auth.wrong_number_change', 'Wrong number? Change')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs text-primary hover:text-primary/80 disabled:text-base-content/30 disabled:bg-transparent"
+                          onClick={handleSendOtp}
+                          disabled={resendTimer > 0 || loading || isRateLimited}
+                        >
+                          {resendTimer > 0
+                            ? t('auth.resend_code_timer', { seconds: resendTimer })
+                            : t('auth.resend_code', 'Resend Code')}
+                        </button>
+                      </div>
                     </form>
                   )}
                 </motion.div>
