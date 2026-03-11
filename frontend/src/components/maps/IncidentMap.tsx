@@ -47,9 +47,20 @@ const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
       });
     } else {
       api.get('/gis/incidents').then((res) => {
-        const data = (res.data || []) as (IncidentPoint & { lon: number })[];
-        // Map lon to lng for consistency
-        setIncidents(data.map((i) => ({ ...i, lng: i.lon })));
+        const data = res.data || [];
+
+        // Only show RECEIVED or ACTIVE incidents to prevent map clutter
+        const activeIncidents = data.filter(
+          (i: any) => i.status === 'RECEIVED' || i.status === 'ACTIVE',
+        );
+
+        setIncidents(
+          activeIncidents.map((i: any) => ({
+            ...i,
+            lat: Number(i.latitude || i.lat),
+            lng: Number(i.longitude || i.lon || i.lng),
+          })),
+        );
       });
     }
   }, [historyMode]);
