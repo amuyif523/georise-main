@@ -24,8 +24,10 @@ const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const [mode, setMode] = useState<'EMAIL' | 'OTP'>('EMAIL');
-  const [email, setEmail] = useState('citizen@georise.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState(() => localStorage.getItem('saved_email') || '');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('saved_email'));
+  const [verifySuccess, setVerifySuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -42,6 +44,11 @@ const LoginPage: React.FC = () => {
       setSuccess(t('auth.create_account') + ' ' + t('common.success'));
     }
   }, [searchParams, t]);
+
+  useEffect(() => {
+    setError(null);
+    setSuccess(null);
+  }, [mode]);
 
   useEffect(() => {
     if (!rateLimitedUntil) return;
@@ -65,10 +72,17 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/redirect-after-login');
+      if (rememberMe) {
+        localStorage.setItem('saved_email', email);
+      } else {
+        localStorage.removeItem('saved_email');
+      }
+      setVerifySuccess(true);
+      setTimeout(() => {
+        navigate('/redirect-after-login');
+      }, 1000);
     } catch (err: any) {
       handleError(err);
-    } finally {
       setLoading(false);
     }
   };
@@ -292,17 +306,35 @@ const LoginPage: React.FC = () => {
                     </label>
                   </div>
 
+                  <div className="flex justify-between items-center px-1">
+                    <label className="label cursor-pointer flex items-center gap-2 m-0 p-0 hover:opacity-80 transition-opacity">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary rounded-sm"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      <span className="label-text text-xs text-base-content/70 font-medium tracking-wide">
+                        Remember Me
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     className="btn btn-primary w-full h-12 text-lg shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none hover:shadow-[0_0_30px_rgba(59,130,246,0.7)] hover:scale-[1.02] transition-all duration-300"
                     type="submit"
                     disabled={loading || isRateLimited}
                     data-testid="login-submit"
                   >
-                    {loading ? (
+                    {loading && !verifySuccess ? (
                       <span className="loading loading-spinner"></span>
+                    ) : verifySuccess ? (
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-current" /> Security Verified
+                      </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        {t('auth.login')} <ArrowRight className="w-5 h-5" />
+                        Authorize Protocol <ArrowRight className="w-5 h-5" />
                       </span>
                     )}
                   </button>

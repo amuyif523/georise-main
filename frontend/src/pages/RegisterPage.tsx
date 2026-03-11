@@ -26,9 +26,17 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const validatePhone = (p: string) => /^\+251[79]\d{8}$/.test(p);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (phone && !validatePhone(phone)) {
+      setError('Invalid phone number format. Must be +251...');
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post('/auth/register', {
@@ -84,7 +92,7 @@ const RegisterPage: React.FC = () => {
             JOIN THE NETWORK
           </h1>
           <p className="text-base-content/70 text-xl font-light mb-8">
-            Become a verified responder and secure your community.
+            Join as a Citizen. Verify your identity to become a Responder.
           </p>
           <div className="flex gap-4 text-xs font-mono text-secondary/60 uppercase tracking-widest">
             <span className="flex items-center gap-1">
