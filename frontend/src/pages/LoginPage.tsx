@@ -158,17 +158,17 @@ const LoginPage: React.FC = () => {
             <ShieldCheck className="w-16 h-16 text-primary animate-pulse" />
           </div>
           <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
-            GEORISE
+            {t('app.title', 'GEORISE')}
           </h1>
           <p className="text-blue-100 text-xl font-light mb-8">
-            Next-Gen Resilience & Incident Response Platform.
+            {t('app.platform_desc', 'Next-Gen Resilience & Incident Response Platform.')}
           </p>
           <div className="flex gap-4 text-xs font-mono text-blue-300/60 uppercase tracking-widest">
             <span className="flex items-center gap-1">
-              <Activity className="w-3 h-3" /> System Operational
+              <Activity className="w-3 h-3" /> {t('app.system_operational', 'System Operational')}
             </span>
             <span>•</span>
-            <span>Secure Access</span>
+            <span>{t('app.secure_access', 'Secure Access')}</span>
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@ const LoginPage: React.FC = () => {
                 {t('auth.sign_in_to_account')}
               </h2>
               <p className="text-base-content/60 text-sm">
-                Create, track, and manage critical incidents.
+                {t('auth.manage_incidents_desc', 'Create, track, and manage critical incidents.')}
               </p>
             </div>
 
@@ -276,7 +276,7 @@ const LoginPage: React.FC = () => {
                       <input
                         type="email"
                         className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                        placeholder="name@georise.com"
+                        placeholder={t('auth.placeholders.email', 'name@georise.com')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -293,7 +293,7 @@ const LoginPage: React.FC = () => {
                         to="/forgot-password"
                         className="text-xs text-primary hover:text-primary-focus transition-colors"
                       >
-                        Forgot?
+                        {t('auth.forgot_link', 'Forgot?')}
                       </Link>
                     </div>
                     <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-primary/50 transition-all border-none h-12">
@@ -301,7 +301,7 @@ const LoginPage: React.FC = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                        placeholder="••••••••"
+                        placeholder={t('auth.placeholders.password_login', '••••••••')}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -329,7 +329,7 @@ const LoginPage: React.FC = () => {
                         onChange={(e) => setRememberMe(e.target.checked)}
                       />
                       <span className="label-text text-xs text-base-content/70 font-medium tracking-wide">
-                        Remember Me
+                        {t('auth.remember_me', 'Remember Me')}
                       </span>
                     </label>
                   </div>
@@ -344,11 +344,13 @@ const LoginPage: React.FC = () => {
                       <span className="loading loading-spinner"></span>
                     ) : verifySuccess ? (
                       <span className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-current" /> Security Verified
+                        <ShieldCheck className="w-5 h-5 text-current" />{' '}
+                        {t('auth.security_verified', 'Security Verified')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        Authorize Protocol <ArrowRight className="w-5 h-5" />
+                        {t('auth.authorize_protocol', 'Authorize Protocol')}{' '}
+                        <ArrowRight className="w-5 h-5" />
                       </span>
                     )}
                   </button>
@@ -375,7 +377,7 @@ const LoginPage: React.FC = () => {
                             className="grow bg-transparent outline-none text-base-content"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+251..."
+                            placeholder={t('auth.placeholders.phone', '+251...')}
                           />
                         </label>
                         <button
@@ -383,7 +385,7 @@ const LoginPage: React.FC = () => {
                           onClick={handleSendOtp}
                           disabled={loading || isRateLimited}
                         >
-                          Send OTP
+                          {t('auth.send_otp', 'Send OTP')}
                         </button>
                       </div>
                     </div>
@@ -392,7 +394,7 @@ const LoginPage: React.FC = () => {
                       <div className="form-control text-center">
                         <label className="label justify-center mb-2">
                           <span className="label-text text-base-content/70">
-                            Enter code sent to{' '}
+                            {t('auth.enter_code_sent', 'Enter code sent to ')}
                             <span className="font-mono font-bold text-primary">{phone}</span>
                           </span>
                         </label>
@@ -404,7 +406,7 @@ const LoginPage: React.FC = () => {
                             onChange={(e) =>
                               setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
                             }
-                            placeholder="••••••"
+                            placeholder={t('auth.placeholders.otp', '••••••')}
                             autoFocus
                           />
                         </div>
@@ -417,7 +419,7 @@ const LoginPage: React.FC = () => {
                         {loading ? (
                           <span className="loading loading-spinner"></span>
                         ) : (
-                          'Verify Engine'
+                          t('auth.verify_engine', 'Verify Engine')
                         )}
                       </button>
                       <button
@@ -425,7 +427,7 @@ const LoginPage: React.FC = () => {
                         className="btn btn-ghost btn-xs w-full text-base-content/50 hover:text-base-content"
                         onClick={() => setOtpSent(false)}
                       >
-                        Wrong number? Change
+                        {t('auth.wrong_number_change', 'Wrong number? Change')}
                       </button>
                     </form>
                   )}
@@ -435,12 +437,12 @@ const LoginPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t border-base-content/10 text-center">
               <p className="text-sm text-base-content/60">
-                New to GEORISE?{' '}
+                {t('auth.new_to_georise', 'New to GEORISE?')}{' '}
                 <Link
                   to="/register"
                   className="text-primary font-semibold hover:underline decoration-2 underline-offset-4"
                 >
-                  Initialize Protocol
+                  {t('auth.initialize_profile', 'Initialize Protocol')}
                 </Link>
               </p>
             </div>

@@ -2,7 +2,10 @@
   "app": {
     "title": "GEORISE",
     "subtitle": "Integrated Emergency Response System",
-    "description": "Connecting citizens with emergency responders in real-time."
+    "description": "Connecting citizens with emergency responders in real-time.",
+    "platform_desc": "Next-Gen Resilience & Incident Response Platform.",
+    "system_operational": "System Operational",
+    "secure_access": "Secure Access"
   },
   "auth": {
     "login": "Login",
@@ -12,10 +15,21 @@
     "password": "Password",
     "phone": "Phone Number",
     "full_name": "Full Name",
+    "join_network": "JOIN THE NETWORK",
+    "join_citizen_desc": "Join as a Citizen. Verify your identity to become a Responder.",
+    "registration_open": "Registration Open",
+    "encrypted_channel": "Encrypted Channel",
+    "initialize_profile": "Initialize Profile",
+    "create_secure_identity": "Create your secure access identity.",
+    "authorize_protocol": "Authorize Protocol",
+    "have_credentials": "Already have credentials?",
+    "access_terminal": "Access Terminal",
     "sign_in_to_account": "Sign in to your account",
     "create_account": "Create an account",
+    "manage_incidents_desc": "Create, track, and manage critical incidents.",
     "have_account": "Already have an account?",
     "no_account": "Don't have an account?",
+    "forgot_link": "Forgot?",
     "forgot_title": "Forgot your password?",
     "forgot_subtitle": "Enter the email or phone number linked to your account. We'll send a reset code.",
     "email_or_phone": "Email or Phone",
@@ -35,7 +49,22 @@
     "reset_request_success": "If an account exists, reset instructions have been sent.",
     "reset_request_failed": "Failed to send reset instructions.",
     "reset_success": "Password updated. You can log in now.",
-    "reset_failed": "Reset failed. Check your code and try again."
+    "reset_failed": "Reset failed. Check your code and try again.",
+    "remember_me": "Remember Me",
+    "security_verified": "Security Verified",
+    "send_otp": "Send OTP",
+    "verify_engine": "Verify Engine",
+    "wrong_number_change": "Wrong number? Change",
+    "enter_code_sent": "Enter code sent to ",
+    "new_to_georise": "New to GEORISE?",
+    "placeholders": {
+      "fullname": "Abebe Bikila",
+      "email": "name@georise.com",
+      "phone": "+251...",
+      "password_create": "Create a strong password",
+      "password_login": "••••••••",
+      "otp": "••••••"
+    }
   },
   "nav": {
     "home": "Home",

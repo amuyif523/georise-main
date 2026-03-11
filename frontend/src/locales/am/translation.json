@@ -1,8 +1,11 @@
 {
   "app": {
-    "title": "GEORISE",
+    "title": "ጂኦራይዝ",
     "subtitle": "የአደጋ ሪፖርት እና የምላሽ መረጃ መድረክ",
-    "description": "የጊዜ ሰዓት እውቀትን እና ተግባራዊ ምላሽን ለማስጠንቀቅ በዚህ መድረክ እንሰበስባለን።"
+    "description": "የጊዜ ሰዓት እውቀትን እና ተግባራዊ ምላሽን ለማስጠንቀቅ በዚህ መድረክ እንሰበስባለን።",
+    "platform_desc": "የአደጋ ሪፖርት እና የምላሽ መረጃ መድረክ",
+    "system_operational": "ስርዓተ ክወና ዝግጁ ነው",
+    "secure_access": "ደህንነቱ የተጠበቀ መዳረሻ"
   },
   "auth": {
     "login": "ግባ",
@@ -12,10 +15,21 @@
     "password": "የይለፍ ቃል",
     "phone": "ስልክ ቁጥር",
     "full_name": "ሙሉ ስም",
+    "join_network": "GEORISE ማህበረሰብን ይቀላቀሉ",
+    "join_citizen_desc": "እንደ ዜጋ ይመዝገቡ። ምላሽ ሰጪ ለመሆን ማንነትዎን ያረጋግጡ።",
+    "registration_open": "ምዝገባ ክፍት ነው",
+    "encrypted_channel": "የተመሰጠረ መስመር",
+    "initialize_profile": "መገለጫ ያስጀምሩ",
+    "create_secure_identity": "የደህንነት መዳረሻ ማንነትዎን ይፍጠሩ።",
+    "authorize_protocol": "ፕሮቶኮሉን ይፍቀዱ",
+    "have_credentials": "የመግቢያ ማስረጃ አለዎት?",
+    "access_terminal": "ተርሚናል ይግቡ",
     "sign_in_to_account": "ወደ መለያህ ግባ",
     "create_account": "አዲስ መለያ ፍጠር",
+    "manage_incidents_desc": "አስቸኳይ ሁኔታዎችን ይፍጠሩ፣ ይከታተሉ እና ያስተዳድሩ።",
     "have_account": "መለያ አለህ?",
     "no_account": "መለያ የለህም?",
+    "forgot_link": "ረሱ?",
     "forgot_title": "የይለፍ ቃልህን ረሳህ?",
     "forgot_subtitle": "ኢሜይል ወይም ስልክ ቁጥርህን አስገባ፤ የማረጋገጫ ኮድ እንልክልሃለን።",
     "email_or_phone": "ኢሜይል ወይም ስልክ ቁጥር",
@@ -35,7 +49,22 @@
     "reset_request_success": "ኮድ ተልኳል፤ መልእክቱን ይመልከቱ እና ይከተሉ።",
     "reset_request_failed": "ኮድ ማስተላለፍ አልተሳካም።",
     "reset_success": "የይለፍ ቃል ተቀይሯል፤ አሁን ተግባ።",
-    "reset_failed": "የይለፍ ቃል ማስተካከል አልተሳካም፣ እባክዎ እንደገና ይሞክሩ።"
+    "reset_failed": "የይለፍ ቃል ማስተካከል አልተሳካም፣ እባክዎ እንደገና ይሞክሩ።",
+    "remember_me": "አስታውሰኝ",
+    "security_verified": "ደህንነት ተረጋግጧል",
+    "send_otp": "የማረጋገጫ ኮድ ላክ",
+    "verify_engine": "ሞተሩን አረጋግጥ",
+    "wrong_number_change": "ስህተት ቁጥር? ቀይር",
+    "enter_code_sent": "የተላከውን ኮድ ያስገቡ ",
+    "new_to_georise": "በGEORISE አዲስ ነዎት?",
+    "placeholders": {
+      "fullname": "አበበ ቢቂላ",
+      "email": "name@georise.com",
+      "phone": "+251...",
+      "password_create": "ጠንካራ የይለፍ ቃል ይፍጠሩ",
+      "password_login": "••••••••",
+      "otp": "••••••"
+    }
   },
   "nav": {
     "home": "መነሻ",

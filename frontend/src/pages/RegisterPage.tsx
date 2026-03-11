@@ -165,7 +165,7 @@ const RegisterPage: React.FC = () => {
                     id="fullName"
                     type="text"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                    placeholder="Abebe Bikila"
+                    placeholder={t('auth.placeholders.fullname', 'Abebe Bikila')}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
@@ -187,7 +187,7 @@ const RegisterPage: React.FC = () => {
                     id="email"
                     type="email"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                    placeholder="name@georise.com"
+                    placeholder={t('auth.placeholders.email', 'name@georise.com')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -208,7 +208,7 @@ const RegisterPage: React.FC = () => {
                     id="phone"
                     type="tel"
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                    placeholder="+251..."
+                    placeholder={t('auth.placeholders.phone', '+251...')}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />
@@ -228,7 +228,7 @@ const RegisterPage: React.FC = () => {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     className="grow bg-transparent outline-none text-base-content placeholder:text-base-content/30"
-                    placeholder="Create a strong password"
+                    placeholder={t('auth.placeholders.password_create', 'Create a strong password')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
