@@ -61,7 +61,7 @@ const LoginPage: React.FC = () => {
   const isRateLimited = rateLimitRemainingMs > 0;
   const rateLimitMessage =
     rateLimitRemainingMs > 0
-      ? `Too many requests. Please wait ${Math.ceil(rateLimitRemainingMs / 1000)}s and try again.`
+      ? t('auth.errors.too_many_requests_wait', { seconds: Math.ceil(rateLimitRemainingMs / 1000) })
       : null;
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -90,7 +90,7 @@ const LoginPage: React.FC = () => {
   const handleSendOtp = async () => {
     if (loading || isRateLimited) return;
     if (!phone) {
-      setError('Phone number is required');
+      setError(t('auth.errors.phone_required', 'Phone number is required'));
       return;
     }
     setLoading(true);
@@ -98,7 +98,7 @@ const LoginPage: React.FC = () => {
     try {
       await api.post('/auth/otp/request', { phone });
       setOtpSent(true);
-      setSuccess('OTP sent to your phone.');
+      setSuccess(t('auth.success.otp_sent', 'OTP sent to your phone.'));
     } catch (err: any) {
       handleError(err);
     } finally {
@@ -130,8 +130,8 @@ const LoginPage: React.FC = () => {
       setRateLimitedUntil(until);
       setError(
         retryMs
-          ? `Too many requests. Try again in ${Math.ceil((retryMs ?? 0) / 1000)}s.`
-          : 'Too many requests. Please wait and retry.',
+          ? t('auth.errors.too_many_requests_wait', { seconds: Math.ceil((retryMs ?? 0) / 1000) })
+          : t('auth.errors.too_many_requests_retry', 'Too many requests. Please wait and retry.'),
       );
     } else {
       setError(err?.response?.data?.message || t('common.error'));

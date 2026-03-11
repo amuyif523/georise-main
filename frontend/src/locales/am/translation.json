@@ -64,6 +64,16 @@
       "password_create": "ጠንካራ የይለፍ ቃል ይፍጠሩ",
       "password_login": "••••••••",
       "otp": "••••••"
+    },
+    "errors": {
+      "invalid_phone": "የስልክ ቁጥር ቅርጸት ልክ አይደለም። +251... መሆን አለበት",
+      "registration_failed": "ምዝገባ አልተሳካም",
+      "phone_required": "ስልክ ቁጥር አስፈላጊ ነው",
+      "too_many_requests_wait": "በጣም ብዙ ጥያቄዎች። እባክዎ {{seconds}} ሰከንዶች ይጠብቁ እና እንደገና ይሞክሩ።",
+      "too_many_requests_retry": "በጣም ብዙ ጥያቄዎች። እባክዎ ይጠብቁ እና እንደገና ይሞክሩ።"
+    },
+    "success": {
+      "otp_sent": "የማረጋገጫ ኮድ ወደ ስልክዎ ተልኳል።"
     }
   },
   "nav": {

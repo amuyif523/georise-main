@@ -64,6 +64,16 @@
       "password_create": "Create a strong password",
       "password_login": "••••••••",
       "otp": "••••••"
+    },
+    "errors": {
+      "invalid_phone": "Invalid phone number format. Must be +251...",
+      "registration_failed": "Registration failed",
+      "phone_required": "Phone number is required",
+      "too_many_requests_wait": "Too many requests. Please wait {{seconds}}s and try again.",
+      "too_many_requests_retry": "Too many requests. Please wait and retry."
+    },
+    "success": {
+      "otp_sent": "OTP sent to your phone."
     }
   },
   "nav": {

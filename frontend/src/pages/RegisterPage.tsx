@@ -36,7 +36,7 @@ const RegisterPage: React.FC = () => {
     setError(null);
 
     if (phone && !validatePhone(phone)) {
-      setError('Invalid phone number format. Must be +251...');
+      setError(t('auth.errors.invalid_phone', 'Invalid phone number format. Must be +251...'));
       return;
     }
 
@@ -51,7 +51,9 @@ const RegisterPage: React.FC = () => {
       });
       navigate('/login?registered=true');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Registration failed');
+      setError(
+        err?.response?.data?.message || t('auth.errors.registration_failed', 'Registration failed'),
+      );
     } finally {
       setLoading(false);
     }
