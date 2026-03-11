@@ -10,6 +10,7 @@ import {
   JWT_REFRESH_EXPIRES_IN,
   JWT_REFRESH_SECRET,
   JWT_SECRET,
+  DEMO_MODE,
 } from '../../config/env';
 import {
   AuthTokenPayload,
@@ -118,8 +119,10 @@ export class AuthService {
     // If phone is provided, automatically trigger OTP for verification
     if (data.phone) {
       try {
-        const otp = smsService.generateOTP();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+        await redis.set(`otp:${data.phone}`, otp, 'EX', 300);
 
         await prisma.citizenVerification.create({
           data: {
@@ -131,10 +134,16 @@ export class AuthService {
           },
         });
 
-        await smsService.sendSMS(
-          data.phone,
-          `Welcome to GEORISE! Your verification code is: ${otp}`,
-        );
+        if (DEMO_MODE) {
+          console.log('\n=============================================');
+          console.log(`[DEMO] OTP for ${data.phone}: ${otp}`);
+          console.log('=============================================\n');
+        } else {
+          await smsService.sendSMS(
+            data.phone,
+            `Welcome to GEORISE! Your verification code is: ${otp}`,
+          );
+        }
       } catch (error) {
         // Log error but don't fail registration
         console.error('Failed to send initial OTP:', error);
@@ -150,8 +159,10 @@ export class AuthService {
     const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) throw new Error('User not found with this phone number');
 
-    const otp = smsService.generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+    await redis.set(`otp:${phone}`, otp, 'EX', 300);
 
     // Upsert verification record
     await prisma.citizenVerification.upsert({
@@ -166,7 +177,13 @@ export class AuthService {
       },
     });
 
-    await smsService.sendSMS(phone, `Your GEORISE verification code is: ${otp}`);
+    if (DEMO_MODE) {
+      console.log('\n=============================================');
+      console.log(`[DEMO] OTP for ${phone}: ${otp}`);
+      console.log('=============================================\n');
+    } else {
+      await smsService.sendSMS(phone, `Your GEORISE verification code is: ${otp}`);
+    }
     return { message: 'OTP sent' };
   }
 
@@ -179,12 +196,19 @@ export class AuthService {
     if (!user || !user.citizenVerification) throw new Error('Invalid request');
     if (user.isActive === false || user.deactivatedAt) throw new Error('Account is inactive');
 
-    const { otpCode, otpExpiresAt } = user.citizenVerification;
-    if (!otpCode || !otpExpiresAt || otpExpiresAt < new Date()) {
-      throw new Error('OTP expired or invalid');
-    }
-    if (otpCode !== code) {
-      throw new Error('Invalid OTP code');
+    // Verify primarily with Redis but fallback/sync to db
+    const redisOtp = await redis.get(`otp:${phone}`);
+    if (redisOtp) {
+      if (redisOtp !== code) throw new Error('Invalid OTP code');
+      await redis.del(`otp:${phone}`);
+    } else {
+      const { otpCode, otpExpiresAt } = user.citizenVerification;
+      if (!otpCode || !otpExpiresAt || otpExpiresAt < new Date()) {
+        throw new Error('OTP expired or invalid');
+      }
+      if (otpCode !== code) {
+        throw new Error('Invalid OTP code');
+      }
     }
 
     // Clear OTP
@@ -377,9 +401,9 @@ export class AuthService {
       where: { userId: user.id },
     });
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     await prisma.passwordResetToken.create({
       data: {
@@ -389,11 +413,14 @@ export class AuthService {
       },
     });
 
-    // Deliver via SMS if phone exists; otherwise log for now (placeholder for email service)
-    if (user.phone) {
+    if (DEMO_MODE) {
+      console.log('\n=============================================');
+      console.log(`[DEMO] Reset Code for ${user.email || user.phone}: ${token}`);
+      console.log('=============================================\n');
+    } else if (user.phone) {
       await smsService.sendSMS(
         user.phone,
-        `Use this code to reset your GEORISE password: ${token}. It expires in 15 minutes.`,
+        `Use this code to reset your GEORISE password: ${token}. It expires in 5 minutes.`,
       );
     } else {
       logger.info({ email: user.email, token }, 'Password reset token generated');
