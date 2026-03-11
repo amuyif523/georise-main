@@ -163,14 +163,19 @@ const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
 
 const MapWrapper: React.FC<Props> = (props) => {
   const { user } = useAuth();
+  const userRole = (user as any)?.role;
 
   const rawLat = (user as any)?.agencyStaff?.agency?.centerLatitude;
   const rawLng = (user as any)?.agencyStaff?.agency?.centerLongitude;
-  const safeLat = Number(rawLat) || 9.0197;
-  const safeLng = Number(rawLng) || 38.7525;
-  const isDataValid = !isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined';
 
-  if (!isDataValid) {
+  const isCitizen = userRole === 'CITIZEN';
+  const safeLat = isCitizen ? 9.0197 : Number(rawLat) || 9.0197;
+  const safeLng = isCitizen ? 38.7525 : Number(rawLng) || 38.7525;
+
+  const isDataValid = !isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined';
+  const isAgencyRole = ['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(userRole);
+
+  if (isAgencyRole && !isDataValid) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-slate-900 text-slate-400 rounded-xl">
         📡 Synchronizing GIS Anchor...
