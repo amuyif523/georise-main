@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Upload, FileText, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -9,17 +9,9 @@ import { useAuth } from '../context/AuthContext';
 
 type VerifStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | null;
 
-interface VerifRequest {
-  status: VerifStatus;
-  reviewNote?: string | null;
-}
-
 const CitizenVerificationPage: React.FC = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-
-  const [verif, setVerif] = useState<VerifRequest | null>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
+  const { user, refreshUser } = useAuth();
 
   // Form state
   const [idNumber, setIdNumber] = useState('');
@@ -29,14 +21,10 @@ const CitizenVerificationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Fetch live status on mount
-  useEffect(() => {
-    api
-      .get('/users/verify/status')
-      .then((res) => setVerif(res.data.verificationRequest))
-      .catch(() => setVerif(null))
-      .finally(() => setStatusLoading(false));
-  }, []);
+  // Determine initial status from AuthContext (which now includes verificationRequest)
+  const currentStatus: VerifStatus = user?.isVerified
+    ? 'APPROVED'
+    : (user?.verificationRequest?.status as VerifStatus) || null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -65,15 +53,14 @@ const CitizenVerificationPage: React.FC = () => {
       await api.post('/users/verify', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setVerif({ status: 'PENDING' });
+      // Force refresh the user object in AuthContext to update the UI globally
+      await refreshUser();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
-
-  const currentStatus: VerifStatus = verif?.status ?? null;
 
   return (
     <AppLayout>
@@ -93,7 +80,7 @@ const CitizenVerificationPage: React.FC = () => {
           </div>
         </div>
 
-        {statusLoading ? (
+        {!user ? (
           <div className="flex justify-center py-20">
             <span className="loading loading-spinner loading-lg text-primary"></span>
           </div>
@@ -225,7 +212,8 @@ const CitizenVerificationPage: React.FC = () => {
                     <div>
                       <div className="font-bold">Verification Rejected</div>
                       <div className="text-xs">
-                        {verif?.reviewNote ?? 'Please resubmit with clearer documents.'}
+                        {user?.verificationRequest?.reviewNote ??
+                          'Please resubmit with clearer documents.'}
                       </div>
                     </div>
                   </motion.div>

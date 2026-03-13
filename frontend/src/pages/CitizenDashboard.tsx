@@ -142,9 +142,27 @@ const CitizenDashboard: React.FC = () => {
               </button>
               <button
                 onClick={() => navigate('/citizen/verify')}
-                className="btn btn-outline justify-start gap-3 h-12"
+                className={`btn justify-start gap-3 h-12 ${
+                  user?.isVerified
+                    ? 'btn-success text-white'
+                    : (user as any)?.verificationRequest?.status === 'PENDING'
+                      ? 'btn-warning text-white'
+                      : 'btn-outline'
+                }`}
               >
-                <CheckCircle className="w-5 h-5" /> Verify ID
+                {user?.isVerified ? (
+                  <>
+                    <CheckCircle className="w-5 h-5" /> Identity Verified
+                  </>
+                ) : (user as any)?.verificationRequest?.status === 'PENDING' ? (
+                  <>
+                    <CheckCircle className="w-5 h-5" /> Review Pending
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" /> Verify ID
+                  </>
+                )}
               </button>
             </div>
           </div>

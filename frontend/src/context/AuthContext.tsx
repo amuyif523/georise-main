@@ -5,7 +5,15 @@ import { connectSocket, disconnectSocket, resetSocketGuard } from '../lib/socket
 
 type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'AGENCY_MANAGER' | 'ADMIN';
 
-interface User {
+interface VerificationRequest {
+  id: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface User {
   id: number;
   fullName: string;
   email: string;
@@ -15,6 +23,8 @@ interface User {
   totalReports?: number;
   validReports?: number;
   rejectedReports?: number;
+  isVerified?: boolean;
+  verificationRequest?: VerificationRequest | null;
 }
 
 interface AuthContextValue {
@@ -23,6 +33,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   setAuth: (user: User, token: string, refreshToken?: string) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -42,12 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const meCacheRef = useRef<{ user: User | null; ts: number } | null>(null);
   const ME_CACHE_TTL_MS = 60_000; // avoid spamming /me on refreshes
 
-  const fetchMe = useCallback(async () => {
+  const fetchMe = useCallback(async (bustCache = false) => {
     const now = Date.now();
-    if (meCacheRef.current && now - meCacheRef.current.ts < ME_CACHE_TTL_MS) {
+    if (!bustCache && meCacheRef.current && now - meCacheRef.current.ts < ME_CACHE_TTL_MS) {
       setUser(meCacheRef.current.user);
       return meCacheRef.current.user;
     }
+
+    // Bust the cache so the next call goes through
+    if (bustCache) meCacheRef.current = null;
 
     if (!meInFlight.current) {
       meInFlight.current = api
@@ -122,6 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     connectSocket(token);
   }, []);
 
+  // Force-refetch /me bypassing the 60s cache — call this after any mutation
+  // that updates the user's profile (e.g. verification submission/approval).
+  const refreshUser = useCallback(async () => {
+    await fetchMe(true);
+  }, [fetchMe]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       if (user && Date.now() - lastActive > SESSION_MAX_IDLE_MS) {
@@ -132,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, lastActive, SESSION_MAX_IDLE_MS, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, setAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, setAuth, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
