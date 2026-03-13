@@ -21,6 +21,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum VerificationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum IncidentStatus {
   RECEIVED
   UNDER_REVIEW
@@ -94,12 +100,14 @@ model User {
   validReports        Int       @default(0)
   rejectedReports     Int       @default(0)
   lastReportAt        DateTime?
+  isVerified          Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
   // Relations
   citizenVerification  CitizenVerification?
   agencyStaff          AgencyStaff?
+  verificationRequest  VerificationRequest?
   incidentsReported    Incident[]              @relation("IncidentsReportedByUser")
   statusHistory        IncidentStatusHistory[]
   auditLogs            AuditLog[]
@@ -454,6 +462,21 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+model VerificationRequest {
+  id          Int                       @id @default(autoincrement())
+  userId      Int                       @unique
+  idNumber    String
+  idPhotoUrl  String
+  status      VerificationRequestStatus @default(PENDING)
+  reviewNote  String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status])
 }
 
 model ClassificationAudit {

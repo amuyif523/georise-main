@@ -9,6 +9,11 @@ if (!fs.existsSync(incidentDir)) {
   fs.mkdirSync(incidentDir, { recursive: true });
 }
 
+const idPhotoDir = path.join(process.cwd(), UPLOAD_DIR, 'id-photos');
+if (!fs.existsSync(idPhotoDir)) {
+  fs.mkdirSync(idPhotoDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, incidentDir);
@@ -28,6 +33,22 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
 
 export const incidentUpload = multer({
   storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+const idStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, idPhotoDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `${Date.now()}-${randomUUID()}${ext}`);
+  },
+});
+
+export const idUpload = multer({
+  storage: idStorage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
