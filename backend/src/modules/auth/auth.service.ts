@@ -353,9 +353,19 @@ export class AuthService {
         totalReports: true,
         validReports: true,
         rejectedReports: true,
+        isVerified: true,
         createdAt: true,
         agencyStaff: { select: { agencyId: true, staffRole: true, agency: true } },
         responders: { select: { id: true, agencyId: true, type: true } },
+        verificationRequest: {
+          select: {
+            id: true,
+            status: true,
+            reviewNote: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
     });
 

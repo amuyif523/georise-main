@@ -24,12 +24,31 @@ export const submitVerificationRequest = async (req: Request, res: Response) => 
     return res.status(400).json({ message: 'idPhoto file is required.' });
   }
 
+  // ─── Multi-Submit Guard ───────────────────────────────────────────────────
+  // Block if there is already an active (PENDING) or successful (APPROVED) request.
+  // Only allow re-submission when the previous request was REJECTED.
+  const existing = await prisma.verificationRequest.findUnique({ where: { userId } });
+  if (existing && (existing.status === 'PENDING' || existing.status === 'APPROVED')) {
+    // Clean up the uploaded file since we won't use it
+    try {
+      fs.unlinkSync(file.path);
+    } catch {
+      /* ignore */
+    }
+    const msg =
+      existing.status === 'APPROVED'
+        ? 'Your identity has already been verified.'
+        : 'You already have a verification request under review. Please wait for the outcome.';
+    return res.status(409).json({ message: msg });
+  }
+  // ─── End Guard ────────────────────────────────────────────────────────────
+
   // Build a public-accessible URL (relative to UPLOAD_DIR)
   const relPath = path.relative(UPLOAD_DIR, file.path).replace(/\\/g, '/');
   const idPhotoUrl = `/uploads/${relPath}`;
 
   try {
-    // Upsert so a user can re-submit if previously rejected
+    // Upsert so a user can re-submit after previous REJECTION
     const request = await prisma.verificationRequest.upsert({
       where: { userId },
       update: {
