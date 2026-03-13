@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { validateBody } from '../../middleware/validate';
 import * as systemController from './system.controller';
 import * as agencyController from '../agency/agency.controller';
+import * as verificationController from '../user/verification.controller';
 import { metrics } from '../../metrics/metrics.service';
 import rateLimit from 'express-rate-limit';
 
@@ -1172,47 +1173,7 @@ router.patch(
   requireAuth,
   requireRole([Role.ADMIN]),
   validateBody(verifyRequestSchema),
-  async (req, res) => {
-    const parsed = idSchema.safeParse(req.params);
-    if (!parsed.success) return res.status(400).json({ message: 'Invalid request id' });
-    const requestId = parsed.data.id;
-    const { status, reviewNote } = req.body as z.infer<typeof verifyRequestSchema>;
-
-    try {
-      const verReq = await prisma.verificationRequest.findUnique({ where: { id: requestId } });
-      if (!verReq) return res.status(404).json({ message: 'Verification request not found' });
-
-      const updated = await prisma.verificationRequest.update({
-        where: { id: requestId },
-        data: { status, reviewNote: reviewNote ?? null },
-      });
-
-      if (status === 'APPROVED') {
-        // Set user as verified and grant +25 trust score bonus
-        await prisma.user.update({
-          where: { id: verReq.userId },
-          data: { isVerified: true },
-        });
-        const { reputationService } = await import('../reputation/reputation.service');
-        await reputationService.adjustTrust(verReq.userId, 25);
-      }
-
-      await prisma.auditLog.create({
-        data: {
-          actorId: req.user!.id,
-          action: `VERIFICATION_${status}`,
-          targetType: 'User',
-          targetId: verReq.userId,
-          note: reviewNote,
-        },
-      });
-
-      res.json({ message: `Verification request ${status.toLowerCase()}.`, request: updated });
-    } catch (err: any) {
-      console.error('Failed to update verification request', err);
-      res.status(500).json({ message: err?.message || 'Internal error' });
-    }
-  },
+  verificationController.updateVerificationStatus,
 );
 
 export default router;

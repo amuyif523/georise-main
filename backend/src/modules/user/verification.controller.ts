@@ -4,6 +4,7 @@ import fs from 'fs';
 import prisma from '../../prisma';
 import logger from '../../logger';
 import { UPLOAD_DIR } from '../../config/env';
+import { getIO } from '../../socket';
 
 /**
  * POST /api/users/verify
@@ -95,4 +96,70 @@ export const getVerificationStatus = async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const request = await prisma.verificationRequest.findUnique({ where: { userId } });
   return res.json({ verificationRequest: request ?? null });
+};
+
+/**
+ * PATCH /api/admin/verify-request/:id
+ * Admin approves or rejects a verification request.
+ */
+export const updateVerificationStatus = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, reviewNote } = req.body as {
+    status: 'APPROVED' | 'REJECTED';
+    reviewNote?: string;
+  };
+
+  try {
+    const requestId = Number(id);
+    if (isNaN(requestId)) return res.status(400).json({ message: 'Invalid request ID' });
+
+    const verReq = await prisma.verificationRequest.findUnique({ where: { id: requestId } });
+    if (!verReq) return res.status(404).json({ message: 'Verification request not found' });
+
+    const updated = await prisma.verificationRequest.update({
+      where: { id: requestId },
+      data: { status, reviewNote: reviewNote ?? null },
+    });
+
+    let isVerified = false;
+    if (status === 'APPROVED') {
+      isVerified = true;
+      // Set user as verified and grant +25 trust score bonus
+      await prisma.user.update({
+        where: { id: verReq.userId },
+        data: { isVerified: true },
+      });
+      const { reputationService } = await import('../reputation/reputation.service');
+      await reputationService.adjustTrust(verReq.userId, 25);
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user!.id,
+        action: `VERIFICATION_${status}`,
+        targetType: 'User',
+        targetId: verReq.userId,
+        note: reviewNote,
+      },
+    });
+
+    // Real-time socket notification
+    try {
+      const io = getIO();
+      if (io) {
+        io.to(`user:${verReq.userId}`).emit('identity_verified', {
+          status,
+          isVerified,
+        });
+        logger.info({ userId: verReq.userId, status }, 'Emitted identity_verified socket event');
+      }
+    } catch (socketErr) {
+      logger.error({ err: socketErr }, 'Failed to emit socket notification');
+    }
+
+    return res.json({ message: `Verification request ${status.toLowerCase()}.`, request: updated });
+  } catch (err: any) {
+    logger.error({ err }, 'Failed to update verification request');
+    return res.status(500).json({ message: err?.message || 'Internal error' });
+  }
 };

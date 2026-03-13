@@ -102,6 +102,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (token) {
       run();
+
+      // Listen for identity verification updates
+      const socket = connectSocket(token);
+      socket.on('identity_verified', (payload: any) => {
+        console.log('Real-time Identity Verified:', payload);
+        fetchMe(true); // Force re-fetch user data
+      });
+
+      return () => {
+        socket.off('identity_verified');
+        cancelled = true;
+      };
     }
 
     const updateActive = () => setLastActive(Date.now());
