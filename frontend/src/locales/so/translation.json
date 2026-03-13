@@ -87,5 +87,12 @@
     "english": "Ingiriis",
     "oromo": "Oromoo",
     "somali": "Soomaali"
+  },
+  "verify": {
+    "identity_terminal": "Xarunta Aqoonsiga",
+    "national_id_number": "Lambarka Aqoonsiga Qaranka",
+    "verification_pending": "Xaqiijinta Sugaysa",
+    "secure_identity_verified": "Aqoonsiga Ammaan-sugnaantu Xaqiijay",
+    "biometric_sync": "Waafajinta Baayoometrikada Dhamaatay"
   }
 }

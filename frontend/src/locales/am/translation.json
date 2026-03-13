@@ -142,5 +142,12 @@
     "english": "እንግሊዝኛ",
     "oromo": "ኦሮምኛ",
     "somali": "ሶማሊኛ"
+  },
+  "verify": {
+    "identity_terminal": "የተገለጣ ተርሚናል",
+    "national_id_number": "የገኖላዊ መታወቂያ ቆጥር",
+    "verification_pending": "ማረጋገጥ በ℻ጃል",
+    "secure_identity_verified": "ደህንነት የተጠበቀ ተገለጣ ተረጋግጧል",
+    "biometric_sync": "የገሥንናዊ መረጃ ተጣቃለቀ"
   }
 }

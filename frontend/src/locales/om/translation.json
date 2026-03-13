@@ -87,5 +87,12 @@
     "english": "Ingiliffa",
     "oromo": "Afaan Oromoo",
     "somali": "Afaan Somaalee"
+  },
+  "verify": {
+    "identity_terminal": "Teerminal Eenyummaa",
+    "national_id_number": "Lakkoofsa ID Biyyoolessaa",
+    "verification_pending": "Mirkaneessaan Eegaa Jira",
+    "secure_identity_verified": "Eenyummaan Nageenyaan Mirkanaaye",
+    "biometric_sync": "Walfakkaatinsa Biometrikii Xumurame"
   }
 }

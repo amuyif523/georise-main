@@ -139,5 +139,12 @@
     "english": "English",
     "oromo": "Oromo",
     "somali": "Somali"
+  },
+  "verify": {
+    "identity_terminal": "Identity Terminal",
+    "national_id_number": "National ID Number",
+    "verification_pending": "Verification Pending",
+    "secure_identity_verified": "Secure Identity Verified",
+    "biometric_sync": "Biometric Sync Complete"
   }
 }

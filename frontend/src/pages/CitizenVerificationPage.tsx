@@ -1,330 +1,359 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldCheck, Upload, FileText, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AppLayout from '../layouts/AppLayout';
 import api from '../lib/api';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ScanLine,
-  Smartphone,
-  ShieldCheck,
-  CheckCircle,
-  Lock,
-  CreditCard,
-  QrCode,
-  Activity,
-} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+
+type VerifStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+
+interface VerifRequest {
+  status: VerifStatus;
+  reviewNote?: string | null;
+}
 
 const CitizenVerificationPage: React.FC = () => {
-  const [nationalId, setNationalId] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'ID_SCAN' | 'OTP_LINK' | 'VERIFIED'>('ID_SCAN');
-  const [isScanning, setIsScanning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const { user } = useAuth();
 
+  const [verif, setVerif] = useState<VerifRequest | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+
+  // Form state
+  const [idNumber, setIdNumber] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch live status on mount
   useEffect(() => {
-    setMessage(null);
-  }, [step]);
+    api
+      .get('/users/verify/status')
+      .then((res) => setVerif(res.data.verificationRequest))
+      .catch(() => setVerif(null))
+      .finally(() => setStatusLoading(false));
+  }, []);
 
-  const simulateScan = (nextAction: () => void) => {
-    setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      nextAction();
-    }, 2000); // 2 second scan effect
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    if (f) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setFilePreview(ev.target?.result as string);
+      reader.readAsDataURL(f);
+    } else {
+      setFilePreview(null);
+    }
   };
 
-  const handleIdSubmit = () => {
-    if (!nationalId || !phone) {
-      setMessage('Identity documents required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!idNumber.trim() || !file) {
+      setError('Please fill in your ID number and upload a photo.');
       return;
     }
-    setLoading(true);
-    simulateScan(async () => {
-      try {
-        const res = await api.post('/verification/request', { nationalId, phone });
-        setMessage(
-          res.data.otpCodeDemo
-            ? `SECURE CHANNEL OPEN: ${res.data.otpCodeDemo}`
-            : 'OTP sent via encrypted SMS.',
-        );
-        setStep('OTP_LINK');
-      } catch (err: any) {
-        setMessage(err?.response?.data?.message || 'Verification Protocol Failed');
-      } finally {
-        setLoading(false);
-      }
-    });
-  };
-
-  const handleOtpSubmit = async () => {
-    setLoading(true);
+    setSubmitting(true);
+    setError(null);
     try {
-      await api.post('/verification/confirm-otp', { otpCode: otp });
-      setStep('VERIFIED');
+      const form = new FormData();
+      form.append('idNumber', idNumber.trim());
+      form.append('idPhoto', file);
+      await api.post('/users/verify', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setVerif({ status: 'PENDING' });
     } catch (err: any) {
-      setMessage(err?.response?.data?.message || 'Invalid Authentication Code');
+      setError(err?.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  const currentStatus: VerifStatus = verif?.status ?? null;
 
   return (
     <AppLayout>
-      <div className="flex flex-col items-center justify-center min-h-[600px] max-w-4xl mx-auto">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center justify-center gap-3">
-            <ShieldCheck className="w-10 h-10 text-primary" />
-            Identity Verification Protocol
-          </h1>
-          <p className="text-base-content/60 font-mono uppercase tracking-widest text-sm">
-            Trust Anchor Level 1 Clearance
-          </p>
+      <div className="max-w-2xl mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="mb-8 flex items-center gap-4">
+          <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
+            <ShieldCheck className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-base-content">
+              {t('verify.identity_terminal', 'Identity Terminal')}
+            </h1>
+            <p className="text-sm text-base-content/60 font-mono tracking-wide">
+              GEORISE · KYC Clearance Protocol
+            </p>
+          </div>
         </div>
 
-        <div className="card w-full max-w-2xl bg-base-100 shadow-2xl border border-base-content/10 overflow-hidden relative">
-          {/* Scanning Overlay */}
-          <AnimatePresence>
-            {isScanning && (
+        {statusLoading ? (
+          <div className="flex justify-center py-20">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {/* ─── STATE C: VERIFIED (APPROVED) ─── */}
+            {currentStatus === 'APPROVED' && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 z-50 bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm"
+                key="verified"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="card bg-base-100/60 backdrop-blur-xl border border-success/30 shadow-[0_0_40px_rgba(34,197,94,0.15)] p-8 text-center space-y-6"
               >
-                <div className="relative w-64 h-40 border-2 border-primary/50 rounded-lg overflow-hidden bg-primary/5">
+                {/* Pulsing Shield */}
+                <div className="relative flex justify-center py-4">
                   <motion.div
-                    animate={{ top: ['0%', '100%', '0%'] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    className="absolute left-0 right-0 h-1 bg-primary shadow-[0_0_20px_rgba(37,99,235,1)]"
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute w-32 h-32 rounded-full bg-success/10"
                   />
-                  <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 gap-1 opacity-20">
-                    {Array.from({ length: 24 }).map((_, i) => (
-                      <div key={i} className="border border-primary/30"></div>
-                    ))}
+                  <div className="relative p-6 bg-success/10 rounded-full border border-success/30 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                    <ShieldCheck className="w-14 h-14 text-success" />
                   </div>
                 </div>
-                <div className="mt-4 font-mono text-primary animate-pulse">
-                  ANALYZING BIOMETRIC HASH...
+
+                <div>
+                  <h2 className="text-2xl font-black text-success mb-1">
+                    {t('verify.secure_identity_verified', 'Secure Identity Verified')}
+                  </h2>
+                  <p className="text-sm text-base-content/60 font-mono">
+                    {t('verify.biometric_sync', 'Biometric Sync Complete')}
+                  </p>
                 </div>
+
+                {/* Trust Score Summary */}
+                <div className="bg-base-200/60 rounded-xl p-6 border border-base-content/10 text-left space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-base-content/40">
+                    Clearance Matrix
+                  </h3>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-base-content/70">Trust Score</span>
+                    <span className="font-black text-2xl text-success">
+                      {user?.trustScore ?? 0}
+                    </span>
+                  </div>
+                  <div className="w-full bg-base-300 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-success rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${Math.min(((user?.trustScore ?? 0) / 100) * 100, 100)}%`,
+                      }}
+                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-base-content/40 font-mono">
+                    <span>0</span>
+                    <span>100 MAX</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 text-success text-sm font-medium">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Identity confirmed by GEORISE Security Protocol</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─── STATE B: PENDING ─── */}
+            {currentStatus === 'PENDING' && (
+              <motion.div
+                key="pending"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card bg-base-100/50 backdrop-blur-xl border border-warning/30 shadow-[0_0_30px_rgba(251,191,36,0.1)] p-8 text-center space-y-6"
+              >
+                {/* Radar Spinner */}
+                <div className="relative flex justify-center py-4">
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute w-28 h-28 rounded-full border-2 border-warning/40"
+                  />
+                  <div className="relative p-6 bg-warning/10 rounded-full border border-warning/30">
+                    <Clock className="w-14 h-14 text-warning" />
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-black text-warning mb-2">
+                    {t('verify.verification_pending', 'Verification Pending')}
+                  </h2>
+                  <p className="text-sm text-base-content/60 font-mono">Scanning Documents...</p>
+                </div>
+
+                {/* Status Alert */}
+                <div className="alert bg-warning/10 border border-warning/30 text-warning text-sm text-left">
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <div>
+                    <div className="font-bold">Review In Progress</div>
+                    <div className="text-xs opacity-80">
+                      Your documents are being reviewed by the GEORISE security team. This usually
+                      takes 1–2 business days.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step tracker */}
+                <ol className="steps steps-vertical text-left text-sm w-full">
+                  <li className="step step-success">Documents Uploaded</li>
+                  <li className="step step-warning">Security Review</li>
+                  <li className="step">Identity Confirmation</li>
+                  <li className="step">Access Granted</li>
+                </ol>
+              </motion.div>
+            )}
+
+            {/* ─── STATE A / REJECTED ─── */}
+            {(currentStatus === null || currentStatus === 'REJECTED') && (
+              <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                {/* Rejection banner */}
+                {currentStatus === 'REJECTED' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="alert alert-error mb-6 shadow-lg text-sm"
+                  >
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    <div>
+                      <div className="font-bold">Verification Rejected</div>
+                      <div className="text-xs">
+                        {verif?.reviewNote ?? 'Please resubmit with clearer documents.'}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                <form
+                  onSubmit={handleSubmit}
+                  className="card bg-base-100/60 backdrop-blur-xl border border-base-content/10 shadow-xl p-8 space-y-6"
+                >
+                  <div>
+                    <h2 className="text-lg font-bold text-base-content mb-1">
+                      {currentStatus === 'REJECTED'
+                        ? 'Re-submit Documents'
+                        : 'KYC Authorization Form'}
+                    </h2>
+                    <p className="text-xs text-base-content/50 font-mono">
+                      Provide your National ID to upgrade your clearance level.
+                    </p>
+                  </div>
+
+                  {/* Error alert */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="alert alert-error text-sm"
+                      >
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <span>{error}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* National ID Number */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text text-xs font-semibold uppercase tracking-wider text-base-content/50">
+                        {t('verify.national_id_number', 'National ID Number')}
+                      </span>
+                    </label>
+                    <label className="input input-bordered flex items-center gap-3 bg-base-200/50 focus-within:ring-2 ring-primary/50 border-none h-12">
+                      <FileText className="w-5 h-5 text-base-content/40 shrink-0" />
+                      <input
+                        type="text"
+                        className="grow bg-transparent outline-none text-base-content font-mono tracking-widest"
+                        placeholder="ETH-XXXXXXXXX"
+                        value={idNumber}
+                        onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  {/* ID Photo Upload */}
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text text-xs font-semibold uppercase tracking-wider text-base-content/50">
+                        ID Photo Upload
+                      </span>
+                    </label>
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                        file
+                          ? 'border-primary/60 bg-primary/5'
+                          : 'border-base-content/20 bg-base-200/30 hover:bg-base-200/60 hover:border-primary/40'
+                      }`}
+                    >
+                      {filePreview ? (
+                        <img
+                          src={filePreview}
+                          alt="Preview"
+                          className="max-h-36 mx-auto rounded-lg object-contain"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-3 text-base-content/40">
+                          <Upload className="w-10 h-10" />
+                          <div>
+                            <p className="text-sm font-semibold">Click to upload</p>
+                            <p className="text-xs">JPG, PNG up to 5MB</p>
+                          </div>
+                        </div>
+                      )}
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                    {file && (
+                      <p className="text-xs text-base-content/50 mt-2 font-mono">
+                        ✓ {file.name} ({(file.size / 1024).toFixed(0)} KB)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={submitting || !idNumber.trim() || !file}
+                    className="btn btn-primary w-full h-12 text-base shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:scale-[1.02] transition-all disabled:scale-100 disabled:shadow-none"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="loading loading-spinner loading-sm" />
+                        Initiating Authorized Sequence...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5" />
+                        Submit for Verification
+                      </span>
+                    )}
+                  </button>
+
+                  <p className="text-center text-xs text-base-content/40">
+                    Your data is encrypted and processed securely. GEORISE does not share identity
+                    documents with third parties.
+                  </p>
+                </form>
               </motion.div>
             )}
           </AnimatePresence>
-
-          <div className="card-body p-8 lg:p-12">
-            {/* Progress Steps */}
-            <div className="flex items-center justify-center mb-10 w-full">
-              <div
-                className={`flex flex-col items-center ${step === 'ID_SCAN' ? 'text-primary' : 'text-success'} transition-colors`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'ID_SCAN' ? 'border-primary bg-primary/10' : 'border-success bg-success/10'}`}
-                >
-                  1
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider">Credentials</span>
-              </div>
-              <div className={`w-20 h-1 bg-base-content/10 mx-4 relative`}>
-                <motion.div
-                  className="absolute top-0 left-0 h-full bg-success"
-                  initial={{ width: '0%' }}
-                  animate={{ width: step === 'ID_SCAN' ? '0%' : '100%' }}
-                />
-              </div>
-              <div
-                className={`flex flex-col items-center ${step === 'OTP_LINK' ? 'text-primary' : step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'OTP_LINK' ? 'border-primary bg-primary/10' : step === 'VERIFIED' ? 'border-success bg-success' : 'border-base-content/10'}`}
-                >
-                  2
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider">Link</span>
-              </div>
-              <div className={`w-20 h-1 bg-base-content/10 mx-4 relative`}>
-                <motion.div
-                  className="absolute top-0 left-0 h-full bg-success"
-                  initial={{ width: '0%' }}
-                  animate={{ width: step === 'VERIFIED' ? '100%' : '0%' }}
-                />
-              </div>
-              <div
-                className={`flex flex-col items-center ${step === 'VERIFIED' ? 'text-success' : 'text-base-content/30'} transition-colors`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold mb-2 ${step === 'VERIFIED' ? 'border-success bg-success text-white shadow-[0_0_20px_rgba(34,197,94,0.5)]' : 'border-base-content/10'}`}
-                >
-                  <CheckCircle className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider">Authorized</span>
-              </div>
-            </div>
-
-            <AnimatePresence mode="wait">
-              {message && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="alert alert-info shadow-sm mb-6 font-mono text-xs"
-                >
-                  <Activity className="w-4 h-4" /> {message}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {step === 'ID_SCAN' && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">National ID / Resident Card</span>
-                  </label>
-                  <label className="input input-bordered flex items-center gap-3 h-14 bg-base-200 focus-within:ring-2 ring-primary/50 transition-all">
-                    <CreditCard className="w-5 h-5 text-base-content/40" />
-                    <input
-                      type="text"
-                      className="grow font-mono uppercase tracking-widest"
-                      placeholder="ID-XXXXXXXX"
-                      value={nationalId}
-                      onChange={(e) => setNationalId(e.target.value)}
-                    />
-                    <ScanLine className="w-5 h-5 text-base-content/30" />
-                  </label>
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-bold">Registered Mobile Number</span>
-                  </label>
-                  <label className="input input-bordered flex items-center gap-3 h-14 bg-base-200 focus-within:ring-2 ring-primary/50 transition-all">
-                    <Smartphone className="w-5 h-5 text-base-content/40" />
-                    <input
-                      type="tel"
-                      className="grow font-mono"
-                      placeholder="+251..."
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
-                  </label>
-                </div>
-
-                <button
-                  className="btn btn-primary w-full h-12 text-lg shadow-lg hover:brightness-110 mt-4"
-                  onClick={handleIdSubmit}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    'Processing...'
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      Initiate Scan <ScanLine className="w-4 h-4" />
-                    </span>
-                  )}
-                </button>
-              </motion.div>
-            )}
-
-            {step === 'OTP_LINK' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6 text-center"
-              >
-                <div className="flex justify-center mb-4">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Lock className="w-10 h-10 text-primary" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold">Two-Factor Authorization</h3>
-                <p className="text-sm opacity-60">
-                  Enter the cryptographic token sent to your device.
-                </p>
-
-                <div className="flex justify-center my-6">
-                  <input
-                    type="text"
-                    className="input input-bordered w-full max-w-[200px] text-center text-3xl font-mono tracking-[0.5em] h-16 bg-base-200 focus:ring-2 ring-primary"
-                    placeholder="000000"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-
-                <button
-                  className="btn btn-primary w-full h-12 text-lg shadow-lg hover:brightness-110"
-                  onClick={handleOtpSubmit}
-                  disabled={loading || otp.length < 4}
-                >
-                  {loading ? 'Verifying...' : 'Authenticate'}
-                </button>
-              </motion.div>
-            )}
-
-            {step === 'VERIFIED' && (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-center py-8"
-              >
-                <div className="relative inline-block mb-6">
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute inset-0 bg-success/20 rounded-full blur-xl"
-                  ></motion.div>
-                  <ShieldCheck className="w-24 h-24 text-success relative z-10" />
-                </div>
-                <h2 className="text-3xl font-bold text-success mb-2">CLEARANCE GRANTED</h2>
-                <p className="text-lg text-base-content/70 mb-8">
-                  Your identity has been cryptographically verified.
-                  <br />
-                  You are now a <strong>Trusted Responder</strong>.
-                </p>
-
-                <div className="grid grid-cols-2 gap-4 text-left max-w-sm mx-auto mb-8 bg-base-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span>Priority Routing</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span>Direct Dispatch</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span>Location Trust</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span>Badge Unlocked</span>
-                  </div>
-                </div>
-
-                <button
-                  className="btn btn-outline w-full"
-                  onClick={() => (window.location.href = '/citizen/dashboard')}
-                >
-                  Return to Command Center
-                </button>
-              </motion.div>
-            )}
-          </div>
-          {/* Security Footer */}
-          <div className="bg-base-200/50 p-4 border-t border-base-content/5 flex justify-between items-center text-[10px] text-base-content/40 font-mono uppercase">
-            <span className="flex items-center gap-1">
-              <QrCode className="w-3 h-3" /> Secure Protocol v2.4
-            </span>
-            <span>Encrypted E2E</span>
-          </div>
-        </div>
+        )}
       </div>
     </AppLayout>
   );
