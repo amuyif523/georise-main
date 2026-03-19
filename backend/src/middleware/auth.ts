@@ -2,8 +2,38 @@ import type { Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { authService } from '../modules/auth/auth.service';
 import logger from '../logger';
+import prisma from '../prisma';
 
 import redis from '../redis';
+
+const getAuthenticatedUser = async (userId: number) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      isVerified: true,
+      isActive: true,
+      deactivatedAt: true,
+      agencyStaff: {
+        select: {
+          agencyId: true,
+        },
+      },
+    },
+  });
+
+  if (!user || user.isActive === false || user.deactivatedAt) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    role: user.role,
+    isVerified: user.isVerified,
+    agencyId: user.agencyStaff?.agencyId ?? null,
+  };
+};
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -21,11 +51,12 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ message: 'Session revoked. Please contact administration.' });
     }
 
-    req.user = {
-      id: payload.userId,
-      role: payload.role,
-      agencyId: payload.agencyId,
-    };
+    const authenticatedUser = await getAuthenticatedUser(payload.userId);
+    if (!authenticatedUser) {
+      return res.status(401).json({ message: 'User not active' });
+    }
+
+    req.user = authenticatedUser;
 
     // Sprint 6: Scope Hardening
     // If request contains agencyId param/body, ensure it matches user's agency
@@ -61,11 +92,12 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       return res.status(401).json({ message: 'Session revoked. Please contact administration.' });
     }
 
-    req.user = {
-      id: payload.userId,
-      role: payload.role,
-      agencyId: payload.agencyId,
-    };
+    const authenticatedUser = await getAuthenticatedUser(payload.userId);
+    if (!authenticatedUser) {
+      return next();
+    }
+
+    req.user = authenticatedUser;
 
     return next();
   } catch (err) {
