@@ -3,7 +3,7 @@ import prisma from '../src/prisma';
 
 async function main() {
   const users = await prisma.user.findMany({
-    where: { fullName: { contains: 'Haile', mode: 'insensitive' } },
+    where: { fullName: { contains: 'Henok Bekele', mode: 'insensitive' } },
     include: { citizenVerification: true },
   });
 

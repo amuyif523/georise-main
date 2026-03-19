@@ -7,10 +7,16 @@ import TrustBadge from '../../components/user/TrustBadge';
 type Pending = {
   id: number;
   userId: number;
-  nationalId: string;
-  phone: string;
-  status: string;
-  user: { id: number; fullName: string; email: string; trustScore: number };
+  idNumber: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+    phone?: string | null;
+    trustScore?: number;
+    isVerified?: boolean;
+  };
 };
 
 const VerificationPage: React.FC = () => {
@@ -19,8 +25,8 @@ const VerificationPage: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const res = await api.get('/verification/pending');
-    setPending(res.data || []);
+    const res = await api.get('/admin/verify-requests');
+    setPending((res.data.requests || []).filter((request: Pending) => !request.user?.isVerified));
     setLoading(false);
   };
 
@@ -28,8 +34,8 @@ const VerificationPage: React.FC = () => {
     load();
   }, []);
 
-  const decide = async (userId: number, decision: 'APPROVE' | 'REJECT') => {
-    await api.post(`/verification/${userId}/decision`, { decision });
+  const decide = async (requestId: number, status: 'APPROVED' | 'REJECTED') => {
+    await api.patch(`/admin/verify-request/${requestId}`, { status });
     await load();
   };
 
@@ -49,19 +55,19 @@ const VerificationPage: React.FC = () => {
               <div>
                 <div className="text-white font-semibold">{p.user.fullName}</div>
                 <div className="text-xs text-slate-400">{p.user.email}</div>
-                <div className="text-xs text-slate-400">National ID: {p.nationalId}</div>
-                <div className="text-xs text-slate-400">Phone: {p.phone}</div>
+                <div className="text-xs text-slate-400">National ID: {p.idNumber}</div>
+                <div className="text-xs text-slate-400">Phone: {p.user.phone ?? 'N/A'}</div>
                 <div className="mt-1">
                   <TrustBadge trustScore={p.user.trustScore ?? 0} />
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="btn btn-xs" onClick={() => decide(p.user.id, 'APPROVE')}>
+                <button className="btn btn-xs" onClick={() => decide(p.id, 'APPROVED')}>
                   Approve
                 </button>
                 <button
                   className="btn btn-xs btn-outline"
-                  onClick={() => decide(p.user.id, 'REJECT')}
+                  onClick={() => decide(p.id, 'REJECTED')}
                 >
                   Reject
                 </button>

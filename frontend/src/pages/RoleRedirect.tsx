@@ -15,6 +15,10 @@ const RoleRedirect: React.FC = () => {
     }
 
     if (user.role === 'CITIZEN') {
+      if (user.isVerified) {
+        navigate('/citizen', { replace: true });
+        return;
+      }
       navigate('/citizen', { replace: true });
     } else if (user.role === 'AGENCY_STAFF' || user.role === 'AGENCY_MANAGER') {
       navigate('/agency', { replace: true });
