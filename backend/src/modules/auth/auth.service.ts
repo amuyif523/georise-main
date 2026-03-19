@@ -2,7 +2,7 @@
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import crypto from 'crypto';
 import prisma from '../../prisma';
 import {
@@ -28,7 +28,87 @@ import redis from '../../redis';
 const LOCK_THRESHOLD = 5;
 const LOCK_DURATION_MS = 30 * 60 * 1000;
 
+type AuthUserShape = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  role: Role;
+  trustScore: number | null;
+  totalReports: number | null;
+  validReports: number | null;
+  rejectedReports: number | null;
+  isVerified: boolean;
+  createdAt: Date;
+  agencyStaff: {
+    agencyId: number;
+    staffRole: string;
+  } | null;
+  verificationRequest: {
+    id: number;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    reviewNote: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+};
+
 export class AuthService {
+  private readonly userInclude = {
+    agencyStaff: {
+      select: {
+        agencyId: true,
+        staffRole: true,
+      },
+    },
+    verificationRequest: {
+      select: {
+        id: true,
+        status: true,
+        reviewNote: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
+  } satisfies Prisma.UserInclude;
+
+  private getAuthUserSelect() {
+    return {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      trustScore: true,
+      totalReports: true,
+      validReports: true,
+      rejectedReports: true,
+      isVerified: true,
+      createdAt: true,
+      ...this.userInclude,
+    } satisfies Prisma.UserSelect;
+  }
+
+  private toAuthUser(
+    user: AuthUserShape,
+  ) {
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone ?? null,
+      role: user.role,
+      agencyId: user.agencyStaff?.agencyId ?? null,
+      trustScore: user.trustScore ?? 0,
+      totalReports: user.totalReports ?? 0,
+      validReports: user.validReports ?? 0,
+      rejectedReports: user.rejectedReports ?? 0,
+      isVerified: user.isVerified,
+      verificationRequest: user.verificationRequest ?? null,
+      createdAt: user.createdAt,
+    };
+  }
+
   async register(data: RegisterRequestBody) {
     const existing = await prisma.user.findFirst({
       where: {
@@ -68,18 +148,6 @@ export class AuthService {
         role: dbRole,
         trustScore: dbRole === 'CITIZEN' ? 10 : 0, // Set initial trust score to 10 for better demo experience
       },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        role: true,
-        trustScore: true,
-        totalReports: true,
-        validReports: true,
-        rejectedReports: true,
-        createdAt: true,
-      },
     });
 
     // Create Responder Profile if needed
@@ -116,7 +184,8 @@ export class AuthService {
       });
     }
 
-    // If phone is provided, automatically trigger OTP for verification
+    // If phone is provided, trigger phone OTP setup only.
+    // Identity verification requests are created later, after the citizen submits documents.
     if (data.phone) {
       try {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -152,7 +221,16 @@ export class AuthService {
 
     // Responder profile handled above during creation
 
-    return user;
+    const authUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: this.getAuthUserSelect(),
+    });
+
+    if (!authUser) {
+      throw new Error('User not found after registration');
+    }
+
+    return this.toAuthUser(authUser);
   }
 
   async requestOtp(phone: string) {
@@ -190,7 +268,10 @@ export class AuthService {
   async verifyOtpLogin(phone: string, code: string) {
     const user = await prisma.user.findUnique({
       where: { phone },
-      include: { citizenVerification: true, agencyStaff: true },
+      include: {
+        citizenVerification: true,
+        ...this.userInclude,
+      },
     });
 
     if (!user || !user.citizenVerification) throw new Error('Invalid request');
@@ -225,21 +306,22 @@ export class AuthService {
     return {
       token: access,
       refreshToken: refresh,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        agencyId,
-        trustScore: user.trustScore ?? 0,
-      },
+      user: this.toAuthUser(user),
     };
   }
 
   async login(data: LoginRequestBody) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
-      include: { agencyStaff: true },
+      select: {
+        ...this.getAuthUserSelect(),
+        passwordHash: true,
+        isActive: true,
+        deactivatedAt: true,
+        lockedUntil: true,
+        failedLoginAttempts: true,
+        tokenVersion: true,
+      },
     });
 
     if (!user) {
@@ -287,17 +369,7 @@ export class AuthService {
     return {
       token: access,
       refreshToken: refresh,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        agencyId,
-        trustScore: user.trustScore ?? 0,
-        totalReports: user.totalReports ?? 0,
-        validReports: user.validReports ?? 0,
-        rejectedReports: user.rejectedReports ?? 0,
-      },
+      user: this.toAuthUser(user),
     };
   }
 
@@ -327,9 +399,14 @@ export class AuthService {
     const decoded = this.verifyRefresh(oldToken);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { agencyStaff: true },
+      select: {
+        ...this.getAuthUserSelect(),
+        isActive: true,
+        tokenVersion: true,
+      },
     });
-    if (!user || user.isActive === false || user.deactivatedAt) throw new Error('User not active');
+
+    if (!user || user.isActive === false) throw new Error('User not active');
     if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
       throw new Error('Invalid refresh token');
     }
@@ -337,43 +414,25 @@ export class AuthService {
     const agencyId = user.agencyStaff?.agencyId || null;
     const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
-    return { access, refresh, user };
+
+    return {
+      token: access,
+      refreshToken: refresh,
+      user: this.toAuthUser(user),
+    };
   }
 
   async getCurrentUser(userId: number) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        role: true,
-        trustScore: true,
-        totalReports: true,
-        validReports: true,
-        rejectedReports: true,
-        isVerified: true,
-        createdAt: true,
-        agencyStaff: { select: { agencyId: true, staffRole: true, agency: true } },
-        responders: { select: { id: true, agencyId: true, type: true } },
-        verificationRequest: {
-          select: {
-            id: true,
-            status: true,
-            reviewNote: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
+      select: this.getAuthUserSelect(),
     });
 
     if (!user) {
       throw new Error('User not found');
     }
 
-    return user;
+    return this.toAuthUser(user);
   }
 
   private async bumpFailure(userId: number, current: number) {

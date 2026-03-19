@@ -5,6 +5,7 @@ declare global {
     interface UserPayload {
       id: number;
       role: Role;
+      isVerified: boolean;
       agencyId?: number | null;
     }
 
