@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Upload, FileText, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Upload, FileText, Clock, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../layouts/AppLayout';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +13,7 @@ type VerifStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | null;
 const CitizenVerificationPage: React.FC = () => {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
 
   // Form state
   const [idNumber, setIdNumber] = useState('');
@@ -21,10 +23,17 @@ const CitizenVerificationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Determine initial status from AuthContext (which now includes verificationRequest)
+  /**
+   * FIX: HIERARCHICAL STATUS CHECK
+   * We prioritize the 'isVerified' boolean from the User object. 
+   * Even if the request status in the DB is still 'PENDING', 
+   * if isVerified is true, the user is APPROVED.
+   */
+  const hasVerificationRequest = Boolean(user?.verificationRequest);
   const currentStatus: VerifStatus = user?.isVerified
     ? 'APPROVED'
     : (user?.verificationRequest?.status as VerifStatus) || null;
+  const showVerificationForm = !hasVerificationRequest || currentStatus === 'REJECTED';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -53,7 +62,9 @@ const CitizenVerificationPage: React.FC = () => {
       await api.post('/users/verify', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      // Force refresh the user object in AuthContext to update the UI globally
+
+      // Antigravity Fix: Refreshing user ensures the AuthContext 
+      // picks up the 'PENDING' status immediately after upload.
       await refreshUser();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Submission failed. Please try again.');
@@ -87,35 +98,39 @@ const CitizenVerificationPage: React.FC = () => {
         ) : (
           <AnimatePresence mode="wait">
             {/* ─── STATE C: VERIFIED (APPROVED) ─── */}
-            {currentStatus === 'APPROVED' && (
+            {user.isVerified && (
               <motion.div
                 key="verified"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="card bg-base-100/60 backdrop-blur-xl border border-success/30 shadow-[0_0_40px_rgba(34,197,94,0.15)] p-8 text-center space-y-6"
               >
-                {/* Pulsing Shield */}
-                <div className="relative flex justify-center py-4">
+                <div className="relative flex justify-center py-6">
                   <motion.div
-                    animate={{ scale: [1, 1.15, 1] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute w-32 h-32 rounded-full bg-success/10"
+                    animate={{ scale: [0.95, 1.08, 0.95], opacity: [0.5, 0.85, 0.5] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute w-36 h-36 rounded-full bg-success/10"
                   />
-                  <div className="relative p-6 bg-success/10 rounded-full border border-success/30 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                    <ShieldCheck className="w-14 h-14 text-success" />
-                  </div>
+                  <motion.div
+                    initial={{ scale: 0.8, rotate: -6 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 180, damping: 14 }}
+                    className="relative flex h-28 w-28 items-center justify-center rounded-full border border-success/30 bg-success/10 shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+                  >
+                    <ShieldCheck className="h-16 w-16 text-success" />
+                  </motion.div>
                 </div>
 
                 <div>
                   <h2 className="text-2xl font-black text-success mb-1">
-                    {t('verify.secure_identity_verified', 'Secure Identity Verified')}
+                    Identity Verified
                   </h2>
-                  <p className="text-sm text-base-content/60 font-mono">
-                    {t('verify.biometric_sync', 'Biometric Sync Complete')}
+                  <p className="text-sm text-base-content/70 max-w-lg mx-auto">
+                    Your account is now fully active. You can now report incidents and track
+                    responses in real-time.
                   </p>
                 </div>
 
-                {/* Trust Score Summary */}
                 <div className="bg-base-200/60 rounded-xl p-6 border border-base-content/10 text-left space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-base-content/40">
                     Clearance Matrix
@@ -136,28 +151,33 @@ const CitizenVerificationPage: React.FC = () => {
                       transition={{ duration: 1.2, ease: 'easeOut' }}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-base-content/40 font-mono">
-                    <span>0</span>
-                    <span>100 MAX</span>
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-center gap-2 text-success text-sm font-medium">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Identity confirmed by GEORISE Security Protocol</span>
+                  <span>Verification successful</span>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => navigate('/citizen', { replace: true })}
+                    className="btn btn-success text-white w-full gap-2 group shadow-lg shadow-success/20"
+                  >
+                    Continue to Dashboard
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </motion.div>
             )}
 
             {/* ─── STATE B: PENDING ─── */}
-            {currentStatus === 'PENDING' && (
+            {!user.isVerified && currentStatus === 'PENDING' && (
               <motion.div
                 key="pending"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="card bg-base-100/50 backdrop-blur-xl border border-warning/30 shadow-[0_0_30px_rgba(251,191,36,0.1)] p-8 text-center space-y-6"
               >
-                {/* Radar Spinner */}
                 <div className="relative flex justify-center py-4">
                   <motion.div
                     animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }}
@@ -176,32 +196,28 @@ const CitizenVerificationPage: React.FC = () => {
                   <p className="text-sm text-base-content/60 font-mono">Scanning Documents...</p>
                 </div>
 
-                {/* Status Alert */}
                 <div className="alert bg-warning/10 border border-warning/30 text-warning text-sm text-left">
                   <Clock className="w-4 h-4 shrink-0" />
                   <div>
                     <div className="font-bold">Review In Progress</div>
                     <div className="text-xs opacity-80">
-                      Your documents are being reviewed by the GEORISE security team. This usually
-                      takes 1–2 business days.
+                      Our security team is reviewing your ID. You will gain full access to reporting
+                      tools once cleared.
                     </div>
                   </div>
                 </div>
 
-                {/* Step tracker */}
                 <ol className="steps steps-vertical text-left text-sm w-full">
                   <li className="step step-success">Documents Uploaded</li>
                   <li className="step step-warning">Security Review</li>
                   <li className="step">Identity Confirmation</li>
-                  <li className="step">Access Granted</li>
                 </ol>
               </motion.div>
             )}
 
             {/* ─── STATE A / REJECTED ─── */}
-            {(currentStatus === null || currentStatus === 'REJECTED') && (
+            {!user.isVerified && showVerificationForm && (
               <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                {/* Rejection banner */}
                 {currentStatus === 'REJECTED' && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
@@ -227,14 +243,15 @@ const CitizenVerificationPage: React.FC = () => {
                     <h2 className="text-lg font-bold text-base-content mb-1">
                       {currentStatus === 'REJECTED'
                         ? 'Re-submit Documents'
-                        : 'KYC Authorization Form'}
+                        : 'Start Verification'}
                     </h2>
                     <p className="text-xs text-base-content/50 font-mono">
-                      Provide your National ID to upgrade your clearance level.
+                      {hasVerificationRequest
+                        ? 'Provide updated documents to continue your review.'
+                        : 'Provide your National ID and documents to enter the review queue.'}
                     </p>
                   </div>
 
-                  {/* Error alert */}
                   <AnimatePresence>
                     {error && (
                       <motion.div
@@ -249,7 +266,6 @@ const CitizenVerificationPage: React.FC = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* National ID Number */}
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text text-xs font-semibold uppercase tracking-wider text-base-content/50">
@@ -269,7 +285,6 @@ const CitizenVerificationPage: React.FC = () => {
                     </label>
                   </div>
 
-                  {/* ID Photo Upload */}
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text text-xs font-semibold uppercase tracking-wider text-base-content/50">
@@ -278,25 +293,17 @@ const CitizenVerificationPage: React.FC = () => {
                     </label>
                     <div
                       onClick={() => fileRef.current?.click()}
-                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                        file
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${file
                           ? 'border-primary/60 bg-primary/5'
                           : 'border-base-content/20 bg-base-200/30 hover:bg-base-200/60 hover:border-primary/40'
-                      }`}
+                        }`}
                     >
                       {filePreview ? (
-                        <img
-                          src={filePreview}
-                          alt="Preview"
-                          className="max-h-36 mx-auto rounded-lg object-contain"
-                        />
+                        <img src={filePreview} alt="Preview" className="max-h-36 mx-auto rounded-lg" />
                       ) : (
                         <div className="flex flex-col items-center gap-3 text-base-content/40">
                           <Upload className="w-10 h-10" />
-                          <div>
-                            <p className="text-sm font-semibold">Click to upload</p>
-                            <p className="text-xs">JPG, PNG up to 5MB</p>
-                          </div>
+                          <p className="text-sm font-semibold">Click to upload JPG/PNG</p>
                         </div>
                       )}
                       <input
@@ -307,36 +314,15 @@ const CitizenVerificationPage: React.FC = () => {
                         onChange={handleFileChange}
                       />
                     </div>
-                    {file && (
-                      <p className="text-xs text-base-content/50 mt-2 font-mono">
-                        ✓ {file.name} ({(file.size / 1024).toFixed(0)} KB)
-                      </p>
-                    )}
                   </div>
 
-                  {/* Submit */}
                   <button
                     type="submit"
                     disabled={submitting || !idNumber.trim() || !file}
-                    className="btn btn-primary w-full h-12 text-base shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:scale-[1.02] transition-all disabled:scale-100 disabled:shadow-none"
+                    className="btn btn-primary w-full h-12 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
                   >
-                    {submitting ? (
-                      <span className="flex items-center gap-2">
-                        <span className="loading loading-spinner loading-sm" />
-                        Initiating Authorized Sequence...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5" />
-                        Submit for Verification
-                      </span>
-                    )}
+                    {submitting ? 'Initiating Protocol...' : 'Submit for Verification'}
                   </button>
-
-                  <p className="text-center text-xs text-base-content/40">
-                    Your data is encrypted and processed securely. GEORISE does not share identity
-                    documents with third parties.
-                  </p>
                 </form>
               </motion.div>
             )}
