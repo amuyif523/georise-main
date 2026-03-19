@@ -49,29 +49,38 @@ export const submitVerificationRequest = async (req: Request, res: Response) => 
   const idPhotoUrl = `/uploads/${relPath}`;
 
   try {
-    // Upsert so a user can re-submit after previous REJECTION
-    const request = await prisma.verificationRequest.upsert({
-      where: { userId },
-      update: {
-        idNumber: idNumber.trim(),
-        idPhotoUrl,
-        status: 'PENDING',
-        reviewNote: null,
-      },
-      create: {
-        userId,
-        idNumber: idNumber.trim(),
-        idPhotoUrl,
-      },
-    });
+    // Verification enters the review pipeline only after the citizen submits documents.
+    const request = await prisma.$transaction(async (tx) => {
+      const nextRequest = await tx.verificationRequest.upsert({
+        where: { userId },
+        update: {
+          idNumber: idNumber.trim(),
+          idPhotoUrl,
+          status: 'PENDING',
+          reviewNote: null,
+        },
+        create: {
+          userId,
+          idNumber: idNumber.trim(),
+          idPhotoUrl,
+        },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: userId,
-        action: 'SUBMIT_VERIFICATION_REQUEST',
-        targetType: 'User',
-        targetId: userId,
-      },
+      await tx.user.update({
+        where: { id: userId },
+        data: { isVerified: false },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          action: 'SUBMIT_VERIFICATION_REQUEST',
+          targetType: 'User',
+          targetId: userId,
+        },
+      });
+
+      return nextRequest;
     });
 
     logger.info({ userId, requestId: request.id }, 'Verification request submitted');
@@ -99,6 +108,42 @@ export const getVerificationStatus = async (req: Request, res: Response) => {
 };
 
 /**
+ * GET /api/admin/verify-requests
+ * Returns only active, reviewable verification submissions.
+ */
+export const getPendingVerificationRequests = async (_req: Request, res: Response) => {
+  const requests = await prisma.verificationRequest.findMany({
+    where: {
+      status: 'PENDING',
+      idNumber: {
+        notIn: ['', 'PENDING'],
+      },
+      idPhotoUrl: {
+        not: '',
+      },
+      user: {
+        isVerified: false,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          trustScore: true,
+          isVerified: true,
+        },
+      },
+    },
+  });
+
+  return res.json({ requests });
+};
+
+/**
  * PATCH /api/admin/verify-request/:id
  * Admin approves or rejects a verification request.
  */
@@ -114,34 +159,54 @@ export const updateVerificationStatus = async (req: Request, res: Response) => {
     if (isNaN(requestId)) return res.status(400).json({ message: 'Invalid request ID' });
 
     const verReq = await prisma.verificationRequest.findUnique({ where: { id: requestId } });
-    if (!verReq) return res.status(404).json({ message: 'Verification request not found' });
+    if (!verReq) {
+      const userScopedRequest = await prisma.verificationRequest.findUnique({ where: { userId: requestId } });
+      if (userScopedRequest) {
+        logger.warn(
+          { requestId, userId: userScopedRequest.userId, verificationRequestId: userScopedRequest.id },
+          'Admin verification route received a user ID instead of a verification request ID',
+        );
+        return res.status(400).json({
+          message: 'Expected verification request ID, but received a user ID.',
+          requestId: userScopedRequest.id,
+          userId: userScopedRequest.userId,
+        });
+      }
 
-    const updated = await prisma.verificationRequest.update({
-      where: { id: requestId },
-      data: { status, reviewNote: reviewNote ?? null },
+      return res.status(404).json({ message: 'Verification request not found' });
+    }
+
+    const isVerified = status === 'APPROVED';
+    const updated = await prisma.$transaction(async (tx) => {
+      const request = await tx.verificationRequest.update({
+        where: { id: requestId },
+        data: { status, reviewNote: reviewNote ?? null },
+      });
+
+      await tx.user.update({
+        where: { id: verReq.userId },
+        data: { isVerified },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user!.id,
+          action: `VERIFICATION_${status}`,
+          targetType: 'User',
+          targetId: verReq.userId,
+          note: reviewNote,
+        },
+      });
+
+      console.log('✅ DATABASE SYNC SUCCESSFUL', { userId: verReq.userId, status });
+
+      return request;
     });
 
-    let isVerified = false;
     if (status === 'APPROVED') {
-      isVerified = true;
-      // Set user as verified and grant +25 trust score bonus
-      await prisma.user.update({
-        where: { id: verReq.userId },
-        data: { isVerified: true },
-      });
       const { reputationService } = await import('../reputation/reputation.service');
       await reputationService.adjustTrust(verReq.userId, 25);
     }
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user!.id,
-        action: `VERIFICATION_${status}`,
-        targetType: 'User',
-        targetId: verReq.userId,
-        note: reviewNote,
-      },
-    });
 
     // Real-time socket notification
     try {

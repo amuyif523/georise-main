@@ -1155,13 +1155,12 @@ router.patch(
 router.post('/broadcast', requireAuth, requireRole([Role.ADMIN]), systemController.sendBroadcast);
 
 // ---------- Verification Request Admin Endpoints ----------
-router.get('/verify-requests', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
-  const requests = await prisma.verificationRequest.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: { select: { id: true, fullName: true, email: true, phone: true } } },
-  });
-  res.json({ requests });
-});
+router.get(
+  '/verify-requests',
+  requireAuth,
+  requireRole([Role.ADMIN]),
+  verificationController.getPendingVerificationRequests,
+);
 
 const verifyRequestSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
