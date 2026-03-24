@@ -25,6 +25,7 @@ type ClusterPoint = {
 interface Props {
   historyMode?: boolean;
   jurisdiction?: any;
+  center?: { lat: number; lng: number } | null;
 }
 
 type HeatmapPoint = {
@@ -175,15 +176,18 @@ const IncidentMap: React.FC<Props> = ({ historyMode, jurisdiction }) => {
 const MapWrapper: React.FC<Props> = (props) => {
   const { user } = useAuth();
   const userRole = (user as any)?.role;
+  const overrideCenter = props.center;
 
   const rawLat = (user as any)?.agencyStaff?.agency?.centerLatitude;
   const rawLng = (user as any)?.agencyStaff?.agency?.centerLongitude;
 
   const isCitizen = userRole === 'CITIZEN';
-  const safeLat = isCitizen ? 9.0197 : Number(rawLat) || 9.0197;
-  const safeLng = isCitizen ? 38.7525 : Number(rawLng) || 38.7525;
+  const safeLat = overrideCenter?.lat ?? (isCitizen ? 9.0197 : Number(rawLat) || 9.0197);
+  const safeLng = overrideCenter?.lng ?? (isCitizen ? 38.7525 : Number(rawLng) || 38.7525);
 
-  const isDataValid = !isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined';
+  const isDataValid =
+    Boolean(overrideCenter) ||
+    (!isNaN(Number(rawLat)) && rawLat !== null && typeof rawLat !== 'undefined');
   const isAgencyRole = ['AGENCY_STAFF', 'AGENCY_MANAGER'].includes(userRole);
 
   if (isAgencyRole && !isDataValid) {

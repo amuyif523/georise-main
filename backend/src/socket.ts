@@ -79,13 +79,58 @@ export const initSocketServer = (server: HttpServer) => {
       try {
         const resp = await prisma.responder.findFirst({
           where: { userId },
-          select: { id: true, agencyId: true },
+          select: { id: true, agencyId: true, latitude: true, longitude: true },
         });
         if (resp) {
           (socket as any).responderId = resp.id;
           (socket as any).responderAgencyId = resp.agencyId;
           socket.join(`responder:${resp.id}`);
           logger.info({ userId, responderId: resp.id }, 'Joined responder room');
+
+          const initialLat =
+            typeof resp.latitude === 'number' && Number.isFinite(resp.latitude)
+              ? resp.latitude
+              : null;
+          const initialLng =
+            typeof resp.longitude === 'number' && Number.isFinite(resp.longitude)
+              ? resp.longitude
+              : null;
+
+          const initialPresence = {
+            lat: initialLat,
+            lng: initialLng,
+            status: ResponderStatus.AVAILABLE,
+            presenceStatus: 'STANDBY',
+            updatedAt: Date.now(),
+          };
+
+          try {
+            await redis.hset(
+              'responder:locations',
+              String(resp.id),
+              JSON.stringify(initialPresence),
+            );
+          } catch (redisErr) {
+            logger.error({ err: redisErr, responderId: resp.id }, 'Failed to prime responder presence');
+          }
+
+          if (resp.agencyId) {
+            io?.to(`agency:${resp.agencyId}`).emit('responder:online', {
+              responderId: resp.id,
+              lat: initialLat,
+              lng: initialLng,
+              status: 'STANDBY',
+            });
+
+            if (initialLat !== null && initialLng !== null) {
+              io?.to(`agency:${resp.agencyId}`).emit('responder:position', {
+                responderId: resp.id,
+                lat: initialLat,
+                lng: initialLng,
+                status: ResponderStatus.AVAILABLE,
+              });
+            }
+          }
         }
       } catch (err) {
         logger.error({ err }, 'Failed joining responder room');

@@ -5,6 +5,7 @@ import AppLayout from '../layouts/AppLayout';
 import type { IncidentListItem } from '../types/incidents';
 import { motion } from 'framer-motion';
 import IncidentMap from '../components/maps/IncidentMap';
+import Skeleton from '../components/ui/Skeleton';
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({
   label,
@@ -25,7 +26,7 @@ import { getSocket } from '../lib/socket';
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
   const [view, setView] = useState<'live' | 'history'>('live');
-  const [recent, setRecent] = useState<IncidentListItem[]>([]);
+  const [recent, setRecent] = useState<IncidentListItem[] | null>(null);
   const [suggestion, setSuggestion] = useState<{
     agencyId: number;
     unitId: number | null;
@@ -35,6 +36,7 @@ const AgencyDashboard: React.FC = () => {
   const [loadingSuggest, setLoadingSuggest] = useState(false);
 
   const [jurisdiction, setJurisdiction] = useState<any>(null);
+  const [agencyCenter, setAgencyCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
@@ -45,8 +47,21 @@ const AgencyDashboard: React.FC = () => {
         // Fetch User Agency to get Jurisdiction
         try {
           const agencyRes = await api.get('/agency/profile');
-          if (agencyRes.data && agencyRes.data.jurisdiction) {
-            setJurisdiction(agencyRes.data.jurisdiction);
+          if (agencyRes.data) {
+            if (agencyRes.data.jurisdiction) {
+              setJurisdiction(agencyRes.data.jurisdiction);
+            }
+            if (
+              agencyRes.data.centerLatitude !== null &&
+              agencyRes.data.centerLatitude !== undefined &&
+              agencyRes.data.centerLongitude !== null &&
+              agencyRes.data.centerLongitude !== undefined
+            ) {
+              setAgencyCenter({
+                lat: Number(agencyRes.data.centerLatitude),
+                lng: Number(agencyRes.data.centerLongitude),
+              });
+            }
           }
         } catch (err) {
           console.error('Failed to load agency profile:', err);
@@ -94,7 +109,7 @@ const AgencyDashboard: React.FC = () => {
     const socket = getSocket();
     if (socket) {
       const handleCreated = (newIncident: IncidentListItem) => {
-        setRecent((prev) => [newIncident, ...prev].slice(0, 5));
+        setRecent((prev) => [newIncident, ...(prev ?? [])].slice(0, 5));
         setStats((s) => ({
           ...s,
           active: s.active + 1,
@@ -103,7 +118,7 @@ const AgencyDashboard: React.FC = () => {
       };
 
       const handleUpdated = (updated: IncidentListItem) => {
-        setRecent((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+        setRecent((prev) => (prev ?? []).map((i) => (i.id === updated.id ? updated : i)));
         if (updated.status === 'RESOLVED') {
           setStats((s) => ({ ...s, active: Math.max(0, s.active - 1), resolved: s.resolved + 1 }));
         }
@@ -120,7 +135,7 @@ const AgencyDashboard: React.FC = () => {
   }, []);
 
   const acceptSuggestion = async () => {
-    if (!suggestion || !recent.length) return;
+    if (!suggestion || !recent?.length) return;
     const target = recent.find((i) => i.status !== 'RESOLVED');
     if (!target) return;
     try {
@@ -148,10 +163,10 @@ const AgencyDashboard: React.FC = () => {
 
       <div className="grid grid-cols-12 gap-4">
         <motion.div
-          className="col-span-12 lg:col-span-8 cyber-card h-[60vh] lg:h-[calc(100vh-220px)]"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        className="col-span-12 lg:col-span-8 cyber-card h-[60vh] lg:h-[calc(100vh-220px)]"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <MapPin size={18} className="text-cyan-300" />
@@ -182,22 +197,29 @@ const AgencyDashboard: React.FC = () => {
               ? 'Real-time situational awareness within your operational jurisdiction.'
               : 'AI-generated hotspots based on high-severity clusters over the last 30 days.'}
           </p>
-          <div className="mt-4 h-[calc(100%-100px)] rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden relative">
+          <div className="mt-4 h-[420px] lg:h-[calc(100%-100px)] min-h-[320px] rounded-lg border border-slate-800 bg-slate-900/40 overflow-hidden relative">
             {/* If stats active is 0, we can show a placeholder or overlay, but keeping the map is better contextually. 
                  The request says: "If no incidents are found, show a 'Waiting for reports in Bole...' empty state instead of a blank box." 
              */}
 
             {/* Ensure map only renders if we're not loading profile to avoid jumpiness, or render anyway */}
-            {profileLoading ? (
-              <div className="flex h-full items-center justify-center text-slate-500 gap-2">
-                <span className="loading loading-spinner loading-md"></span> Loading map
-                configuration...
+            {profileLoading || recent === null ? (
+              <div className="h-full w-full p-4">
+                <Skeleton className="h-full w-full rounded-lg" />
               </div>
             ) : (
-              <IncidentMap historyMode={view === 'history'} jurisdiction={jurisdiction} />
+              <IncidentMap
+                historyMode={view === 'history'}
+                jurisdiction={jurisdiction}
+                center={agencyCenter ?? { lat: 9.0197, lng: 38.7525 }}
+              />
             )}
 
-            {!loadingSuggest && stats.active === 0 && view === 'live' && !profileLoading && (
+            {!loadingSuggest &&
+              stats.active === 0 &&
+              view === 'live' &&
+              !profileLoading &&
+              recent !== null && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[1000] pointer-events-none">
                 <div className="text-center p-6 bg-slate-900/90 border border-slate-700 rounded-xl shadow-2xl">
                   <Activity className="w-10 h-10 text-emerald-500 mx-auto mb-3 opacity-80" />
@@ -218,7 +240,7 @@ const AgencyDashboard: React.FC = () => {
               <h3 className="font-semibold">Recent incidents</h3>
             </div>
             <div className="space-y-3">
-              {recent.map((i) => (
+              {(recent || []).map((i) => (
                 <div key={i.id} className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{i.title}</p>
@@ -234,7 +256,7 @@ const AgencyDashboard: React.FC = () => {
                   </p>
                 </div>
               ))}
-              {!recent.length && (
+              {recent !== null && recent.length === 0 && (
                 <div className="p-6 text-center border border-dashed border-slate-800 rounded-lg">
                   <p className="text-sm text-slate-500">No active incidents reported recently.</p>
                 </div>

@@ -337,18 +337,40 @@ router.patch(
       const { assignedAgencyId, assignedResponderId } = req.body;
 
       const updated = await prisma.$transaction(async (tx) => {
+        let resolvedAgencyId = assignedAgencyId ?? null;
+
+        if (assignedResponderId) {
+          const responder = await tx.responder.findUnique({
+            where: { id: Number(assignedResponderId) },
+            select: { agencyId: true, status: true, isActive: true, deletedAt: true },
+          });
+
+          if (!responder || !responder.isActive || responder.deletedAt) {
+            throw new Error('Responder not found');
+          }
+
+          if (
+            responder.status !== ResponderStatus.AVAILABLE &&
+            responder.status !== ResponderStatus.STANDBY
+          ) {
+            throw new Error(`Responder is currently ${responder.status} and cannot be assigned.`);
+          }
+
+          resolvedAgencyId = responder.agencyId;
+        }
+
         const inc = await tx.incident.update({
           where: { id: incidentId },
           data: {
             status: IncidentStatus.ASSIGNED,
-            assignedAgencyId: assignedAgencyId ?? null,
+            assignedAgencyId: resolvedAgencyId,
             assignedResponderId: assignedResponderId ?? null,
           },
         });
 
         if (assignedResponderId) {
           await tx.responder.update({
-            where: { id: assignedResponderId },
+            where: { id: Number(assignedResponderId) },
             data: { status: 'ASSIGNED' },
           });
         }

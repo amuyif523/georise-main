@@ -1,15 +1,22 @@
 import prisma from '../../prisma';
 import * as turf from '@turf/turf';
+import { ResponderStatus } from '@prisma/client';
 import { routingService } from '../../services/routing.service';
 
 interface DispatchCandidate {
   agencyId: number;
+  agencyName: string;
   unitId: number | null;
+  unitName: string | null;
+  responderStatus: ResponderStatus | null;
+  subCityName?: string | null;
+  woredaName?: string | null;
   distanceKm: number | null;
   estimatedDurationMin?: number | null;
   jurisdictionScore: number;
   severityScore: number;
   proximityScore: number;
+  statusScore: number;
   totalScore: number;
 }
 
@@ -18,43 +25,32 @@ const normalize = (value: number | null, max: number) => {
   return Math.max(0, Math.min(1, value / max));
 };
 
-const categoryPreferred = (category?: string | null, agencyType?: string | null): number => {
-  if (!category || !agencyType) return 0;
-  const cat = category.toLowerCase();
-  const type = agencyType.toLowerCase();
-  if (type === 'fire' && (cat.includes('fire') || cat.includes('smoke'))) return 0.2;
-  if (
-    type === 'medical' &&
-    (cat.includes('medical') || cat.includes('injury') || cat.includes('ambulance'))
-  )
-    return 0.2;
-  if (
-    type === 'police' &&
-    (cat.includes('crime') || cat.includes('assault') || cat.includes('robbery'))
-  )
-    return 0.15;
-  if (
-    type === 'traffic' &&
-    (cat.includes('traffic') || cat.includes('accident') || cat.includes('crash'))
-  )
-    return 0.15;
+const haversineDistanceKm = (
+  startLat: number,
+  startLon: number,
+  endLat: number,
+  endLon: number,
+) => {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(endLat - startLat);
+  const dLon = toRadians(endLon - startLon);
+  const originLat = toRadians(startLat);
+  const destinationLat = toRadians(endLat);
 
-  // Infrastructure routing
-  if (
-    cat === 'infrastructure' ||
-    cat.includes('hazard') ||
-    cat.includes('pothole') ||
-    cat.includes('light')
-  ) {
-    if (
-      type === 'construction' ||
-      type === 'electric' ||
-      type === 'water' ||
-      type === 'administration'
-    )
-      return 0.3;
-  }
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(originLat) *
+      Math.cos(destinationLat) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
+  return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+const statusScoreForResponder = (status: ResponderStatus | null) => {
+  if (status === ResponderStatus.AVAILABLE) return 1;
+  if (status === ResponderStatus.STANDBY) return 0.6;
   return 0;
 };
 
@@ -63,164 +59,147 @@ export class DispatchService {
     incidentId: number,
     scopedAgencyId?: number | null,
   ): Promise<DispatchCandidate[]> {
-    const incidentRows: any[] = await prisma.$queryRaw`
+    const incidentRows: Array<{
+      id: number;
+      severityScore: number | null;
+      latitude: number | null;
+      longitude: number | null;
+      declinedResponderIds: number[];
+      location: unknown;
+    }> = await prisma.$queryRaw`
       SELECT id,
              "severityScore",
-             location,
              latitude,
              longitude,
-             category,
-             "declinedResponderIds"
+             "declinedResponderIds",
+             location
       FROM "Incident"
       WHERE id = ${incidentId}
-      LIMIT 1;
+      LIMIT 1
     `;
-    if (!incidentRows.length) {
+
+    const incident = incidentRows[0];
+    if (!incident) {
       throw new Error('Incident not found');
     }
-    const incident = incidentRows[0];
-    const severityNorm = normalize(incident.severityscore ?? 3, 5);
 
-    // load agencies with optional jurisdiction geometry
-    const agencies: any[] = await prisma.$queryRaw`
-      SELECT id,
-             name,
-             type,
-             jurisdiction
-      FROM "Agency"
-      WHERE "isActive" = true
-    `;
+    const severityNorm = normalize(incident.severityScore ?? 3, 5);
+    const agencies: Array<{ id: number; name: string; jurisdiction: unknown }> =
+      await prisma.$queryRawUnsafe(
+        `
+          SELECT id, name, jurisdiction
+          FROM "Agency"
+          WHERE "isActive" = true
+          ${scopedAgencyId ? `AND id = ${Number(scopedAgencyId)}` : ''}
+        `,
+      );
 
-    // load available units with last known position
-    let units: any[] = [];
+    const responders = await prisma.responder.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        status: { in: [ResponderStatus.AVAILABLE, ResponderStatus.STANDBY] },
+        ...(scopedAgencyId ? { agencyId: scopedAgencyId } : {}),
+      },
+      select: {
+        id: true,
+        agencyId: true,
+        name: true,
+        status: true,
+        latitude: true,
+        longitude: true,
+        subCity: { select: { name: true } },
+        woreda: { select: { name: true } },
+      },
+    });
 
-    if (incident.location) {
-      units = await prisma.$queryRaw`
-        SELECT u.id,
-               u."agencyId",
-               u.name,
-               u.status,
-               u.latitude as "lastLat",
-               u.longitude as "lastLon",
-               ST_DistanceSphere(
-                 ST_SetSRID(ST_MakePoint(u.longitude, u.latitude), 4326),
-                 ${incident.location}
-               ) / 1000 AS distance_km
-        FROM "Responder" u
-        WHERE u.status::text = 'AVAILABLE'
-          AND u.latitude IS NOT NULL 
-          AND u.longitude IS NOT NULL;
-      `;
-    } else {
-      // Fallback if incident has no location: just get available units
-      units = await prisma.$queryRaw`
-        SELECT u.id,
-               u."agencyId",
-               u.name,
-               u.status,
-               u.latitude as "lastLat",
-               u.longitude as "lastLon",
-               NULL as distance_km
-        FROM "Responder" u
-        WHERE u.status::text = 'AVAILABLE';
-      `;
-    }
-
+    const declinedResponderIds = incident.declinedResponderIds || [];
     const candidates: DispatchCandidate[] = [];
 
-    const targetAgencies = scopedAgencyId
-      ? agencies.filter((a) => a.id === scopedAgencyId)
-      : agencies;
-
-    for (const agency of targetAgencies) {
-      // jurisdiction check if geometry available
+    for (const agency of agencies) {
       let inJurisdiction = false;
       if (agency.jurisdiction && incident.location) {
-        const flag: any[] = await prisma.$queryRaw`
+        const flag: Array<{ inside: boolean }> = await prisma.$queryRaw`
           SELECT ST_Contains(${agency.jurisdiction}::geometry, ${incident.location}::geometry) AS inside
         `;
         inJurisdiction = !!flag[0]?.inside;
       }
+
       const jurisdictionScore = inJurisdiction ? 1 : 0.5;
-      const declinedIds: number[] = incident.declinedResponderIds || [];
+      const agencyResponders = responders.filter(
+        (responder) =>
+          responder.agencyId === agency.id && !declinedResponderIds.includes(responder.id),
+      );
 
-      const agencyUnits = units.filter((u) => {
-        const uId = u.id;
-        const aId = u.agencyid || u.agencyId;
-        return aId === agency.id && !declinedIds.includes(uId);
-      });
+      for (const responder of agencyResponders) {
+        let distanceKm: number | null = null;
+        let estimatedDurationMin: number | null = null;
 
-      if (!agencyUnits.length) {
-        const catBonus = categoryPreferred(incident.category, agency.type);
-        const totalScore = jurisdictionScore * 0.5 + severityNorm * 0.4 + catBonus;
-        candidates.push({
-          agencyId: agency.id,
-          unitId: null,
-          distanceKm: null,
-          jurisdictionScore,
-          severityScore: severityNorm,
-          proximityScore: 0,
-          totalScore,
-        });
-        continue;
-      }
-
-      for (const unit of agencyUnits) {
-        const straightLineKm = unit.distance_km as number | null;
-
-        // Calculate drive-time and road distance via routing provider (cached with fallback)
-        let durationMin = 0;
-        let distanceKm = straightLineKm;
         if (
-          incident.location &&
-          incident.latitude &&
-          incident.longitude &&
-          unit.lastLat &&
-          unit.lastLon
+          incident.latitude !== null &&
+          incident.longitude !== null &&
+          responder.latitude !== null &&
+          responder.longitude !== null
         ) {
+          distanceKm = haversineDistanceKm(
+            incident.latitude,
+            incident.longitude,
+            responder.latitude,
+            responder.longitude,
+          );
+
           try {
             const route = await routingService.calculateRoute(
-              unit.lastLat,
-              unit.lastLon,
+              responder.latitude,
+              responder.longitude,
               incident.latitude,
               incident.longitude,
             );
-            if (route.distanceKm !== null) {
-              distanceKm = route.distanceKm;
-              durationMin = route.durationMin;
-            }
-          } catch (e) {
-            // ignore routing errors, keep straight line
+            estimatedDurationMin =
+              route.distanceKm !== null
+                ? route.durationMin
+                : Math.max(1, Math.round((distanceKm / 35) * 60));
+          } catch {
+            estimatedDurationMin = Math.max(1, Math.round((distanceKm / 35) * 60));
           }
         }
 
-        const proximityScore = 1 - normalize(distanceKm, 15); // 15km cap
-        const catBonus = categoryPreferred(incident.category, agency.type);
+        const proximityScore =
+          distanceKm === null ? 0 : Math.max(0, 1 - Math.min(distanceKm, 10) / 10);
+        const statusScore = statusScoreForResponder(responder.status);
+        const totalScore = proximityScore * 0.6 + statusScore * 0.4;
 
-        // Adjust score based on duration (shorter is better)
-        // If duration > 30 mins, penalty
-        const durationPenalty = durationMin > 30 ? 0.2 : 0;
-
-        const totalScore =
-          jurisdictionScore * 0.35 +
-          severityNorm * 0.3 +
-          proximityScore * 0.25 +
-          catBonus -
-          durationPenalty;
         candidates.push({
           agencyId: agency.id,
-          unitId: unit.id,
+          agencyName: agency.name,
+          unitId: responder.id,
+          unitName: responder.name,
+          responderStatus: responder.status,
+          subCityName: responder.subCity?.name ?? null,
+          woredaName: responder.woreda?.name ?? null,
           distanceKm,
-          estimatedDurationMin: durationMin,
+          estimatedDurationMin,
           jurisdictionScore,
           severityScore: severityNorm,
           proximityScore,
+          statusScore,
           totalScore,
         });
       }
     }
 
-    candidates.sort((a, b) => b.totalScore - a.totalScore);
+    candidates.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) {
+        return b.totalScore - a.totalScore;
+      }
+
+      if (a.distanceKm === null && b.distanceKm === null) return 0;
+      if (a.distanceKm === null) return 1;
+      if (b.distanceKm === null) return -1;
+
+      return a.distanceKm - b.distanceKm;
+    });
+
     return candidates;
   }
 
@@ -231,22 +210,15 @@ export class DispatchService {
     });
 
     if (!incident || incident.status !== 'RECEIVED') return null;
-
-    // Auto-pilot trigger conditions: Critical severity (5)
     if ((incident.severityScore ?? 0) < 5) return null;
 
     const recs = await this.recommendForIncident(incidentId);
     if (!recs.length) return null;
 
     const top = recs[0];
-
-    // High confidence threshold for auto-pilot:
-    // 1. Top candidate has a specific unit assigned
-    // 2. Unit is within 2km
-    // 3. Top candidate is highly suitable (totalScore > 0.75)
     if (top.unitId && top.distanceKm && top.distanceKm <= 2 && top.totalScore >= 0.75) {
       const unit = await prisma.responder.findUnique({ where: { id: top.unitId } });
-      if (!unit || unit.status !== 'AVAILABLE') return null;
+      if (!unit || (unit.status !== 'AVAILABLE' && unit.status !== 'STANDBY')) return null;
 
       const updatedIncident = await prisma.incident.update({
         where: { id: incidentId },
@@ -290,10 +262,6 @@ export class DispatchService {
     actorId: number,
   ) {
     return prisma.$transaction(async (tx) => {
-      // 0. Jurisdiction Check (GIS Guard)
-      // Unless force=true is passed (not implemented yet in args, but logic is here)
-      // Fetch Agency Polygon
-      // Fetch Agency Polygon via Raw Query because 'jurisdiction' is Unsupported type
       const agencyResult: any[] = await tx.$queryRaw`
         SELECT jurisdiction FROM "Agency" WHERE id = ${agencyId}
       `;
@@ -307,25 +275,16 @@ export class DispatchService {
 
         if (incidentLoc?.latitude && incidentLoc?.longitude) {
           const point = turf.point([incidentLoc.longitude, incidentLoc.latitude]);
-          // The jurisdiction is stored as JSON (GeoJSON), need to cast/parse if necessary,
-          // but prisma handles JSON. If it's pure GeoJSON geometry:
-          const poly = agency.jurisdiction as any; // polygon or multipolygon
+          const poly = agency.jurisdiction as any;
 
-          // @ts-ignore
+          // @ts-ignore GeoJSON from Unsupported field
           const isInside = turf.booleanPointInPolygon(point, poly);
-
           if (!isInside) {
-            // For now, allow override if we implement a flag, otherwise BLOCK
-            // throw new Error("Assignment failed: Incident is outside agency jurisdiction.");
-            // Requirement says: "block the request and return a 403 Forbidden"
-            // But simpler to throw Error here and let controller handle status mapped to 403?
-            // Or just throw generic error message.
             throw new Error('Assignment failed: Incident is outside agency jurisdiction.');
           }
         }
       }
 
-      // 1. Validation for Responder
       if (unitId) {
         const responder = await tx.responder.findUnique({
           where: { id: unitId },
@@ -335,18 +294,16 @@ export class DispatchService {
           throw new Error('Responder not found');
         }
 
-        if (responder.status !== 'AVAILABLE') {
+        if (responder.status !== 'AVAILABLE' && responder.status !== 'STANDBY') {
           throw new Error(`Responder is currently ${responder.status} and cannot be assigned.`);
         }
 
-        // 2. Lock & Update Responder
         await tx.responder.update({
           where: { id: unitId },
           data: { status: 'ASSIGNED' },
         });
       }
 
-      // 3. Update Incident
       const incident = await tx.incident.update({
         where: { id: incidentId },
         data: {
@@ -357,7 +314,6 @@ export class DispatchService {
         },
       });
 
-      // 4. Create Audit Log
       await tx.auditLog.create({
         data: {
           actorId,
@@ -375,8 +331,9 @@ export class DispatchService {
   async acknowledgeAssignment(incidentId: number, responderId: number, actorUserId: number) {
     const incident = await prisma.incident.findUnique({ where: { id: incidentId } });
     if (!incident) throw new Error('Incident not found');
-    if (incident.assignedResponderId !== responderId)
+    if (incident.assignedResponderId !== responderId) {
       throw new Error('Not assigned to this responder');
+    }
     if (incident.acknowledgedAt) throw new Error('Already acknowledged');
 
     const updated = await prisma.incident.update({
@@ -399,16 +356,15 @@ export class DispatchService {
     reason: string,
     actorUserId: number,
   ) {
-    // 1. Reset Incident & Track Decline
     const result = await prisma.$transaction(async (tx) => {
       const incident = await tx.incident.findUnique({ where: { id: incidentId } });
       if (!incident) throw new Error('Incident not found');
-      if (incident.assignedResponderId !== responderId)
+      if (incident.assignedResponderId !== responderId) {
         throw new Error('Not assigned to this responder');
+      }
 
       const newDeclinedIds = [...(incident.declinedResponderIds || []), responderId];
 
-      // 1. Reset Incident
       const updatedIncident = await tx.incident.update({
         where: { id: incidentId },
         data: {
@@ -421,13 +377,11 @@ export class DispatchService {
         },
       });
 
-      // 2. Reset Responder
       await tx.responder.update({
         where: { id: responderId },
         data: { status: 'AVAILABLE' },
       });
 
-      // 3. Log
       await tx.auditLog.create({
         data: {
           actorId: actorUserId,
@@ -454,7 +408,6 @@ export class DispatchService {
       return updatedIncident;
     });
 
-    // Post-transaction: Attempt Auto-Reassign
     try {
       await this.executeAutoAssignment(incidentId);
     } catch (err) {

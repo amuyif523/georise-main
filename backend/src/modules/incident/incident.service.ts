@@ -162,6 +162,7 @@ export class IncidentService {
               incidentId: incident.id,
               title: incident.title,
               description: incident.description,
+              manualCategory: data.category?.toUpperCase() || null,
               reporterId: reporterId || 0,
               initialTrustScore,
             });
@@ -201,6 +202,7 @@ export class IncidentService {
             incidentId: incident.id,
             title: incident.title,
             description: incident.description,
+            manualCategory: data.category?.toUpperCase() || null,
             reporterId: 0,
             initialTrustScore,
           });
@@ -678,6 +680,19 @@ export class IncidentService {
       (user.role === 'AGENCY_STAFF' || user.role === 'AGENCY_MANAGER') && user.agencyId;
     let jurisdictionIds: number[] | null = null;
     const agencyId = user.agencyId;
+    let responderScope:
+      | {
+          id: number;
+          subCityId: number | null;
+        }
+      | null = null;
+
+    if (user.role === 'AGENCY_STAFF') {
+      responderScope = await prisma.responder.findFirst({
+        where: { userId: user.id, isActive: true, deletedAt: null },
+        select: { id: true, subCityId: true },
+      });
+    }
 
     if (isAgencyStaff && agencyId) {
       // 1. Get incidents within Agency Jurisdiction using raw SQL
@@ -722,6 +737,22 @@ export class IncidentService {
       }
     }
 
+    if (responderScope?.subCityId) {
+      const responderVisibilityFilter = {
+        OR: [
+          { subCityId: responderScope.subCityId },
+          { assignedResponderId: responderScope.id },
+          { sharedWith: { some: { agencyId } } },
+        ],
+      };
+
+      if (where.AND) {
+        where.AND.push(responderVisibilityFilter);
+      } else {
+        where.AND = [responderVisibilityFilter];
+      }
+    }
+
     const baseSelect = {
       id: true,
       title: true,
@@ -730,6 +761,7 @@ export class IncidentService {
       status: true,
       latitude: true,
       longitude: true,
+      assignedResponderId: true,
       subCityId: true,
       reviewStatus: true,
       createdAt: true,

@@ -40,6 +40,7 @@ type Incident = {
     fullName: string;
     trustScore?: number | null;
   } | null;
+  assignedAgencyId?: number | null;
   assignedResponderId?: number | null;
   acknowledgedAt?: string | null;
 };
@@ -373,6 +374,37 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           return { ...prev, [payload.responderId]: newPath };
         });
       };
+      const responderCreated = (payload: any) => {
+        setResponders((prev) => {
+          const existing = prev.find((r) => r.id === payload.responderId || r.id === payload.id);
+          if (existing) {
+            return prev.map((r) =>
+              r.id === payload.responderId || r.id === payload.id
+                ? {
+                    ...r,
+                    latitude: payload.latitude ?? payload.lat ?? r.latitude,
+                    longitude: payload.longitude ?? payload.lng ?? r.longitude,
+                    status: payload.status ?? r.status,
+                    name: payload.name ?? r.name,
+                    type: payload.type ?? r.type,
+                  }
+                : r,
+            );
+          }
+
+          return [
+            {
+              id: payload.responderId ?? payload.id,
+              name: payload.name ?? 'Responder',
+              type: payload.type ?? 'General',
+              latitude: payload.latitude ?? payload.lat,
+              longitude: payload.longitude ?? payload.lng,
+              status: payload.status ?? 'STANDBY',
+            },
+            ...prev,
+          ];
+        });
+      };
       const responderAssigned = (payload: any) => {
         setIncidents((prev) =>
           prev.map((i) =>
@@ -390,6 +422,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
       socket.on('incident:updated', handlerUpdated);
       // FR-06: Listen for live location updates (Corrected event name)
       socket.on('responder:position', responderPos);
+      socket.on('responder:created', responderCreated);
       socket.on('incident:assignedResponder', responderAssigned);
       socket.on('disconnect', () => {
         // fallback polling every 30s
@@ -406,6 +439,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
         socket.off('incident:created', handlerCreated);
         socket.off('incident:updated', handlerUpdated);
         socket.off('responder:position', responderPos);
+        socket.off('responder:created', responderCreated);
         socket.off('incident:assignedResponder', responderAssigned);
         socket.off('disconnect');
         socket.off('connect');
@@ -435,6 +469,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
   const getResponderColor = (status: string) => {
     switch (status) {
+      case 'STANDBY':
       case 'AVAILABLE':
         return '#10b981'; // emerald-500
       case 'ASSIGNED':
@@ -835,10 +870,17 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
           responders={responders}
           onAssignResponder={
             selectedIncident
-              ? async (responderId: number) => {
+              ? async ({
+                  responderId,
+                  agencyId,
+                }: {
+                  responderId: number;
+                  agencyId: number;
+                }) => {
                   try {
                     setActionLoading(selectedIncident.id);
                     await api.patch(`/incidents/${selectedIncident.id}/assign`, {
+                      assignedAgencyId: agencyId,
                       assignedResponderId: responderId,
                     });
                     await fetchData();

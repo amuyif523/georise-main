@@ -37,6 +37,7 @@ type Incident = {
   latitude: number | null;
   longitude: number | null;
   createdAt: string;
+  assignedAgencyId?: number | null;
   assignedResponderId?: number | null;
   acknowledgedAt?: string | null;
   reporter?: {
@@ -78,9 +79,37 @@ interface Props {
   onAssign?: () => void;
   onRespond?: () => void;
   onResolve?: () => void;
-  responders?: { id: number; name: string; status: string }[];
-  onAssignResponder?: (responderId: number) => void;
+  responders?: { id: number; name: string; status: string; userId?: number }[];
+  onAssignResponder?: (assignment: { responderId: number; agencyId: number }) => void;
 }
+
+type AssignableResponder = {
+  userId: number;
+  fullName: string;
+  agencyStaff?: {
+    agencyId: number;
+    staffRole: string;
+  } | null;
+  responder?: {
+    id: number;
+    agencyId: number;
+    name: string;
+    status: string;
+    latitude: number | null;
+    longitude: number | null;
+    subCityName?: string | null;
+    woredaName?: string | null;
+  } | null;
+};
+
+type AssignableResponderOption = {
+  id: number;
+  agencyId: number;
+  name: string;
+  status: string;
+  locationLabel: string;
+  distanceKm: number | null;
+};
 
 const typeIcon = (type: ActivityLog['type']) => {
   switch (type) {
@@ -97,6 +126,29 @@ const typeIcon = (type: ActivityLog['type']) => {
     default:
       return <Clock size={16} className="text-slate-300" />;
   }
+};
+
+const haversineDistanceKm = (
+  startLat: number,
+  startLon: number,
+  endLat: number,
+  endLon: number,
+) => {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(endLat - startLat);
+  const dLon = toRadians(endLon - startLon);
+  const originLat = toRadians(startLat);
+  const destinationLat = toRadians(endLat);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(originLat) *
+      Math.cos(destinationLat) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
 interface TriageCorrectionFormProps {
@@ -273,16 +325,24 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [recs, setRecs] = useState<
     Array<{
       agencyId: number;
+      agencyName?: string;
       unitId: number | null;
+      unitName?: string | null;
+      responderStatus?: string | null;
+      subCityName?: string | null;
+      woredaName?: string | null;
       distanceKm?: number | null;
       estimatedDurationMin?: number | null;
       totalScore?: number;
       jurisdictionScore?: number;
       severityScore?: number;
       proximityScore?: number;
+      statusScore?: number;
     }>
   >([]);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [assignableResponders, setAssignableResponders] = useState<AssignableResponder[]>([]);
+  const [assignableLoading, setAssignableLoading] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateIncident[]>([]);
   const [mergingId, setMergingId] = useState<number | null>(null);
   const [photos, setPhotos] = useState<IncidentPhoto[]>([]);
@@ -509,6 +569,95 @@ const IncidentDetailPane: React.FC<Props> = ({
     fetchRecs();
   }, [incident]);
 
+  useEffect(() => {
+    const fetchAssignableResponders = async () => {
+      if (!incident || !onAssignResponder || user?.role === 'CITIZEN') {
+        setAssignableResponders([]);
+        return;
+      }
+
+      setAssignableLoading(true);
+      try {
+        const res = await api.get('/agency/staff', {
+          params: {
+            role: 'RESPONDER',
+            statuses: 'STANDBY,AVAILABLE',
+          },
+        });
+
+        const fetchedStaff = (res.data.staff || []) as AssignableResponder[];
+        const filteredStaff = fetchedStaff.filter((member) => {
+          const responder = member.responder;
+          if (!responder) return false;
+          if (!incident.assignedAgencyId) return true;
+          return responder.agencyId === incident.assignedAgencyId;
+        });
+
+        setAssignableResponders(filteredStaff);
+      } catch (err) {
+        console.error('Failed to load assignable responders', err);
+        setAssignableResponders([]);
+      } finally {
+        setAssignableLoading(false);
+      }
+    };
+
+    fetchAssignableResponders();
+  }, [incident?.id, incident?.assignedAgencyId, onAssignResponder, user?.role]);
+
+  const assignableResponderOptions = useMemo<AssignableResponderOption[]>(
+    () =>
+      assignableResponders
+        .map((member) => {
+          const responder = member.responder;
+          if (!responder) return null;
+
+          const distanceKm =
+            incident?.latitude !== null &&
+            incident?.latitude !== undefined &&
+            incident?.longitude !== null &&
+            incident?.longitude !== undefined &&
+            responder.latitude !== null &&
+            responder.longitude !== null
+              ? haversineDistanceKm(
+                  incident.latitude,
+                  incident.longitude,
+                  responder.latitude,
+                  responder.longitude,
+                )
+              : null;
+
+          const locationLabel =
+            distanceKm !== null
+              ? `${distanceKm.toFixed(1)}km from scene`
+              : responder.subCityName || responder.woredaName || 'Location unavailable';
+
+          return {
+            id: responder.id,
+            agencyId: responder.agencyId,
+            name: responder.name || member.fullName,
+            status: responder.status,
+            locationLabel,
+            distanceKm,
+          };
+        })
+        .filter((responder): responder is AssignableResponderOption => Boolean(responder))
+        .sort((a, b) => {
+          if (a.distanceKm === null && b.distanceKm === null) return 0;
+          if (a.distanceKm === null) return 1;
+          if (b.distanceKm === null) return -1;
+          return a.distanceKm - b.distanceKm;
+        }),
+    [assignableResponders, incident?.latitude, incident?.longitude],
+  );
+
+  const handleResponderSelection = (responderId: number) => {
+    if (!onAssignResponder) return;
+    const responder = assignableResponderOptions.find((option) => option.id === responderId);
+    if (!responder) return;
+    onAssignResponder({ responderId: responder.id, agencyId: responder.agencyId });
+  };
+
   const handleComment = async () => {
     if (!incident || !comment.trim()) return;
     try {
@@ -625,23 +774,26 @@ const IncidentDetailPane: React.FC<Props> = ({
           </a>
         </div>
 
-        {onAssignResponder && Array.isArray(responders) && responders.length > 0 && (
+        {onAssignResponder && (
           <div className="p-3 border-b border-slate-800 bg-slate-900/60">
             <p className="text-sm font-semibold text-white mb-2">Assign responder</p>
             <div className="flex gap-2 items-center">
               <select
                 className="select select-sm bg-slate-900 border-slate-700 text-white"
-                onChange={(e) => onAssignResponder(Number(e.target.value))}
+                onChange={(e) => handleResponderSelection(Number(e.target.value))}
                 defaultValue=""
+                disabled={assignableLoading || assignableResponderOptions.length === 0}
               >
                 <option value="" disabled>
-                  Select responder
+                  {assignableLoading
+                    ? 'Loading responders...'
+                    : assignableResponderOptions.length > 0
+                      ? 'Select responder'
+                      : 'No standby or available responders'}
                 </option>
-                {responders
-                  .filter((r) => r.status === 'AVAILABLE' || r.status === 'ASSIGNED')
-                  .map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({r.status})
+                {assignableResponderOptions.map((responder) => (
+                    <option key={responder.id} value={responder.id}>
+                      {responder.name} ({responder.status}) • {responder.locationLabel}
                     </option>
                   ))}
               </select>
@@ -676,7 +828,8 @@ const IncidentDetailPane: React.FC<Props> = ({
                         >
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-slate-200">
-                              Agency #{rec.agencyId} {rec.unitId && <>• Unit {rec.unitId}</>}
+                              {rec.unitName || rec.agencyName || `Agency ${rec.agencyId}`}
+                              {rec.agencyName && rec.unitName ? ` • ${rec.agencyName}` : ''}
                             </div>
                             <span className="text-[11px] text-cyan-300">
                               Score {((rec.totalScore || 0) * 100).toFixed(0)}
@@ -685,9 +838,12 @@ const IncidentDetailPane: React.FC<Props> = ({
                           <div className="text-[11px] text-slate-400 flex flex-col mt-1">
                             <span>
                               {rec.distanceKm !== null && rec.distanceKm !== undefined
-                                ? `Road Distance: ${rec.distanceKm.toFixed(1)} km`
-                                : 'No location data'}
+                                ? `${rec.distanceKm.toFixed(1)}km from scene`
+                                : rec.subCityName || rec.woredaName || 'Location unavailable'}
                             </span>
+                            {rec.responderStatus && (
+                              <span className="text-slate-300">Status: {rec.responderStatus}</span>
+                            )}
                             {rec.estimatedDurationMin !== null &&
                               rec.estimatedDurationMin !== undefined && (
                                 <span className="text-emerald-400">
@@ -700,9 +856,9 @@ const IncidentDetailPane: React.FC<Props> = ({
                               )}
                           </div>
                           <div className="text-[11px] text-slate-500">
-                            Jurisdiction {Math.round((rec.jurisdictionScore || 0) * 100)}% •
-                            Severity {Math.round((rec.severityScore || 0) * 100)}% • Proximity{' '}
-                            {Math.round((rec.proximityScore || 0) * 100)}%
+                            Proximity {Math.round((rec.proximityScore || 0) * 100)}% • Status{' '}
+                            {Math.round((rec.statusScore || 0) * 100)}% • Jurisdiction{' '}
+                            {Math.round((rec.jurisdictionScore || 0) * 100)}%
                           </div>
                           <button
                             className="btn btn-xs btn-accent mt-2"
@@ -712,6 +868,16 @@ const IncidentDetailPane: React.FC<Props> = ({
                                   assignedAgencyId: rec.agencyId,
                                   assignedResponderId: rec.unitId,
                                 });
+                                setIncident((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        assignedAgencyId: rec.agencyId,
+                                        assignedResponderId: rec.unitId,
+                                        status: 'ASSIGNED',
+                                      }
+                                    : prev,
+                                );
                                 alert('Suggestion accepted.');
                               } catch {
                                 alert('Failed to assign suggestion.');
