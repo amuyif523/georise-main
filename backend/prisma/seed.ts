@@ -1,4 +1,4 @@
-import { Role, StaffRole, AgencyType } from '@prisma/client';
+import { Role, StaffRole, AgencyType, ResponderStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
 import prisma from '../src/prisma';
@@ -7,28 +7,12 @@ const SEED_PASSWORD = 'password123';
 
 async function clearDatabase() {
   console.log('--- CLEARING DATABASE (TRUNCATE CASCADE) ---');
-  // Use raw SQL to truncate all tables safely ignoring foreign keys during the operation
   const tableNames = [
-    'ActivityLog',
-    'IncidentAIOutput',
-    'IncidentPhoto',
-    'IncidentStatusHistory',
-    'SharedIncident',
-    'Incident',
-    'Responder',
-    'AuditLog',
-    'PasswordResetToken',
-    'IncidentChat',
-    'PushSubscription',
-    'Notification',
-    'CitizenVerification',
-    'AgencyStaff',
-    'AgencyJurisdiction',
-    'Agency',
-    'DispatchRule',
-    'Woreda',
-    'SubCity',
-    'User',
+    'ActivityLog', 'IncidentAIOutput', 'IncidentPhoto', 'IncidentStatusHistory',
+    'SharedIncident', 'Incident', 'Responder', 'AuditLog', 'PasswordResetToken',
+    'IncidentChat', 'PushSubscription', 'Notification', 'CitizenVerification',
+    'AgencyStaff', 'AgencyJurisdiction', 'Agency', 'DispatchRule', 'Woreda',
+    'SubCity', 'User',
   ];
 
   for (const tableName of tableNames) {
@@ -43,7 +27,29 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
 
-  // 1. Super Admin
+  // 1. Seed Addis Ababa Sub-Cities
+  console.log('- Seeding Addis Ababa Sub-Cities...');
+  const subCitiesData = [
+    { name: 'Bole', code: 'BOL' },
+    { name: 'Nifas Silk-Lafto', code: 'NSL' },
+    { name: 'Arada', code: 'ARA' },
+    { name: 'Kirkos', code: 'KIR' },
+    { name: 'Yeka', code: 'YEK' },
+  ];
+
+  const subCityRecords = [];
+  for (const sc of subCitiesData) {
+    const record = await prisma.subCity.create({ 
+      data: {
+        name: sc.name,
+        code: sc.code
+      } 
+    });
+    subCityRecords.push(record);
+  }
+  const boleSubCity = subCityRecords.find(s => s.name === 'Bole')!;
+
+  // 2. Super Admin
   const sysAdmin = await prisma.user.create({
     data: {
       email: 'admin@georise.com',
@@ -51,9 +57,8 @@ async function main() {
       phone: '+251911000000',
       passwordHash: passwordHash,
       role: Role.ADMIN,
-      trustScore: 100, // Trust Score: 100 for admin
       isActive: true,
-      deletedAt: null,
+      trustScore: 100,
       citizenVerification: {
         create: {
           nationalId: 'V-ADMIN',
@@ -63,25 +68,23 @@ async function main() {
       },
     },
   });
-  console.log(`- Created Main Admin: ${sysAdmin.email}`);
 
-  // 2. Bole Agency
+  // 3. Bole Agency (Added 'city' and 'description')
   const boleAgency = await prisma.agency.create({
     data: {
       name: 'Bole District Command Center',
       type: AgencyType.POLICE,
       city: 'Addis Ababa',
       description: 'Primary rapid response node for Bole sub-city.',
-      isApproved: true,
-      isActive: true,
-      deletedAt: null,
-      centerLatitude: 9.0,
+      centerLatitude: 9.000,
       centerLongitude: 38.785,
+      subCityId: boleSubCity.id,
+      isActive: true,
+      isApproved: true,
     },
   });
-  console.log(`- Created Agency: ${boleAgency.name} at [9.0000, 38.7850]`);
 
-  // 3. Agency Manager for Bole
+  // 4. Agency Manager for Bole
   const boleManager = await prisma.user.create({
     data: {
       email: 'manager.bole@georise.com',
@@ -89,9 +92,8 @@ async function main() {
       phone: '+251911000001',
       passwordHash: passwordHash,
       role: Role.AGENCY_MANAGER,
-      trustScore: 50,
       isActive: true,
-      deletedAt: null,
+      trustScore: 50,
       citizenVerification: {
         create: {
           nationalId: 'V-MANAGER-BOLE',
@@ -107,26 +109,22 @@ async function main() {
       userId: boleManager.id,
       agencyId: boleAgency.id,
       staffRole: StaffRole.MANAGER,
-      isActive: true,
-      deactivatedAt: null,
     },
   });
-  console.log(`- Created Agency Manager: ${boleManager.email}`);
 
-  // 4. Responders
-  const responderNames = ['Bole-Alpha', 'Bole-Bravo', 'Bole-Charlie'];
+  // 5. Responders (With Jitter)
+  const responderNames = ['Bole-Alpha', 'Bole-Bravo'];
   let phoneCounter = 2;
+
   for (const rName of responderNames) {
-    const userHash = await bcrypt.hash(`${rName.toLowerCase()}123`, 10);
     const user = await prisma.user.create({
       data: {
         email: `${rName.toLowerCase()}@georise.com`,
         fullName: `Officer ${rName}`,
-        passwordHash: userHash,
+        passwordHash: passwordHash,
         role: Role.AGENCY_STAFF,
-        trustScore: 50,
         isActive: true,
-        deletedAt: null,
+        trustScore: 50,
         citizenVerification: {
           create: {
             nationalId: `V-${rName.toUpperCase()}`,
@@ -142,10 +140,11 @@ async function main() {
         userId: user.id,
         agencyId: boleAgency.id,
         staffRole: StaffRole.RESPONDER,
-        isActive: true,
-        deactivatedAt: null,
       },
     });
+
+    const jitterLat = boleAgency.centerLatitude + (Math.random() - 0.5) * 0.01;
+    const jitterLng = boleAgency.centerLongitude + (Math.random() - 0.5) * 0.01;
 
     await prisma.responder.create({
       data: {
@@ -153,16 +152,13 @@ async function main() {
         type: 'UNIT',
         agencyId: boleAgency.id,
         userId: user.id,
-        status: 'AVAILABLE',
+        status: ResponderStatus.STANDBY,
+        subCityId: boleSubCity.id,
+        latitude: jitterLat,
+        longitude: jitterLng,
         isActive: true,
-        deletedAt: null,
-        latitude: 9.0,
-        longitude: 38.785,
-        // @ts-ignore - Prisma JSON array syntax bypass for breadcrumbs
-        breadcrumbs: [[38.785, 9.0]],
       },
     });
-    console.log(`- Created Responder Unit: ${rName} at [9.0000, 38.7850]`);
   }
 
   console.log('--- SEED COMPLETE ---');

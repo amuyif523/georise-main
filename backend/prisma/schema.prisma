@@ -44,6 +44,7 @@ enum ReviewStatus {
 }
 
 enum ResponderStatus {
+  STANDBY
   AVAILABLE
   ASSIGNED
   EN_ROUTE
@@ -88,6 +89,7 @@ model User {
   email               String    @unique
   phone               String?   @unique
   passwordHash        String
+  mustChangePassword  Boolean   @default(true)
   role                Role      @default(CITIZEN)
   isActive            Boolean   @default(true)
   deactivatedAt       DateTime?
@@ -225,6 +227,7 @@ model CitizenVerification {
   nationalId   String
   phone        String
   status       VerificationStatus @default(PENDING)
+  verifiedAt   DateTime?
   otpCode      String?
   otpExpiresAt DateTime?
   createdAt    DateTime           @default(now())
@@ -372,9 +375,10 @@ model SubCity {
   updatedAt    DateTime                               @updatedAt
   jurisdiction Unsupported("geometry(Polygon,4326)")?
 
-  agencies  Agency[]
-  woredas   Woreda[]
-  incidents Incident[]
+  agencies   Agency[]
+  woredas    Woreda[]
+  incidents  Incident[]
+  responders Responder[]
 
   @@index([jurisdiction], name: "subcity_jurisdiction_idx", type: Gist)
 }
@@ -386,9 +390,10 @@ model Woreda {
   subCityId Int
   boundary  Unsupported("geometry(Polygon,4326)")?
 
-  subCity   SubCity    @relation(fields: [subCityId], references: [id])
-  incidents Incident[]
-  agencies  Agency[]
+  subCity    SubCity     @relation(fields: [subCityId], references: [id])
+  incidents  Incident[]
+  agencies   Agency[]
+  responders Responder[]
 
   @@unique([subCityId, name])
   @@index([boundary], name: "woreda_boundary_idx", type: Gist)
@@ -416,6 +421,8 @@ model Responder {
   type             String
   status           ResponderStatus @default(AVAILABLE)
   agencyId         Int
+  subCityId        Int?
+  woredaId         Int?
   incidentId       Int?
   userId           Int?
   latitude         Float?
@@ -430,6 +437,8 @@ model Responder {
   deletedAt        DateTime?
 
   agency            Agency     @relation(fields: [agencyId], references: [id])
+  subCity           SubCity?   @relation(fields: [subCityId], references: [id])
+  woreda            Woreda?    @relation(fields: [woredaId], references: [id])
   incident          Incident?  @relation("IncidentResponders", fields: [incidentId], references: [id])
   assignedIncidents Incident[] @relation("IncidentAssignedResponder")
   user              User?      @relation(fields: [userId], references: [id])
@@ -465,14 +474,14 @@ model PasswordResetToken {
 }
 
 model VerificationRequest {
-  id          Int                       @id @default(autoincrement())
-  userId      Int                       @unique
-  idNumber    String
-  idPhotoUrl  String
-  status      VerificationRequestStatus @default(PENDING)
-  reviewNote  String?
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
+  id         Int                       @id @default(autoincrement())
+  userId     Int                       @unique
+  idNumber   String
+  idPhotoUrl String
+  status     VerificationRequestStatus @default(PENDING)
+  reviewNote String?
+  createdAt  DateTime                  @default(now())
+  updatedAt  DateTime                  @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 
