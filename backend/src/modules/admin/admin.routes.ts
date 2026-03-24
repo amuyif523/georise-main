@@ -417,7 +417,13 @@ router.get('/users', requireAuth, requireRole([Role.ADMIN]), async (req, res) =>
         isActive: true,
         deactivatedAt: true,
         createdAt: true,
-        citizenVerification: { select: { status: true } },
+        citizenVerification: {
+          select: {
+            status: true,
+            verifiedAt: true,
+            updatedAt: true,
+          },
+        },
         agencyStaff: {
           select: {
             agencyId: true,
@@ -466,6 +472,7 @@ router.post(
           phone: data.phone,
           role: data.role,
           passwordHash,
+          mustChangePassword: true,
           isActive: data.isActive ?? true,
           deactivatedAt: data.isActive === false ? new Date() : null,
         },
@@ -615,7 +622,7 @@ router.post(
       const passwordHash = await bcrypt.hash(tempPassword, 10);
       const user = await prisma.user.update({
         where: { id: userId },
-        data: { passwordHash, tokenVersion: { increment: 1 } },
+        data: { passwordHash, mustChangePassword: true, tokenVersion: { increment: 1 } },
       });
       await auditUser(req.user!.id, 'FORCE_RESET_PASSWORD', user.id);
       res.json({ userId: user.id, tempPassword });
@@ -676,22 +683,29 @@ router.get(
 
     const [total, users] = await Promise.all([
       prisma.user.count({ where }),
-      prisma.user.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          deactivatedAt: true,
-          createdAt: true,
-          agencyStaff: { select: { staffRole: true, isActive: true, deactivatedAt: true } },
+    prisma.user.findMany({
+      where,
+      skip,
+      take: Number(limit),
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        deactivatedAt: true,
+        createdAt: true,
+        citizenVerification: {
+          select: {
+            status: true,
+            verifiedAt: true,
+            updatedAt: true,
+          },
         },
-      }),
+        agencyStaff: { select: { staffRole: true, isActive: true, deactivatedAt: true } },
+      },
+    }),
     ]);
     res.json({ total, page: Number(page), limit: Number(limit), users });
   },
@@ -720,6 +734,7 @@ router.post(
           phone: data.phone,
           role: Role.AGENCY_STAFF,
           passwordHash,
+          mustChangePassword: true,
           isActive: data.isActive ?? true,
           deactivatedAt: data.isActive === false ? new Date() : null,
         },
@@ -817,7 +832,7 @@ router.post(
       const passwordHash = await bcrypt.hash(tempPassword, 10);
       const user = await prisma.user.update({
         where: { id: targetId },
-        data: { passwordHash, tokenVersion: { increment: 1 } },
+        data: { passwordHash, mustChangePassword: true, tokenVersion: { increment: 1 } },
       });
       await auditUser(req.user!.id, 'AGENCY_FORCE_RESET_PASSWORD', user.id);
       res.json({ userId: user.id, tempPassword });

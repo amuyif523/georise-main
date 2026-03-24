@@ -4,6 +4,8 @@ import api from '../../lib/api';
 import AppLayout from '../../layouts/AppLayout';
 import { useAuth } from '../../context/AuthContext';
 
+const ADMIN_USERS_INVALIDATED_EVENT = 'georise:admin-users-invalidated';
+
 type User = {
   id: number;
   fullName: string;
@@ -31,6 +33,23 @@ const badge = (text: string, tone: 'blue' | 'green' | 'gray') => {
     gray: 'bg-slate-700/40 text-slate-200 border-slate-500/30',
   };
   return <span className={`badge badge-sm border ${map[tone]}`}>{text}</span>;
+};
+
+const getVerificationBadge = (status?: string | null) => {
+  const normalizedStatus = status ?? 'UNVERIFIED';
+  if (normalizedStatus === 'VERIFIED') {
+    return badge('Verified', 'green');
+  }
+
+  if (normalizedStatus === 'PENDING' || normalizedStatus === 'APPROVED') {
+    return badge('Pending', 'blue');
+  }
+
+  if (normalizedStatus === 'REJECTED') {
+    return badge('Rejected', 'gray');
+  }
+
+  return badge('Unverified', 'gray');
 };
 
 const staffRoleOptions = ['DISPATCHER', 'RESPONDER', 'SUPERVISOR'];
@@ -103,6 +122,18 @@ const UsersPage: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, roleFilter, statusFilter, staffRoleFilter, page, isAgencyAdmin]);
+
+  useEffect(() => {
+    const handleUsersInvalidated = () => {
+      fetchUsers();
+    };
+
+    window.addEventListener(ADMIN_USERS_INVALIDATED_EVENT, handleUsersInvalidated);
+    return () => {
+      window.removeEventListener(ADMIN_USERS_INVALIDATED_EVENT, handleUsersInvalidated);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, roleFilter, statusFilter, staffRoleFilter, page, isAgencyAdmin]);
 
@@ -293,10 +324,7 @@ const UsersPage: React.FC = () => {
                     {badge(u.isActive ? 'Active' : 'Inactive', u.isActive ? 'green' : 'gray')}
                   </td>
                   <td>
-                    {badge(
-                      u.citizenVerification?.status === 'VERIFIED' ? 'Verified' : 'Unverified',
-                      u.citizenVerification?.status === 'VERIFIED' ? 'green' : 'gray',
-                    )}
+                    {getVerificationBadge(u.citizenVerification?.status)}
                   </td>
                   <td className="space-x-2">
                     <button className="btn btn-xs" onClick={() => setStatus(u.id, !u.isActive)}>

@@ -89,3 +89,27 @@ export const confirmPasswordReset = async (req: Request, res: Response) => {
     return res.status(400).json({ message: err?.message || 'Password reset failed' });
   }
 };
+
+export const completeOnboarding = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const result = await authService.completeOnboarding(req.user.id, req.body);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    logger.error({ err }, 'Complete onboarding error');
+    return res.status(400).json({ message: err?.message || 'Failed to complete onboarding' });
+  }
+};
+
+export const responderOnboard = async (req: Request, res: Response) => {
+  try {
+    const result = await authService.onboardResponder(req.body);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    logger.error({ err }, 'Responder onboarding error');
+    return res.status(400).json({ message: err?.message || 'Responder onboarding failed' });
+  }
+};

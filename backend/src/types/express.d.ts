@@ -6,6 +6,7 @@ declare global {
       id: number;
       role: Role;
       isVerified: boolean;
+      mustChangePassword?: boolean;
       agencyId?: number | null;
     }
 

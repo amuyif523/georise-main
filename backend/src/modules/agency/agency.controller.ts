@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { agencyService } from './agency.service'; // Ensure correct import path?
 import prisma from '../../prisma';
-import { Role } from '@prisma/client';
+import { Role, ResponderStatus, StaffRole } from '@prisma/client';
 
 export const getAgencies = async (req: Request, res: Response) => {
   try {
@@ -60,7 +60,9 @@ export const createAgency = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       agency: result.agency,
-      admin: { ...result.user, tempPassword: result.tempPassword },
+      manager: result.manager,
+      // TODO: Remove cleartextOtp from response in production environment.
+      cleartextOtp: result.cleartextOtp,
     });
   } catch (error: any) {
     console.error('Create agency error', error);
@@ -86,8 +88,18 @@ export const addStaff = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    await agencyService.addStaff(agencyId, { fullName, email, phone, staffRole });
-    return res.status(201).json({ message: 'Staff added successfully' });
+    const result = await agencyService.addStaff(agencyId, {
+      fullName,
+      email,
+      phone,
+      staffRole,
+    });
+    return res.status(201).json({
+      message: 'Staff added successfully',
+      staff: result.user,
+      // TODO: Remove cleartextOtp from response in production environment.
+      cleartextOtp: result.cleartextOtp,
+    });
   } catch (error: any) {
     console.error('Add staff error', error);
     return res.status(400).json({ message: error.message || 'Failed to add staff' });
@@ -99,7 +111,26 @@ export const getStaff = async (req: Request, res: Response) => {
     const agencyId = req.user?.agencyId;
     if (!agencyId) return res.status(403).json({ message: 'Unauthorized' });
 
-    const staff = await agencyService.getStaff(agencyId);
+    const staffRoleQuery = req.query.staffRole ?? req.query.role;
+    const staffRole =
+      typeof staffRoleQuery === 'string' && staffRoleQuery in StaffRole
+        ? StaffRole[staffRoleQuery as keyof typeof StaffRole]
+        : undefined;
+
+    const statusesQuery = req.query.statuses;
+    const responderStatuses =
+      typeof statusesQuery === 'string'
+        ? statusesQuery
+            .split(',')
+            .map((status) => status.trim())
+            .filter((status): status is ResponderStatus => status in ResponderStatus)
+            .map((status) => ResponderStatus[status as keyof typeof ResponderStatus])
+        : undefined;
+
+    const staff = await agencyService.getStaff(agencyId, {
+      staffRole,
+      responderStatuses,
+    });
     return res.json({ staff: staff || [] });
   } catch (error) {
     console.error('Get staff error', error);

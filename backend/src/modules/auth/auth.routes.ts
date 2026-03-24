@@ -10,6 +10,8 @@ import {
   verifyOtp,
   requestPasswordReset,
   confirmPasswordReset,
+  completeOnboarding,
+  responderOnboard,
 } from './auth.controller';
 import { validateBody } from '../../middleware/validate';
 import {
@@ -17,6 +19,8 @@ import {
   registerSchema,
   passwordResetRequestSchema,
   passwordResetConfirmSchema,
+  completeOnboardingSchema,
+  responderOnboardSchema,
 } from './auth.validation';
 import refreshRouter from './refresh.routes';
 import { loginLimiter, sessionLimiter } from '../../middleware/rateLimiter';
@@ -38,6 +42,13 @@ router.post(
   validateBody(passwordResetConfirmSchema),
   confirmPasswordReset,
 );
+router.post(
+  '/complete-onboarding',
+  requireAuth,
+  validateBody(completeOnboardingSchema),
+  completeOnboarding,
+);
+router.post('/responder/onboard', validateBody(responderOnboardSchema), responderOnboard);
 router.get('/me', requireAuth, sessionLimiter, me);
 
 router.post(

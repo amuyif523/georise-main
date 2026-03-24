@@ -23,9 +23,29 @@ export interface PasswordResetConfirmBody {
   password: string;
 }
 
+export interface CompleteOnboardingBody {
+  newPassword: string;
+}
+
+export interface ResponderOnboardBody {
+  token: string;
+  password: string;
+  biometricEnabled: boolean;
+}
+
 export interface AuthTokenPayload {
   userId: number;
   role: Role;
   tokenVersion?: number;
   agencyId?: number | null;
+  mustChangePassword?: boolean;
+}
+
+export interface ResponderInviteTokenPayload {
+  userId: number;
+  responderId: number;
+  agencyId: number;
+  role: Role;
+  tokenVersion: number;
+  purpose: 'responder_onboard';
 }

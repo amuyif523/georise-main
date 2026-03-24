@@ -12,6 +12,7 @@ import { EditControl } from 'react-leaflet-draw';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
 import { booleanPointInPolygon, point, polygon, multiPolygon } from '@turf/turf';
+import { CheckCircle2, Copy, KeyRound } from 'lucide-react';
 import api from '../../lib/api';
 import AppLayout from '../../layouts/AppLayout';
 
@@ -96,6 +97,11 @@ const AgenciesPage: React.FC = () => {
   const [createModal, setCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [successData, setSuccessData] = useState<{
+    agencyName: string;
+    managerEmail: string;
+    otp: string;
+  } | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -289,7 +295,13 @@ const AgenciesPage: React.FC = () => {
       adminPhone: '',
     });
     setNewAgencyPin(null);
+    setSuccessData(null);
     setCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setCreateModal(false);
+    setSuccessData(null);
   };
 
   const submitCreate = async () => {
@@ -300,7 +312,7 @@ const AgenciesPage: React.FC = () => {
     console.log('SUBMIT TRIGGERED', form);
     try {
       setCreating(true);
-      await api.post('/admin/agencies', {
+      const res = await api.post('/admin/agencies', {
         name: form.name,
         city: form.city,
         type: form.type,
@@ -315,8 +327,12 @@ const AgenciesPage: React.FC = () => {
           phone: form.adminPhone || undefined,
         },
       });
-      setCreateModal(false);
       fetchAll();
+      setSuccessData({
+        agencyName: res.data?.agency?.name || form.name,
+        managerEmail: res.data?.manager?.email || form.adminEmail,
+        otp: res.data?.cleartextOtp || '',
+      });
     } catch (err: any) {
       console.error('Agency creation failed:', err.response?.data || err.message);
       setError(err?.response?.data?.message || 'Failed to create agency');
@@ -713,128 +729,198 @@ const AgenciesPage: React.FC = () => {
                 <span>{error}</span>
               </div>
             )}
-            <div className="space-y-3">
-              <input
-                className="input input-bordered w-full bg-slate-800 border-slate-700"
-                placeholder="Name"
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="input input-bordered bg-slate-800 border-slate-700"
-                  placeholder="City"
-                  value={form.city}
-                  onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                />
-                <select
-                  className="select select-bordered bg-slate-800 border-slate-700"
-                  value={form.type}
-                  onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-                >
-                  {agencyTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Mini Map for HQ Selection */}
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">
-                  Headquarters Location <span className="text-error">*</span>
-                </label>
-                <div className="h-40 w-full rounded border border-slate-700 overflow-hidden relative">
-                  <MapContainer
-                    center={[9.0, 38.785]}
-                    zoom={11}
-                    className="w-full h-full"
-                    zoomControl={false}
-                  >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <LocationMarker />
-                  </MapContainer>
-                  {!newAgencyPin && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/20 z-[400]">
-                      <span className="bg-slate-900/80 px-2 py-1 rounded text-xs text-white">
-                        Click map to drop HQ pin
-                      </span>
+            {successData ? (
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-300" />
+                    <div>
+                      <h4 className="text-lg font-semibold text-white">Agency &amp; Manager Created!</h4>
+                      <p className="mt-1 text-sm text-slate-300">
+                        Share these credentials with the initial manager during the demo.
+                      </p>
                     </div>
-                  )}
-                </div>
-                {newAgencyPin && (
-                  <div className="text-[10px] text-slate-400 text-right">
-                    Lat: {newAgencyPin.lat.toFixed(5)}, Lng: {newAgencyPin.lng.toFixed(5)}
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div className="divider text-xs text-slate-500 my-1">Initial Admin</div>
-              <input
-                className="input input-bordered w-full bg-slate-800 border-slate-700"
-                placeholder="Admin Name"
-                value={form.adminName}
-                onChange={(e) => setForm((p) => ({ ...p, adminName: e.target.value }))}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="input input-bordered bg-slate-800 border-slate-700"
-                  placeholder="Admin Email"
-                  type="email"
-                  value={form.adminEmail}
-                  onChange={(e) => setForm((p) => ({ ...p, adminEmail: e.target.value }))}
-                />
-                <input
-                  className="input input-bordered bg-slate-800 border-slate-700"
-                  placeholder="Admin Phone"
-                  value={form.adminPhone}
-                  onChange={(e) => setForm((p) => ({ ...p, adminPhone: e.target.value }))}
-                />
+                <div className="rounded-2xl border border-slate-700 bg-[#0b1220] p-5 shadow-inner">
+                  <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                    <KeyRound className="h-4 w-4" />
+                    Tactical Provisioning Output
+                  </div>
+
+                  <div className="space-y-4 font-mono">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        Agency Name
+                      </div>
+                      <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-lg text-slate-100">
+                        {successData.agencyName}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        Manager Email
+                      </div>
+                      <div className="mt-2 break-all rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-lg text-slate-100">
+                        {successData.managerEmail}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        One-Time Passcode
+                      </div>
+                      <div className="mt-2 rounded-xl border border-cyan-500/20 bg-slate-950 px-4 py-4 text-center text-3xl tracking-[0.35em] text-cyan-300">
+                        {successData.otp}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-action">
+                  <button
+                    className="btn btn-outline border-slate-600 text-slate-200"
+                    onClick={async () => {
+                      const payload = `Agency: ${successData.agencyName}\nManager Email: ${successData.managerEmail}\nOne-Time Passcode: ${successData.otp}`;
+                      try {
+                        await navigator.clipboard.writeText(payload);
+                        toast.success('Manager credentials copied');
+                      } catch {
+                        toast.error('Failed to copy credentials');
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy Credentials
+                  </button>
+                  <button className="btn btn-primary" onClick={closeCreateModal}>
+                    Done
+                  </button>
+                </div>
               </div>
-              <textarea
-                className="textarea textarea-bordered w-full bg-slate-800 border-slate-700"
-                placeholder="Description"
-                value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              />
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-sm">
+            ) : (
+              <>
+                <div className="space-y-3">
                   <input
-                    type="checkbox"
-                    className="toggle toggle-success"
-                    checked={form.isApproved}
-                    onChange={(e) => setForm((p) => ({ ...p, isApproved: e.target.checked }))}
+                    className="input input-bordered w-full bg-slate-800 border-slate-700"
+                    placeholder="Name"
+                    value={form.name}
+                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   />
-                  Approved
-                </label>
-                <label className="flex items-center gap-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="input input-bordered bg-slate-800 border-slate-700"
+                      placeholder="City"
+                      value={form.city}
+                      onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
+                    />
+                    <select
+                      className="select select-bordered bg-slate-800 border-slate-700"
+                      value={form.type}
+                      onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
+                    >
+                      {agencyTypes.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400">
+                      Headquarters Location <span className="text-error">*</span>
+                    </label>
+                    <div className="h-40 w-full rounded border border-slate-700 overflow-hidden relative">
+                      <MapContainer
+                        center={[9.0, 38.785]}
+                        zoom={11}
+                        className="w-full h-full"
+                        zoomControl={false}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <LocationMarker />
+                      </MapContainer>
+                      {!newAgencyPin && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/20 z-[400]">
+                          <span className="bg-slate-900/80 px-2 py-1 rounded text-xs text-white">
+                            Click map to drop HQ pin
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {newAgencyPin && (
+                      <div className="text-[10px] text-slate-400 text-right">
+                        Lat: {newAgencyPin.lat.toFixed(5)}, Lng: {newAgencyPin.lng.toFixed(5)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="divider text-xs text-slate-500 my-1">Initial Admin</div>
                   <input
-                    type="checkbox"
-                    className="toggle toggle-info"
-                    checked={form.isActive}
-                    onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                    className="input input-bordered w-full bg-slate-800 border-slate-700"
+                    placeholder="Admin Name"
+                    value={form.adminName}
+                    onChange={(e) => setForm((p) => ({ ...p, adminName: e.target.value }))}
                   />
-                  Active
-                </label>
-              </div>
-            </div>
-            <div className="modal-action">
-              <button
-                className="btn btn-ghost"
-                onClick={() => setCreateModal(false)}
-                disabled={creating}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={`btn btn-primary hover:bg-primary-focus active:scale-95 transition-all relative z-[100] ${creating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={!creating ? submitCreate : undefined}
-              >
-                {creating ? 'Saving...' : 'Create Agency & Admin'}
-              </button>
-            </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="input input-bordered bg-slate-800 border-slate-700"
+                      placeholder="Admin Email"
+                      type="email"
+                      value={form.adminEmail}
+                      onChange={(e) => setForm((p) => ({ ...p, adminEmail: e.target.value }))}
+                    />
+                    <input
+                      className="input input-bordered bg-slate-800 border-slate-700"
+                      placeholder="Admin Phone"
+                      value={form.adminPhone}
+                      onChange={(e) => setForm((p) => ({ ...p, adminPhone: e.target.value }))}
+                    />
+                  </div>
+                  <textarea
+                    className="textarea textarea-bordered w-full bg-slate-800 border-slate-700"
+                    placeholder="Description"
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  />
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-success"
+                        checked={form.isApproved}
+                        onChange={(e) => setForm((p) => ({ ...p, isApproved: e.target.checked }))}
+                      />
+                      Approved
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-info"
+                        checked={form.isActive}
+                        onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                      />
+                      Active
+                    </label>
+                  </div>
+                </div>
+                <div className="modal-action">
+                  <button className="btn btn-ghost" onClick={closeCreateModal} disabled={creating}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-primary hover:bg-primary-focus active:scale-95 transition-all relative z-[100] ${creating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={!creating ? submitCreate : undefined}
+                  >
+                    {creating ? 'Saving...' : 'Create Agency & Admin'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

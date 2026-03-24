@@ -26,3 +26,13 @@ export const passwordResetConfirmSchema = z.object({
   token: z.string().min(10),
   password: z.string().min(8).max(100),
 });
+
+export const completeOnboardingSchema = z.object({
+  newPassword: z.string().min(8).max(100),
+});
+
+export const responderOnboardSchema = z.object({
+  token: z.string().min(10),
+  password: z.string().min(8).max(100),
+  biometricEnabled: z.literal(true),
+});

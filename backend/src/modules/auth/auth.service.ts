@@ -11,6 +11,8 @@ import {
   JWT_REFRESH_SECRET,
   JWT_SECRET,
   DEMO_MODE,
+  RESPONDER_INVITE_SECRET,
+  RESPONDER_INVITE_EXPIRES_IN,
 } from '../../config/env';
 import {
   AuthTokenPayload,
@@ -18,6 +20,9 @@ import {
   RegisterRequestBody,
   PasswordResetRequestBody,
   PasswordResetConfirmBody,
+  CompleteOnboardingBody,
+  ResponderInviteTokenPayload,
+  ResponderOnboardBody,
 } from './auth.types';
 
 import { smsService } from '../sms/sms.service';
@@ -33,6 +38,7 @@ type AuthUserShape = {
   fullName: string;
   email: string;
   phone: string | null;
+  mustChangePassword: boolean;
   role: Role;
   trustScore: number | null;
   totalReports: number | null;
@@ -78,6 +84,7 @@ export class AuthService {
       fullName: true,
       email: true,
       phone: true,
+      mustChangePassword: true,
       role: true,
       trustScore: true,
       totalReports: true,
@@ -97,6 +104,7 @@ export class AuthService {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone ?? null,
+      mustChangePassword: user.mustChangePassword,
       role: user.role,
       agencyId: user.agencyStaff?.agencyId ?? null,
       trustScore: user.trustScore ?? 0,
@@ -145,6 +153,7 @@ export class AuthService {
         email: data.email,
         phone: data.phone,
         passwordHash,
+        mustChangePassword: false,
         role: dbRole,
         trustScore: dbRole === 'CITIZEN' ? 10 : 0, // Set initial trust score to 10 for better demo experience
       },
@@ -300,7 +309,13 @@ export class AuthService {
 
     // Generate tokens
     const agencyId = user.agencyStaff?.agencyId || null;
-    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
+    const access = this.createAccessToken(
+      user.id,
+      user.role,
+      user.tokenVersion ?? 0,
+      agencyId,
+      user.mustChangePassword,
+    );
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
     return {
@@ -352,7 +367,13 @@ export class AuthService {
     });
 
     const agencyId = user.agencyStaff?.agencyId || null;
-    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
+    const access = this.createAccessToken(
+      user.id,
+      user.role,
+      user.tokenVersion ?? 0,
+      agencyId,
+      user.mustChangePassword,
+    );
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
     // Audit login success
@@ -378,8 +399,48 @@ export class AuthService {
     return decoded;
   }
 
-  createAccessToken(userId: number, role: Role, tokenVersion: number, agencyId?: number | null) {
-    const payload: AuthTokenPayload = { userId, role, tokenVersion, agencyId };
+  createResponderInviteToken(
+    userId: number,
+    responderId: number,
+    agencyId: number,
+    tokenVersion: number,
+  ) {
+    const payload: ResponderInviteTokenPayload = {
+      userId,
+      responderId,
+      agencyId,
+      role: 'AGENCY_STAFF',
+      tokenVersion,
+      purpose: 'responder_onboard',
+    };
+
+    return jwt.sign(payload, RESPONDER_INVITE_SECRET as jwt.Secret, {
+      expiresIn: RESPONDER_INVITE_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    });
+  }
+
+  verifyResponderInviteToken(token: string) {
+    const decoded = jwt.verify(token, RESPONDER_INVITE_SECRET) as ResponderInviteTokenPayload;
+    if (decoded.purpose !== 'responder_onboard') {
+      throw new Error('Invalid onboarding token');
+    }
+    return decoded;
+  }
+
+  createAccessToken(
+    userId: number,
+    role: Role,
+    tokenVersion: number,
+    agencyId?: number | null,
+    mustChangePassword?: boolean,
+  ) {
+    const payload: AuthTokenPayload = {
+      userId,
+      role,
+      tokenVersion,
+      agencyId,
+      mustChangePassword,
+    };
     return jwt.sign(payload, JWT_SECRET as jwt.Secret, {
       expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
     });
@@ -412,7 +473,13 @@ export class AuthService {
     }
 
     const agencyId = user.agencyStaff?.agencyId || null;
-    const access = this.createAccessToken(user.id, user.role, user.tokenVersion ?? 0, agencyId);
+    const access = this.createAccessToken(
+      user.id,
+      user.role,
+      user.tokenVersion ?? 0,
+      agencyId,
+      user.mustChangePassword,
+    );
     const refresh = this.createRefreshToken(user.id, user.tokenVersion ?? 0);
 
     return {
@@ -433,6 +500,169 @@ export class AuthService {
     }
 
     return this.toAuthUser(user);
+  }
+
+  async completeOnboarding(userId: number, data: CompleteOnboardingBody) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        ...this.getAuthUserSelect(),
+        isActive: true,
+        deactivatedAt: true,
+        tokenVersion: true,
+      },
+    });
+
+    if (!currentUser || currentUser.isActive === false || currentUser.deactivatedAt) {
+      throw new Error('User not active');
+    }
+
+    if (!currentUser.mustChangePassword) {
+      throw new Error('Onboarding is already complete');
+    }
+
+    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          tokenVersion: { increment: 1 },
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        },
+        select: {
+          ...this.getAuthUserSelect(),
+          tokenVersion: true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: userId,
+          action: 'COMPLETE_ONBOARDING',
+          targetType: 'User',
+          targetId: userId,
+          note: 'Initial OTP replaced with a permanent password',
+        },
+      });
+
+      return user;
+    });
+
+    const agencyId = updatedUser.agencyStaff?.agencyId || null;
+    const access = this.createAccessToken(
+      updatedUser.id,
+      updatedUser.role,
+      updatedUser.tokenVersion ?? 0,
+      agencyId,
+      updatedUser.mustChangePassword,
+    );
+    const refresh = this.createRefreshToken(updatedUser.id, updatedUser.tokenVersion ?? 0);
+
+    return {
+      token: access,
+      refreshToken: refresh,
+      user: this.toAuthUser(updatedUser),
+    };
+  }
+
+  async onboardResponder(data: ResponderOnboardBody) {
+    const decoded = this.verifyResponderInviteToken(data.token);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        ...this.getAuthUserSelect(),
+        passwordHash: true,
+        isActive: true,
+        deactivatedAt: true,
+        tokenVersion: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('Invite target not found');
+    }
+
+    if (user.role !== 'AGENCY_STAFF') {
+      throw new Error('Invite target is not an agency responder');
+    }
+
+    if ((user.tokenVersion ?? 0) !== decoded.tokenVersion) {
+      throw new Error('Onboarding token is no longer valid');
+    }
+
+    if (user.isActive && !user.deactivatedAt) {
+      throw new Error('Responder account is already onboarded');
+    }
+
+    const responder = await prisma.responder.findUnique({
+      where: { id: decoded.responderId },
+      select: { id: true, agencyId: true, userId: true, status: true },
+    });
+
+    if (!responder || responder.userId !== user.id || responder.agencyId !== decoded.agencyId) {
+      throw new Error('Responder record does not match invite token');
+    }
+
+    if (!data.biometricEnabled) {
+      throw new Error('Biometric enablement is required during responder onboarding');
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const onboardedUser = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          isActive: true,
+          mustChangePassword: false,
+          deactivatedAt: null,
+          tokenVersion: { increment: 1 },
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        },
+        select: this.getAuthUserSelect(),
+      });
+
+      await tx.responder.update({
+        where: { id: responder.id },
+        data: { status: 'OFFLINE' },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'RESPONDER_ONBOARDED',
+          targetType: 'Responder',
+          targetId: responder.id,
+          note: 'Responder set initial password and confirmed biometric enrollment',
+        },
+      });
+
+      return updatedUser;
+    });
+
+    const agencyId = onboardedUser.agencyStaff?.agencyId || null;
+    const currentTokenVersion = (user.tokenVersion ?? 0) + 1;
+    const access = this.createAccessToken(
+      onboardedUser.id,
+      onboardedUser.role,
+      currentTokenVersion,
+      agencyId,
+      onboardedUser.mustChangePassword,
+    );
+    const refresh = this.createRefreshToken(onboardedUser.id, currentTokenVersion);
+
+    return {
+      token: access,
+      refreshToken: refresh,
+      user: this.toAuthUser(onboardedUser),
+    };
   }
 
   private async bumpFailure(userId: number, current: number) {
@@ -522,6 +752,7 @@ export class AuthService {
         where: { id: record.userId },
         data: {
           passwordHash,
+          mustChangePassword: false,
           tokenVersion: { increment: 1 }, // invalidate existing refresh tokens
           failedLoginAttempts: 0,
           lockedUntil: null,

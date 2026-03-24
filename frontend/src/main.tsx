@@ -23,6 +23,7 @@ import CrisisBanner from './components/CrisisBanner';
 import BroadcastModal from './components/BroadcastModal';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import SetupPassword from './pages/SetupPassword';
 import SyncManager from './components/SyncManager';
 
 const AgencyMap = React.lazy(() => import('./pages/AgencyMap'));
@@ -71,6 +72,14 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route
+                path="/auth/setup-password"
+                element={
+                  <ProtectedRoute allowPasswordSetup>
+                    <SetupPassword />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/redirect-after-login"
                 element={

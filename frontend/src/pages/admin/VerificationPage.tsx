@@ -4,6 +4,8 @@ import AppLayout from '../../layouts/AppLayout';
 import api from '../../lib/api';
 import TrustBadge from '../../components/user/TrustBadge';
 
+const ADMIN_USERS_INVALIDATED_EVENT = 'georise:admin-users-invalidated';
+
 type Pending = {
   id: number;
   userId: number;
@@ -36,6 +38,7 @@ const VerificationPage: React.FC = () => {
 
   const decide = async (requestId: number, status: 'APPROVED' | 'REJECTED') => {
     await api.patch(`/admin/verify-request/${requestId}`, { status });
+    window.dispatchEvent(new CustomEvent(ADMIN_USERS_INVALIDATED_EVENT));
     await load();
   };
 

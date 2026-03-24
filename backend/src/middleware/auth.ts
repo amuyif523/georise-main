@@ -14,6 +14,7 @@ const getAuthenticatedUser = async (userId: number) => {
       role: true,
       isVerified: true,
       isActive: true,
+      mustChangePassword: true,
       deactivatedAt: true,
       agencyStaff: {
         select: {
@@ -31,6 +32,7 @@ const getAuthenticatedUser = async (userId: number) => {
     id: user.id,
     role: user.role,
     isVerified: user.isVerified,
+    mustChangePassword: user.mustChangePassword,
     agencyId: user.agencyStaff?.agencyId ?? null,
   };
 };

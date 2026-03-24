@@ -188,6 +188,22 @@ export const updateVerificationStatus = async (req: Request, res: Response) => {
         data: { isVerified },
       });
 
+      await tx.citizenVerification.upsert({
+        where: { userId: verReq.userId },
+        update: {
+          nationalId: verReq.idNumber,
+          status: isVerified ? 'VERIFIED' : 'REJECTED',
+          verifiedAt: isVerified ? new Date() : null,
+        },
+        create: {
+          userId: verReq.userId,
+          nationalId: verReq.idNumber,
+          phone: 'SYSTEM-REVIEW',
+          status: isVerified ? 'VERIFIED' : 'REJECTED',
+          verifiedAt: isVerified ? new Date() : null,
+        },
+      });
+
       await tx.auditLog.create({
         data: {
           actorId: req.user!.id,

@@ -20,6 +20,7 @@ export interface User {
   email: string;
   role: Role;
   agencyId?: number | null;
+  mustChangePassword?: boolean;
   trustScore?: number;
   totalReports?: number;
   validReports?: number;

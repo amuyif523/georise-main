@@ -3,6 +3,15 @@ import bcrypt from 'bcrypt';
 import { StaffRole, AgencyType, IncidentStatus, ResponderStatus, Role } from '@prisma/client';
 import { smsService } from '../sms/sms.service';
 import { getIO } from '../../socket';
+import crypto from 'crypto';
+
+const STAFF_OTP_LENGTH = 8;
+const STAFF_OTP_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+const generateStaffOtp = () =>
+  Array.from(crypto.randomBytes(STAFF_OTP_LENGTH), (value) => {
+    return STAFF_OTP_ALPHABET[value % STAFF_OTP_ALPHABET.length];
+  }).join('');
 
 export const agencyService = {
   async getAgencies(filters: {
@@ -145,11 +154,13 @@ export const agencyService = {
     if (existing) throw new Error(`User with email ${adminData.email} already exists`);
 
     // 2. Generate Temp Password
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const otp = generateStaffOtp();
+    const passwordHash = await bcrypt.hash(otp, 10);
 
     // 3. Atomic Transaction
     return await prisma.$transaction(async (tx) => {
+      const verifiedAt = new Date();
+
       // Create Agency
       const agency = await tx.agency.create({
         data: {
@@ -171,6 +182,8 @@ export const agencyService = {
           email: adminData.email,
           phone: adminData.phone, // Phone might be optional in UI but schema check? Schema says optional string?
           passwordHash,
+          mustChangePassword: true,
+          isVerified: true,
           role: Role.AGENCY_MANAGER, // Updated to AGENCY_MANAGER
           isActive: true,
         },
@@ -186,14 +199,33 @@ export const agencyService = {
         },
       });
 
+      await tx.citizenVerification.create({
+        data: {
+          userId: user.id,
+          nationalId: 'SYSTEM-AUTO',
+          phone: adminData.phone ?? 'SYSTEM-AUTO',
+          status: 'VERIFIED',
+          verifiedAt,
+        },
+      });
+
       // Return combined result
-      return { agency, user, tempPassword };
+      return {
+        agency,
+        manager: user,
+        cleartextOtp: otp,
+      };
     });
   },
 
   async addStaff(
     agencyId: number,
-    data: { fullName: string; email: string; phone: string; staffRole: StaffRole },
+    data: {
+      fullName: string;
+      email: string;
+      phone: string;
+      staffRole: StaffRole;
+    },
   ) {
     // 1. Check if user exists
     const existing = await prisma.user.findFirst({
@@ -201,9 +233,8 @@ export const agencyService = {
     });
     if (existing) throw new Error('User with this email or phone already exists');
 
-    // 2. Generate Temp Password
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const otp = generateStaffOtp();
+    const passwordHash = await bcrypt.hash(otp, 10);
 
     // 3. Create User + AgencyStaff + Responder (if applicable)
     const result = await prisma.$transaction(async (tx) => {
@@ -213,6 +244,7 @@ export const agencyService = {
           email: data.email,
           phone: data.phone,
           passwordHash,
+          mustChangePassword: true,
           role: 'AGENCY_STAFF',
           isActive: true,
         },
@@ -226,22 +258,37 @@ export const agencyService = {
         },
       });
 
-      if (data.staffRole === 'RESPONDER') {
+      let responderId: number | null = null;
+      let responderPayload: {
+        id: number;
+        agencyId: number;
+        latitude: number;
+        longitude: number;
+        status: ResponderStatus;
+        name: string;
+        type: string;
+      } | null = null;
+
+      if (data.staffRole === StaffRole.RESPONDER) {
         const agency = await tx.agency.findUnique({
           where: { id: agencyId },
-          select: { centerLatitude: true, centerLongitude: true },
+          select: { centerLatitude: true, centerLongitude: true, subCityId: true },
         });
 
         // Fallback to Addis Ababa center if HQ coordinates are magically null
-        const lat = agency?.centerLatitude ?? 9.0192;
-        const lng = agency?.centerLongitude ?? 38.7525;
+        const hqLat = agency?.centerLatitude ?? 9.0192;
+        const hqLng = agency?.centerLongitude ?? 38.7525;
+        const lat = hqLat + (Math.random() - 0.5) * 0.01;
+        const lng = hqLng + (Math.random() - 0.5) * 0.01;
 
-        await tx.responder.create({
+        const responder = await tx.responder.create({
           data: {
             name: user.fullName,
             agencyId,
+            subCityId: agency?.subCityId ?? null,
+            woredaId: null,
             userId: user.id,
-            status: 'OFFLINE',
+            status: ResponderStatus.STANDBY,
             type: 'General',
             latitude: lat,
             longitude: lng,
@@ -249,32 +296,142 @@ export const agencyService = {
             breadcrumbs: [[lng, lat]],
           },
         });
+        responderId = responder.id;
+        responderPayload = {
+          id: responder.id,
+          agencyId,
+          latitude: lat,
+          longitude: lng,
+          status: ResponderStatus.STANDBY,
+          name: responder.name,
+          type: responder.type,
+        };
       }
 
-      return user;
+      return { user, responderId, responderPayload };
     });
 
     try {
       await smsService.sendSMS(
         data.phone,
-        `Welcome to GeoRise! You have been added as ${data.staffRole}. Temp Password: ${tempPassword}`,
+        `Welcome to GeoRise! Your one-time passcode is ${otp}. Sign in with it and reset your password immediately.`,
       );
     } catch (e) {
       console.error('Failed to send welcome SMS:', e);
     }
 
-    return result;
+    if (result.responderPayload) {
+      try {
+        getIO().to(`agency:${agencyId}`).emit('responder:created', {
+          responderId: result.responderPayload.id,
+          id: result.responderPayload.id,
+          agencyId: result.responderPayload.agencyId,
+          name: result.responderPayload.name,
+          type: result.responderPayload.type,
+          latitude: result.responderPayload.latitude,
+          longitude: result.responderPayload.longitude,
+          lat: result.responderPayload.latitude,
+          lng: result.responderPayload.longitude,
+          status: result.responderPayload.status,
+        });
+      } catch (e) {
+        console.error('Failed to emit responder:created event:', e);
+      }
+    }
+
+    return {
+      user: result.user,
+      cleartextOtp: otp,
+    };
   },
 
-  async getStaff(agencyId: number) {
-    return prisma.agencyStaff.findMany({
-      where: { agencyId, isActive: true },
+  async getStaff(
+    agencyId: number,
+    filters?: {
+      staffRole?: StaffRole;
+      responderStatuses?: ResponderStatus[];
+    },
+  ) {
+    const staff = await prisma.agencyStaff.findMany({
+      where: {
+        agencyId,
+        isActive: true,
+        ...(filters?.staffRole ? { staffRole: filters.staffRole } : {}),
+      },
       include: {
         user: {
-          select: { id: true, fullName: true, email: true, phone: true },
+          select: { id: true, fullName: true, email: true, phone: true, isActive: true },
         },
       },
+      orderBy: { id: 'desc' },
     });
+
+    const userIds = staff.map((member) => member.userId);
+    const responders = userIds.length
+      ? await prisma.responder.findMany({
+          where: {
+            agencyId,
+            userId: { in: userIds },
+            isActive: true,
+            deletedAt: null,
+            ...(filters?.responderStatuses?.length
+              ? { status: { in: filters.responderStatuses } }
+              : {}),
+          },
+          include: {
+            subCity: { select: { id: true, name: true } },
+            woreda: { select: { id: true, name: true } },
+          },
+        })
+      : [];
+
+    const respondersByUserId = new Map(
+      responders
+        .filter((responder) => responder.userId !== null)
+        .map((responder) => [responder.userId as number, responder]),
+    );
+
+    return staff
+      .filter((member) => {
+        if (filters?.staffRole !== StaffRole.RESPONDER) {
+          return true;
+        }
+
+        return respondersByUserId.has(member.userId);
+      })
+      .map((member) => {
+        const responder = respondersByUserId.get(member.userId);
+
+        return {
+          id: member.user.id,
+          userId: member.user.id,
+          fullName: member.user.fullName,
+          email: member.user.email,
+          phone: member.user.phone,
+          isActive: member.user.isActive && member.isActive,
+          agencyStaff: {
+            agencyId: member.agencyId,
+            staffRole: member.staffRole,
+            isActive: member.isActive,
+            deactivatedAt: member.deactivatedAt,
+          },
+          responder: responder
+            ? {
+                id: responder.id,
+                agencyId: responder.agencyId,
+                name: responder.name,
+                status: responder.status,
+                latitude: responder.latitude,
+                longitude: responder.longitude,
+                subCityId: responder.subCityId,
+                subCityName: responder.subCity?.name ?? null,
+                woredaId: responder.woredaId,
+                woredaName: responder.woreda?.name ?? null,
+                updatedAt: responder.updatedAt,
+              }
+            : null,
+        };
+      });
   },
 
   getProfile: async (agencyId: number) => {
