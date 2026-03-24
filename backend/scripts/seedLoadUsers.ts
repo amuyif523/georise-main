@@ -35,12 +35,19 @@ async function run() {
         description: 'Seeded for load testing',
         isActive: true,
         isApproved: true,
+        centerLatitude: 9.0192,
+        centerLongitude: 38.7525,
       },
     });
   } else {
     agency = await prisma.agency.update({
       where: { id: agency.id },
-      data: { isActive: true, isApproved: true },
+      data: {
+        isActive: true,
+        isApproved: true,
+        centerLatitude: agency.centerLatitude || 9.0192,
+        centerLongitude: agency.centerLongitude || 38.7525,
+      },
     });
   }
 

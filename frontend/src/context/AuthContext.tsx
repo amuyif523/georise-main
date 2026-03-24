@@ -49,17 +49,11 @@ const getInitialToken = () => {
   return localStorage.getItem('georise_token');
 };
 
-  const normalizeUserPayload = (payload: unknown): User | null => {
+const normalizeUserPayload = (payload: unknown): User | null => {
   if (!payload || typeof payload !== 'object') return null;
   const data = payload as { user?: User } & User;
   return data.user || data;
-  };
-
-  const assertDashboardAllowedUser = useCallback((userData: User | null) => {
-    if (userData?.role === 'RESPONDER') {
-      throw new Error('Responders cannot access the management dashboard. Use the mobile app.');
-    }
-  }, []);
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const initialToken = getInitialToken();
@@ -70,6 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const meInFlight = useRef<Promise<User | null> | null>(null);
   const meCacheRef = useRef<{ user: User | null; ts: number } | null>(null);
   const ME_CACHE_TTL_MS = 60_000;
+
+  const assertDashboardAllowedUser = useCallback((userData: User | null) => {
+    if (userData?.role === 'RESPONDER') {
+      throw new Error('Access denied. Responders must use the mobile app.');
+    }
+  }, []);
 
   const fetchMe = useCallback(async (bustCache = false) => {
     const now = Date.now();

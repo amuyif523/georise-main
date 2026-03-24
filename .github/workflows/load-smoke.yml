@@ -63,8 +63,10 @@ jobs:
           NODE_ENV=production
           PORT=4000
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
-          JWT_SECRET=ci_test_secret
-          JWT_REFRESH_SECRET=ci_test_refresh_secret
+          DIRECT_URL=postgresql://postgres:postgres@localhost:5432/georise_test?schema=public
+          JWT_SECRET=ci_test_secret_key_with_32_chars_min
+          JWT_REFRESH_SECRET=ci_test_refresh_secret_key_with_32_chars
+          INTERNAL_SERVICE_SECRET=ci_internal_service_secret_key
           JWT_EXPIRES_IN=1h
           JWT_REFRESH_EXPIRES_IN=7d
           REDIS_URL=redis://localhost:6379
