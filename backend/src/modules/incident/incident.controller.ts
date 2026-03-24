@@ -171,6 +171,7 @@ export const postChatMessage = async (req: Request, res: Response) => {
     const chat = await incidentService.addChatMessage(Number(incidentId), req.user!.id, message);
 
     getIO().to(`incident:${incidentId}`).emit('incident:chat', chat);
+    getIO().to(`incident:${incidentId}`).emit('incident:message', chat);
 
     return res.json(chat);
   } catch (err: any) {

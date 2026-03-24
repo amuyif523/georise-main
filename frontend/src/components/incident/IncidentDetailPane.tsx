@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   MessageSquare,
@@ -60,9 +60,11 @@ type IncidentPhoto = {
 };
 
 type ChatMessage = {
+  id?: number;
   senderId: number;
   sender?: {
     fullName: string;
+    role?: string;
     agencyStaff?: {
       agency?: {
         name: string;
@@ -349,9 +351,12 @@ const IncidentDetailPane: React.FC<Props> = ({
   const apiBase = useMemo(() => (api.defaults.baseURL || '').replace(/\/api$/, ''), []);
 
   // Chat & Share State
-  const [activeTab, setActiveTab] = useState<'timeline' | 'chat'>('timeline');
+  const [activeTab, setActiveTab] = useState<'details' | 'messages' | 'logs'>('details');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [hasUnreadResponderMessage, setHasUnreadResponderMessage] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Helper to find my responder profile
   const myResponderProfile = useMemo(() => {
@@ -402,33 +407,73 @@ const IncidentDetailPane: React.FC<Props> = ({
   const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
-    if (activeTab === 'chat' && incident) {
-      const loadChat = async () => {
-        try {
-          const res = await api.get(`/incidents/${incident.id}/chat`);
-          setChatMessages(res.data.messages || []);
-        } catch (e) {
-          console.error(e);
-        }
-      };
-      loadChat();
-
-      const socket = getSocket();
-      if (socket) {
-        socket.emit('join_incident', incident.id);
-        socket.on('incident:chat', (msg: ChatMessage) => {
-          setChatMessages((prev) => [...prev, msg]);
-        });
-      }
-
-      return () => {
-        if (socket) {
-          socket.emit('leave_incident', incident.id);
-          socket.off('incident:chat');
-        }
-      };
+    if (!incident) {
+      setChatMessages([]);
+      setChatInput('');
+      setHasUnreadResponderMessage(false);
+      return;
     }
-  }, [activeTab, incident]);
+
+    const loadChat = async () => {
+      setChatLoading(true);
+      try {
+        const res = await api.get(`/incidents/${incident.id}/chat`);
+        setChatMessages(res.data.messages || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setChatLoading(false);
+      }
+    };
+
+    void loadChat();
+
+    const socket = getSocket();
+    const onIncomingMessage = (msg: ChatMessage & { incidentId?: number }) => {
+      if (msg.incidentId && msg.incidentId !== incident.id) return;
+      setChatMessages((prev) => {
+        const alreadyExists = prev.some(
+          (existing) =>
+            (existing.id && msg.id && existing.id === msg.id) ||
+            (existing.senderId === msg.senderId &&
+              existing.createdAt === msg.createdAt &&
+              existing.message === msg.message),
+        );
+        if (alreadyExists) return prev;
+        return [...prev, msg];
+      });
+
+      if (activeTab !== 'messages' && msg.sender?.role === 'RESPONDER') {
+        setHasUnreadResponderMessage(true);
+      }
+    };
+
+    if (socket) {
+      socket.emit('join_incident', incident.id);
+      socket.on('incident:message', onIncomingMessage);
+      socket.on('incident:chat', onIncomingMessage);
+    }
+
+    return () => {
+      if (socket) {
+        socket.emit('leave_incident', incident.id);
+        socket.off('incident:message', onIncomingMessage);
+        socket.off('incident:chat', onIncomingMessage);
+      }
+    };
+  }, [incident?.id, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      setHasUnreadResponderMessage(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeTab, chatMessages]);
 
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -761,16 +806,25 @@ const IncidentDetailPane: React.FC<Props> = ({
         {/* Tabs */}
         <div className="tabs tabs-boxed bg-slate-900 mx-4 mt-4">
           <a
-            className={`tab ${activeTab === 'timeline' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('timeline')}
+            className={`tab ${activeTab === 'details' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('details')}
           >
-            Timeline
+            Details
           </a>
           <a
-            className={`tab ${activeTab === 'chat' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('chat')}
+            className={`tab gap-2 ${activeTab === 'messages' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('messages')}
           >
-            Inter-Agency Chat
+            Messages
+            {hasUnreadResponderMessage && (
+              <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+            )}
+          </a>
+          <a
+            className={`tab ${activeTab === 'logs' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('logs')}
+          >
+            Logs
           </a>
         </div>
 
@@ -802,7 +856,7 @@ const IncidentDetailPane: React.FC<Props> = ({
         )}
 
         <div className="p-4 space-y-4 h-[calc(100%-240px)] overflow-y-auto">
-          {activeTab === 'timeline' ? (
+          {activeTab === 'details' ? (
             <>
               {user?.role !== 'CITIZEN' && (
                 <div className="p-3 rounded-lg border border-cyan-600/30 bg-slate-900/70">
@@ -963,6 +1017,72 @@ const IncidentDetailPane: React.FC<Props> = ({
                 </div>
               )}
 
+            </>
+          ) : activeTab === 'messages' ? (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {chatLoading ? (
+                  <div className="text-center text-slate-500 text-sm mt-10">
+                    Loading message history...
+                  </div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="text-center text-slate-500 text-sm mt-10">
+                    No messages yet. Start the coordination.
+                  </div>
+                ) : (
+                  chatMessages.map((msg, idx) => {
+                    const isSelf = msg.senderId === user?.id;
+                    const isResponder = msg.sender?.role === 'RESPONDER';
+                    const isSystem = !msg.sender || msg.senderId === 0;
+                    const containerClass = isSelf
+                      ? 'ml-auto border-cyan-500/30 bg-cyan-500/10'
+                      : isResponder
+                        ? 'mr-auto border-emerald-500/30 bg-emerald-500/10'
+                        : 'mx-auto border-amber-500/30 bg-amber-500/10';
+
+                    const label = isSystem
+                      ? 'System'
+                      : isSelf
+                        ? 'Dispatcher'
+                        : isResponder
+                          ? 'Responder'
+                          : 'Field Unit';
+
+                    return (
+                      <div key={msg.id ?? `${msg.createdAt}-${idx}`} className="flex">
+                        <div className={`max-w-[88%] rounded-2xl border px-3 py-2 ${containerClass}`}>
+                          <div className="text-[11px] text-slate-400">
+                            {label}
+                            {!isSystem && msg.sender?.fullName ? ` • ${msg.sender.fullName}` : ''}
+                          </div>
+                          <div className="mt-1 text-sm text-white whitespace-pre-wrap">
+                            {msg.message}
+                          </div>
+                          <div className="mt-2 text-[10px] text-slate-500">
+                            {new Date(msg.createdAt).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <form onSubmit={handleSendChat} className="flex gap-2 pt-4">
+                <input
+                  type="text"
+                  className="input input-bordered input-sm flex-1 bg-slate-900"
+                  placeholder="Send dispatcher update..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                />
+                <button type="submit" className="btn btn-sm btn-primary" disabled={!chatInput.trim()}>
+                  <Send size={14} />
+                </button>
+              </form>
+            </div>
+          ) : (
+            <>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -1038,42 +1158,6 @@ const IncidentDetailPane: React.FC<Props> = ({
                 </div>
               )}
             </>
-          ) : (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-                {chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`chat ${msg.senderId === user?.id ? 'chat-end' : 'chat-start'}`}
-                  >
-                    <div className="chat-header text-xs opacity-50">
-                      {msg.sender?.fullName} • {msg.sender?.agencyStaff?.agency?.name || 'Admin'}
-                    </div>
-                    <div className="chat-bubble chat-bubble-primary text-sm">{msg.message}</div>
-                    <div className="chat-footer opacity-50 text-[10px]">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
-                    </div>
-                  </div>
-                ))}
-                {chatMessages.length === 0 && (
-                  <div className="text-center text-slate-500 text-sm mt-10">
-                    No messages yet. Start the coordination.
-                  </div>
-                )}
-              </div>
-              <form onSubmit={handleSendChat} className="flex gap-2">
-                <input
-                  type="text"
-                  className="input input-bordered input-sm flex-1 bg-slate-900"
-                  placeholder="Type a message..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                />
-                <button type="submit" className="btn btn-sm btn-primary">
-                  <Send size={14} />
-                </button>
-              </form>
-            </div>
           )}
         </div>
 
