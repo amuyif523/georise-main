@@ -1,10 +1,16 @@
 import { Router } from 'express';
-import { Role } from '@prisma/client';
+import { Role, ResponderStatus } from '@prisma/client';
 import prisma from '../../prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import logger from '../../logger';
 
 const router = Router();
+
+const appendBreadcrumbPoint = (existing: unknown, lng: number, lat: number) => {
+  const current = Array.isArray(existing) ? [...existing] : [];
+  current.push([lng, lat, Date.now()]);
+  return current.slice(-500);
+};
 
 async function auditResponder(actorId: number, action: string, targetId: number, note?: string) {
   try {
@@ -211,5 +217,84 @@ router.delete(
     }
   },
 );
+
+router.patch('/me/status', requireAuth, async (req: any, res) => {
+  try {
+    const { status } = req.body as { status?: ResponderStatus };
+    if (!status || !Object.values(ResponderStatus).includes(status)) {
+      return res.status(400).json({ message: 'Valid responder status is required' });
+    }
+
+    const responder = await prisma.responder.findFirst({
+      where: { userId: req.user!.id, isActive: true, deletedAt: null },
+    });
+    if (!responder) {
+      return res.status(404).json({ message: 'Responder profile not found' });
+    }
+
+    const updated = await prisma.responder.update({
+      where: { id: responder.id },
+      data: { status, lastSeenAt: new Date() },
+    });
+
+    await auditResponder(req.user!.id, 'UPDATE_RESPONDER_STATUS_SELF', responder.id, status);
+    return res.json({ responder: updated });
+  } catch (err: any) {
+    logger.error({ err }, 'Update own responder status error');
+    return res.status(400).json({ message: 'Failed to update responder status' });
+  }
+});
+
+router.patch('/me/location', requireAuth, async (req: any, res) => {
+  try {
+    const { latitude, longitude, status } = req.body as {
+      latitude?: number;
+      longitude?: number;
+      status?: ResponderStatus;
+    };
+
+    if (
+      latitude === undefined ||
+      longitude === undefined ||
+      !Number.isFinite(Number(latitude)) ||
+      !Number.isFinite(Number(longitude))
+    ) {
+      return res.status(400).json({ message: 'Valid latitude and longitude are required' });
+    }
+
+    if (status && !Object.values(ResponderStatus).includes(status)) {
+      return res.status(400).json({ message: 'Invalid responder status' });
+    }
+
+    const responder = await prisma.responder.findFirst({
+      where: { userId: req.user!.id, isActive: true, deletedAt: null },
+      select: { id: true, breadcrumbs: true },
+    });
+
+    if (!responder) {
+      return res.status(404).json({ message: 'Responder profile not found' });
+    }
+
+    const updated = await prisma.responder.update({
+      where: { id: responder.id },
+      data: {
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        lastSeenAt: new Date(),
+        ...(status ? { status } : {}),
+        breadcrumbs: appendBreadcrumbPoint(
+          responder.breadcrumbs,
+          Number(longitude),
+          Number(latitude),
+        ),
+      },
+    });
+
+    return res.json({ responder: updated });
+  } catch (err: any) {
+    logger.error({ err }, 'Update own responder location error');
+    return res.status(400).json({ message: 'Failed to update responder location' });
+  }
+});
 
 export default router;

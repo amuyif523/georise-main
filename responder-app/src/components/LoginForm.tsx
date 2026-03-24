@@ -47,6 +47,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, loading, error }) => {
           </div>
         )}
 
+        <div className="mb-4 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-xs text-cyan-200">
+          First-time staff must complete password setup and identity verification before they can
+          go on duty.
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">

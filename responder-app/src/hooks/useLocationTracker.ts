@@ -18,7 +18,7 @@ function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: number,
   return d * 1000;
 }
 
-export function useLocationTracker() {
+export function useLocationTracker(currentStatus?: string) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const watchId = useRef<number | null>(null);
   const lastEmitted = useRef<{ lat: number; lng: number; time: number } | null>(null);
@@ -76,7 +76,11 @@ export function useLocationTracker() {
           import('axios').then((axiosModule) => {
             const axios = axiosModule.default;
             const token = localStorage.getItem('responder_token');
-            const payload = { latitude, longitude, status: 'IDLE' }; // Will be overwritten by other states if active
+            const payload = {
+              latitude,
+              longitude,
+              ...(currentStatus ? { status: currentStatus } : {}),
+            };
 
             axios
               .patch(

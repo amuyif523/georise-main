@@ -423,6 +423,12 @@ export class IncidentService {
         aiOutput: true,
         statusHistory: true,
         photos: true,
+        subCity: {
+          select: { id: true, name: true },
+        },
+        woreda: {
+          select: { id: true, name: true },
+        },
         reporter: {
           select: { id: true, fullName: true, trustScore: true, phone: true },
         },

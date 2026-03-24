@@ -8,6 +8,12 @@ import redis from './redis';
 
 let io: Server | null = null;
 
+const appendBreadcrumbPoint = (existing: unknown, lng: number, lat: number, updatedAt: number) => {
+  const current = Array.isArray(existing) ? [...existing] : [];
+  current.push([lng, lat, updatedAt]);
+  return current.slice(-500);
+};
+
 export const initSocketServer = (server: HttpServer) => {
   const allowedOrigins = [
     'http://localhost:5173',
@@ -206,6 +212,19 @@ setInterval(async () => {
             lastSeenAt: new Date(data.updatedAt),
           };
           if (data.status) updateData.status = data.status;
+          const currentResponder = await prisma.responder.findUnique({
+            where: { id },
+            select: { breadcrumbs: true },
+          });
+          if (!currentResponder) {
+            throw Object.assign(new Error('Responder not found'), { code: 'P2025' });
+          }
+          updateData.breadcrumbs = appendBreadcrumbPoint(
+            currentResponder.breadcrumbs,
+            data.lng,
+            data.lat,
+            data.updatedAt,
+          );
 
           await prisma.responder.update({
             where: { id },
