@@ -8,6 +8,7 @@ def infer_severity(base_label: str, text: str) -> int:
         "CRIME": 2,
         "TRAFFIC": 3,
         "INFRASTRUCTURE": 2,
+        "UTILITY": 2,
         "OTHER": 2,
     }
     score = base_map.get(base_label, 2)

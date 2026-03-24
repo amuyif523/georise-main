@@ -28,7 +28,10 @@ export async function classifyWithBackoff(payload: Record<string, any>) {
       const formattedPayload = {
         title: payload.title || payload.text?.substring(0, 50) || 'No Title',
         description: payload.description || payload.text || '',
-        metadata: { initialTrustScore: payload.initialTrustScore },
+        metadata: {
+          initialTrustScore: payload.initialTrustScore,
+          manualCategory: payload.manualCategory || payload.category || null,
+        },
       };
 
       const res = await axios.post(CLASSIFY_URL, formattedPayload, {

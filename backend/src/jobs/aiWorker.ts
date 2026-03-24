@@ -8,10 +8,72 @@ import { dispatchService } from '../modules/dispatch/dispatch.service';
 import logger from '../logger';
 import { metrics } from '../metrics/metrics.service';
 
+const ALLOWED_INCIDENT_CATEGORIES = new Set([
+  'FIRE',
+  'MEDICAL',
+  'TRAFFIC',
+  'CRIME',
+  'INFRASTRUCTURE',
+  'OTHER',
+]);
+
+const CATEGORY_ALIASES: Record<string, string> = {
+  POLICE: 'CRIME',
+  ACCIDENT: 'TRAFFIC',
+  UTILITY: 'INFRASTRUCTURE',
+  UNSPECIFIED: 'OTHER',
+  UNKNOWN: 'OTHER',
+};
+
+const normalizeCategory = (value?: string | null) => {
+  if (!value) return '';
+  const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return CATEGORY_ALIASES[normalized] ?? normalized;
+};
+
+const inferCategoryFromText = (text: string, manualCategory?: string | null) => {
+  const body = text.toLowerCase();
+  const keywordGroups: Array<[string, string[]]> = [
+    ['CRIME', ['thief', 'thieves', 'robber', 'robbery', 'burglary', 'break-in', 'breaking in', 'intruder', 'stolen', 'crime', 'ሌባ', 'ወንጀል']],
+    ['FIRE', ['fire', 'smoke', 'flame', 'burn', 'explosion', 'እሳት', 'ጭስ']],
+    ['MEDICAL', ['medical', 'injury', 'injured', 'blood', 'ambulance', 'hospital', 'ሕክምና', 'ደም']],
+    ['TRAFFIC', ['traffic', 'accident', 'crash', 'collision', 'vehicle', 'car', 'truck', 'ትራፊክ', 'መኪና']],
+    ['INFRASTRUCTURE', ['bridge', 'pothole', 'electric', 'power', 'water', 'flood', 'internet', 'road', 'መብራት', 'ውሃ']],
+  ];
+
+  for (const [category, keywords] of keywordGroups) {
+    if (keywords.some((keyword) => body.includes(keyword))) {
+      return category;
+    }
+  }
+
+  const normalizedManual = normalizeCategory(manualCategory);
+  if (ALLOWED_INCIDENT_CATEGORIES.has(normalizedManual)) {
+    return normalizedManual;
+  }
+
+  return 'OTHER';
+};
+
+const validateIncidentCategory = (
+  aiCategory: string | null | undefined,
+  title: string,
+  description: string,
+  manualCategory?: string | null,
+) => {
+  const normalized = normalizeCategory(aiCategory);
+  if (ALLOWED_INCIDENT_CATEGORIES.has(normalized)) {
+    return normalized;
+  }
+
+  return inferCategoryFromText(`${title} ${description}`.trim(), manualCategory);
+};
+
 export const aiWorker = new Worker(
   'incident-ai',
   async (job: Job) => {
-    const { incidentId, title, description, reporterId, initialTrustScore } = job.data;
+    const { incidentId, title, description, reporterId, initialTrustScore, manualCategory } =
+      job.data;
     logger.info({ incidentId }, 'Processing AI classification job');
 
     const start = process.hrtime.bigint();
@@ -47,24 +109,30 @@ export const aiWorker = new Worker(
       const trustWeight = initialTrustScore ?? 0.5;
       const rawSeverity = aiOutput.severity_score ?? 1;
       const finalPriority = Math.max(1, Math.round(rawSeverity * trustWeight));
+      const validatedCategory = validateIncidentCategory(
+        aiOutput.predicted_category,
+        title,
+        description,
+        manualCategory,
+      );
 
       const updated = await prisma.incident.update({
         where: { id: incidentId },
         data: {
-          category: aiOutput.predicted_category,
+          category: validatedCategory,
           severityScore: finalPriority,
           aiOutput: {
             upsert: {
               create: {
                 modelVersion: aiOutput.model_version,
-                predictedCategory: aiOutput.predicted_category,
+                predictedCategory: validatedCategory,
                 severityScore: aiOutput.severity_score,
                 confidence: aiOutput.confidence,
                 summary: aiOutput.summary,
               },
               update: {
                 modelVersion: aiOutput.model_version,
-                predictedCategory: aiOutput.predicted_category,
+                predictedCategory: validatedCategory,
                 severityScore: aiOutput.severity_score,
                 confidence: aiOutput.confidence,
                 summary: aiOutput.summary,

@@ -23,6 +23,11 @@ export const INTERNAL_SERVICE_SECRET = required(
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET;
 export const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+export const RESPONDER_INVITE_SECRET = process.env.RESPONDER_INVITE_SECRET || JWT_SECRET;
+export const RESPONDER_INVITE_EXPIRES_IN =
+  process.env.RESPONDER_INVITE_EXPIRES_IN || '15m';
+export const RESPONDER_ONBOARD_DEEP_LINK =
+  process.env.RESPONDER_ONBOARD_DEEP_LINK || 'georise://onboard';
 export const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 export const DEMO_MODE = process.env.DEMO_MODE === 'true';
 export const SMS_PROVIDER = (process.env.SMS_PROVIDER || 'console').toLowerCase();
