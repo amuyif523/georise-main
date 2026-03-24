@@ -59,6 +59,15 @@ type AuthUserShape = {
   } | null;
 };
 
+type AuthenticatedLoginUser = AuthUserShape & {
+  passwordHash: string;
+  isActive: boolean;
+  deactivatedAt: Date | null;
+  lockedUntil: Date | null;
+  failedLoginAttempts: number | null;
+  tokenVersion: number | null;
+};
+
 export class AuthService {
   private readonly userInclude = {
     agencyStaff: {
@@ -99,13 +108,16 @@ export class AuthService {
   private toAuthUser(
     user: AuthUserShape,
   ) {
+    const normalizedRole =
+      user.agencyStaff?.staffRole === 'RESPONDER' ? ('RESPONDER' as const) : user.role;
+
     return {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
       phone: user.phone ?? null,
       mustChangePassword: user.mustChangePassword,
-      role: user.role,
+      role: normalizedRole,
       agencyId: user.agencyStaff?.agencyId ?? null,
       trustScore: user.trustScore ?? 0,
       totalReports: user.totalReports ?? 0,
@@ -325,7 +337,7 @@ export class AuthService {
     };
   }
 
-  async login(data: LoginRequestBody) {
+  async authenticateLogin(data: LoginRequestBody) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
       select: {
@@ -366,6 +378,10 @@ export class AuthService {
       data: { failedLoginAttempts: 0, lockedUntil: null },
     });
 
+    return user as AuthenticatedLoginUser;
+  }
+
+  async createLoginResult(user: AuthenticatedLoginUser) {
     const agencyId = user.agencyStaff?.agencyId || null;
     const access = this.createAccessToken(
       user.id,
@@ -392,6 +408,11 @@ export class AuthService {
       refreshToken: refresh,
       user: this.toAuthUser(user),
     };
+  }
+
+  async login(data: LoginRequestBody) {
+    const user = await this.authenticateLogin(data);
+    return this.createLoginResult(user);
   }
 
   verifyToken(token: string): AuthTokenPayload {

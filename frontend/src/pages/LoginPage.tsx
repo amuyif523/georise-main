@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
     setSuccess(null);
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, 'DASHBOARD');
       if (rememberMe) {
         localStorage.setItem('saved_email', email);
       } else {
@@ -132,6 +132,11 @@ const LoginPage: React.FC = () => {
   };
 
   const handleError = (err: any) => {
+    if (err?.response?.status === 403) {
+      setError('Responders cannot access the management dashboard. Use the mobile app.');
+      return;
+    }
+
     const is429 = err?.response?.status === 429;
     const retryMs: number | undefined = err?.retryAfterMs;
     if (is429) {

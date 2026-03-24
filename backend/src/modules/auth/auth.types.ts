@@ -12,6 +12,7 @@ export interface RegisterRequestBody {
 export interface LoginRequestBody {
   email: string;
   password: string;
+  clientSource?: 'DASHBOARD' | 'RESPONDER_APP';
 }
 
 export interface PasswordResetRequestBody {

@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import api from '../lib/api';
 import { connectSocket, disconnectSocket, resetSocketGuard } from '../lib/socket';
 
-type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'AGENCY_MANAGER' | 'ADMIN';
+type Role = 'CITIZEN' | 'AGENCY_STAFF' | 'AGENCY_MANAGER' | 'ADMIN' | 'RESPONDER';
 
 interface VerificationRequest {
   id: number;
@@ -32,7 +32,11 @@ export interface User {
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+    clientSource?: 'DASHBOARD' | 'RESPONDER_APP',
+  ) => Promise<void>;
   logout: () => void;
   setAuth: (user: User, token: string, refreshToken?: string) => void;
   refreshUser: () => Promise<void>;
@@ -45,11 +49,17 @@ const getInitialToken = () => {
   return localStorage.getItem('georise_token');
 };
 
-const normalizeUserPayload = (payload: unknown): User | null => {
+  const normalizeUserPayload = (payload: unknown): User | null => {
   if (!payload || typeof payload !== 'object') return null;
   const data = payload as { user?: User } & User;
   return data.user || data;
-};
+  };
+
+  const assertDashboardAllowedUser = useCallback((userData: User | null) => {
+    if (userData?.role === 'RESPONDER') {
+      throw new Error('Responders cannot access the management dashboard. Use the mobile app.');
+    }
+  }, []);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const initialToken = getInitialToken();
@@ -155,20 +165,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [fetchMe]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
-    const { token } = res.data;
-    const userData = normalizeUserPayload(res.data);
-    if (!userData) {
-      throw new Error('Invalid /auth/login payload');
-    }
-    localStorage.setItem('georise_token', token);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      clientSource: 'DASHBOARD' | 'RESPONDER_APP' = 'DASHBOARD',
+    ) => {
+      const res = await api.post('/auth/login', { email, password, clientSource });
+      const { token } = res.data;
+      const userData = normalizeUserPayload(res.data);
+      if (!userData) {
+        throw new Error('Invalid /auth/login payload');
+      }
+      assertDashboardAllowedUser(userData);
+      localStorage.setItem('georise_token', token);
 
-    // Clear cache immediately on login to prevent leftovers
-    meCacheRef.current = null;
-    setUser(userData);
-    connectSocket(token);
-  }, []);
+      // Clear cache immediately on login to prevent leftovers
+      meCacheRef.current = null;
+      setUser(userData);
+      connectSocket(token);
+    },
+    [assertDashboardAllowedUser],
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem('georise_token');
@@ -180,11 +198,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const setAuth = useCallback((userData: User, token: string, refreshToken?: string) => {
+    assertDashboardAllowedUser(userData);
     localStorage.setItem('georise_token', token);
     if (refreshToken) localStorage.setItem('georise_refresh_token', refreshToken);
     setUser(normalizeUserPayload(userData));
     connectSocket(token);
-  }, []);
+  }, [assertDashboardAllowedUser]);
 
   const refreshUser = useCallback(async () => {
     // Explicitly pass true to bust the 60s cache

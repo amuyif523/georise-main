@@ -15,7 +15,18 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const result = await authService.login(req.body);
+    const authenticatedUser = await authService.authenticateLogin(req.body);
+    const isResponderOrAgencyStaff =
+      authenticatedUser.agencyStaff?.staffRole === 'RESPONDER' ||
+      authenticatedUser.role === 'AGENCY_STAFF';
+
+    if (req.body.clientSource === 'DASHBOARD' && isResponderOrAgencyStaff) {
+      return res
+        .status(403)
+        .json({ message: 'Access denied. Please use the GEORISE Responder App.' });
+    }
+
+    const result = await authService.createLoginResult(authenticatedUser);
     if (result.user.role === 'ADMIN') {
       await prisma.auditLog.create({
         data: {
@@ -29,6 +40,9 @@ export const login = async (req: Request, res: Response) => {
     return res.status(200).json(result);
   } catch (err: any) {
     logger.error({ err }, 'Login error');
+    if (err?.statusCode === 403) {
+      return res.status(403).json({ message: err?.message || 'Access denied' });
+    }
     return res.status(401).json({ message: err?.message || 'Login failed' });
   }
 };
