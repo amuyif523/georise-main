@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import * as turf from '@turf/turf';
@@ -7,16 +7,19 @@ import api from '../lib/api';
 // Fix for default marker icons in Leaflet missing paths
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconRetinaUrl: '/assets/map/marker-icon-2x.png',
+  iconUrl: '/assets/map/marker-icon.png',
+  shadowUrl: '/assets/map/marker-shadow.png',
 });
 
 interface IncidentMapProps {
   responderLat: number;
   responderLng: number;
+  visible?: boolean;
+  fallbackLocation?: { lat: number; lng: number };
   incidentLat?: number | null;
   incidentLng?: number | null;
+  incidentId?: number | null;
   currentUserId?: number;
   nearbyResponders?: Array<{
     id: number;
@@ -28,6 +31,7 @@ interface IncidentMapProps {
   }>;
   following: boolean;
   onRouteData?: (distanceKm: number, durationMin: number) => void;
+  onOfflineReadyChange?: (ready: boolean) => void;
 }
 
 const MapEffect: React.FC<{ responderLat: number; responderLng: number; following: boolean }> = ({
@@ -36,66 +40,164 @@ const MapEffect: React.FC<{ responderLat: number; responderLng: number; followin
   following,
 }) => {
   const map = useMap();
+  const lastMoveRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+
   useEffect(() => {
     if (following) {
-      map.setView([responderLat, responderLng], 16, { animate: true });
+      const now = Date.now();
+      const elapsed = lastMoveRef.current ? now - lastMoveRef.current.ts : Number.POSITIVE_INFINITY;
+      const shouldAnimate = elapsed > 1400;
+      const currentZoom = map.getZoom();
+      if (currentZoom < 16) {
+        map.setView([responderLat, responderLng], 16, { animate: shouldAnimate });
+      } else {
+        map.panTo([responderLat, responderLng], { animate: shouldAnimate });
+      }
+      lastMoveRef.current = { lat: responderLat, lng: responderLng, ts: now };
     }
   }, [responderLat, responderLng, following, map]);
+  return null;
+};
+
+const MapVisibilityEffect: React.FC<{ visible: boolean }> = ({ visible }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const timeoutId = window.setTimeout(() => {
+      map.invalidateSize({ animate: false });
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [visible, map]);
+
   return null;
 };
 
 const IncidentMap: React.FC<IncidentMapProps> = ({
   responderLat,
   responderLng,
+  visible = true,
+  fallbackLocation,
   incidentLat,
   incidentLng,
+  incidentId,
   currentUserId,
   nearbyResponders = [],
   following,
   onRouteData,
+  onOfflineReadyChange,
 }) => {
   const [routeGeoJSON, setRouteGeoJSON] = useState<any>(null);
+  const lastRouteFetchRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+  const routeAbortRef = useRef<AbortController | null>(null);
+  const onRouteDataRef = useRef<typeof onRouteData | undefined>(undefined);
 
   useEffect(() => {
-    if (incidentLat && incidentLng) {
-      // Calculate basic distance
-      const from = turf.point([responderLng, responderLat]);
-      const to = turf.point([incidentLng, incidentLat]);
-      const dist = turf.distance(from, to, { units: 'kilometers' });
+    onRouteDataRef.current = onRouteData;
+  }, [onRouteData]);
 
-      // Fetch OSRM via backend
-      api
-        .get(
-          `/gis/route?startLat=${responderLat}&startLon=${responderLng}&endLat=${incidentLat}&endLon=${incidentLng}`,
-        )
-        .then((res: any) => {
-          if (res.data?.geometry) {
-            setRouteGeoJSON(res.data.geometry);
-          }
-          if (onRouteData) {
-            onRouteData(res.data?.distanceKm ?? dist, res.data?.durationMin ?? dist * 2); // default 30kph approximation
-          }
-        })
-        .catch((err: any) => {
-          console.error('Failed to fetch route:', err);
-          if (onRouteData) onRouteData(dist, dist * 2);
-        });
+  useEffect(() => {
+    if (!incidentId || !incidentLat || !incidentLng) {
+      onOfflineReadyChange?.(false);
+      return;
     }
+
+    onOfflineReadyChange?.(true);
+  }, [incidentId, incidentLat, incidentLng, onOfflineReadyChange]);
+
+  useEffect(() => {
+    if (!incidentLat || !incidentLng) {
+      routeAbortRef.current?.abort();
+      routeAbortRef.current = null;
+      setRouteGeoJSON(null);
+      return;
+    }
+
+    const now = Date.now();
+    const last = lastRouteFetchRef.current;
+    if (last) {
+      const movedMeters = turf.distance(
+        turf.point([last.lng, last.lat]),
+        turf.point([responderLng, responderLat]),
+        { units: 'kilometers' },
+      ) * 1000;
+      const elapsedMs = now - last.ts;
+      // Avoid rerouting on tiny movement bursts; keeps map rendering smooth.
+      if (movedMeters < 30 && elapsedMs < 15000) {
+        return;
+      }
+    }
+
+    const from = turf.point([responderLng, responderLat]);
+    const to = turf.point([incidentLng, incidentLat]);
+    const dist = turf.distance(from, to, { units: 'kilometers' });
+
+    routeAbortRef.current?.abort();
+    const controller = new AbortController();
+    routeAbortRef.current = controller;
+
+    api
+      .get(
+        `/gis/route?startLat=${responderLat}&startLon=${responderLng}&endLat=${incidentLat}&endLon=${incidentLng}`,
+        { signal: controller.signal },
+      )
+      .then((res: any) => {
+        if (controller.signal.aborted) return;
+
+        lastRouteFetchRef.current = { lat: responderLat, lng: responderLng, ts: now };
+        setRouteGeoJSON(res.data?.geometry ?? null);
+        if (onRouteDataRef.current) {
+          onRouteDataRef.current(res.data?.distanceKm ?? dist, res.data?.durationMin ?? dist * 2);
+        }
+      })
+      .catch((err: any) => {
+        if (controller.signal.aborted || err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') {
+          return;
+        }
+
+        console.error('Failed to fetch route:', err);
+        if (onRouteDataRef.current) onRouteDataRef.current(dist, dist * 2);
+      });
+
+    return () => {
+      controller.abort();
+      if (routeAbortRef.current === controller) {
+        routeAbortRef.current = null;
+      }
+    };
   }, [responderLat, responderLng, incidentLat, incidentLng]);
 
-  const mapCenter: [number, number] =
-    incidentLat && incidentLng && !following
-      ? [incidentLat, incidentLng]
-      : [responderLat, responderLng];
+  const initialCenterRef = useRef<[number, number] | null>(null);
+  if (!initialCenterRef.current) {
+    initialCenterRef.current =
+      incidentLat && incidentLng && !following
+        ? [incidentLat, incidentLng]
+        : [fallbackLocation?.lat ?? responderLat, fallbackLocation?.lng ?? responderLng];
+  }
+
+  // Recenter baseline only when the assigned incident target changes.
+  useEffect(() => {
+    if (incidentLat && incidentLng && !following) {
+      initialCenterRef.current = [incidentLat, incidentLng];
+    }
+  }, [incidentLat, incidentLng, following]);
 
   return (
     <MapContainer
-      center={mapCenter}
+      center={initialCenterRef.current}
       zoom={14}
       style={{ width: '100%', height: '100%' }}
       zoomControl={false}
     >
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; OpenStreetMap contributors'
+        updateWhenIdle={true}
+        keepBuffer={3}
+      />
+      <MapVisibilityEffect visible={visible} />
       <MapEffect responderLat={responderLat} responderLng={responderLng} following={following} />
 
       {/* Responder Marker */}
@@ -159,4 +261,4 @@ const IncidentMap: React.FC<IncidentMapProps> = ({
   );
 };
 
-export default IncidentMap;
+export default React.memo(IncidentMap);

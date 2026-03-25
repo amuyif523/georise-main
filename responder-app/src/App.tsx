@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import api from './lib/api';
 import { connectSocket, disconnectSocket, getSocket, setActiveIncidentRoom } from './lib/socket';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -6,14 +6,17 @@ import { useLocationTracker } from './hooks/useLocationTracker';
 import NetworkBanner from './components/NetworkBanner';
 import InstallAppBanner from './components/InstallAppBanner';
 import LoginForm from './components/LoginForm';
-import IncidentMap from './components/IncidentMap';
 import SetupPassword from './components/SetupPassword';
 import VerificationTerminal from './components/VerificationTerminal';
-import TacticalChatDrawer from './components/TacticalChatDrawer';
-import { MapPin, Navigation2, CheckCircle, AlertCircle, Camera } from 'lucide-react';
+import MissionDashboard from './components/MissionDashboard';
 import * as turf from '@turf/turf';
 import { addChatMessageToQueue } from './offline/chatQueue';
 import { flushOfflineQueuesChronologically } from './offline/offlineSync';
+import { addStatusUpdateToQueue } from './offline/responderLocationQueue';
+
+const TacticalChatDrawer = lazy(() => import('./components/TacticalChatDrawer'));
+const TacticalMap = lazy(() => import('./components/TacticalMap'));
+const preloadMap = () => import('./components/TacticalMap');
 
 const urlBase64ToUint8Array = (base64String: string) => {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -33,6 +36,7 @@ type Incident = {
   latitude?: number | null;
   longitude?: number | null;
   status?: string;
+  acknowledgedAt?: string | null;
   subCity?: { id: number; name: string } | null;
   woreda?: { id: number; name: string } | null;
   photos?: Array<{
@@ -63,6 +67,10 @@ type AuthUser = {
   role: string;
   mustChangePassword?: boolean;
   isVerified?: boolean;
+  citizenVerification?: {
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+    verifiedAt?: string | null;
+  } | null;
   verificationRequest?: VerificationRequest | null;
 };
 
@@ -87,7 +95,22 @@ const normalizeUser = (payload: unknown): AuthUser | null => {
   return data.user || data;
 };
 
+const isTrustedVerifiedUser = (candidate: AuthUser | null) => {
+  if (!candidate) return false;
+  return candidate.isVerified === true || candidate.citizenVerification?.status === 'VERIFIED';
+};
+
 const ACTIVE_INCIDENT_STORAGE_KEY = 'responder_active_incident_id';
+type AppView = 'MISSION_DASHBOARD' | 'TACTICAL_MAP';
+
+const DeferredPanelFallback = ({ label }: { label: string }) => (
+  <div className="flex h-full min-h-24 items-center justify-center bg-slate-950/60 text-xs text-slate-400">
+    <div className="flex items-center gap-2">
+      <span className="loading loading-spinner loading-sm" />
+      <span>{label}</span>
+    </div>
+  </div>
+);
 
 const getPublicAssetUrl = (path?: string | null) => {
   if (!path) return null;
@@ -107,6 +130,7 @@ const normalizeIncident = (payload: any): Incident => ({
   latitude: payload.latitude ?? null,
   longitude: payload.longitude ?? null,
   status: payload.status,
+  acknowledgedAt: payload.acknowledgedAt ?? null,
   subCity: payload.subCity ?? null,
   woreda: payload.woreda ?? null,
   photos: Array.isArray(payload.photos)
@@ -132,11 +156,13 @@ const App: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acceptingMission, setAcceptingMission] = useState(false);
   const online = useNetworkStatus();
 
   const [routeDist, setRouteDist] = useState<number | null>(null);
   const [routeEta, setRouteEta] = useState<number | null>(null);
   const [following, setFollowing] = useState(true);
+  const [recenterToken, setRecenterToken] = useState(0);
   const [closingPhoto, setClosingPhoto] = useState<File | null>(null);
   const [bootstrapping, setBootstrapping] = useState<boolean>(() => Boolean(token));
   const [chatOpen, setChatOpen] = useState(false);
@@ -145,7 +171,51 @@ const App: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [nearbyResponders, setNearbyResponders] = useState<NearbyResponder[]>([]);
-  const coords = useLocationTracker(getResponderStatusForIncident(activeIncident?.status));
+  const [missionMapOfflineReady, setMissionMapOfflineReady] = useState(false);
+  const [view, setView] = useState<AppView>('MISSION_DASHBOARD');
+  const [mapActivated, setMapActivated] = useState(false);
+  const [socketResponderCoords, setSocketResponderCoords] = useState<{
+    lat: number;
+    lng: number;
+    heading?: number | null;
+    updatedAt: number;
+  } | null>(null);
+  const [autoArriving, setAutoArriving] = useState(false);
+  const trackerCoords = useLocationTracker(getResponderStatusForIncident(activeIncident?.status));
+  const coords = useMemo(() => {
+    if (!socketResponderCoords) return trackerCoords;
+    if (!trackerCoords) {
+      return {
+        lat: socketResponderCoords.lat,
+        lng: socketResponderCoords.lng,
+        heading: socketResponderCoords.heading ?? null,
+      };
+    }
+
+    const trackerTimestamp = Date.now();
+    const socketAgeMs = trackerTimestamp - socketResponderCoords.updatedAt;
+    if (socketAgeMs <= 10000) {
+      return {
+        lat: socketResponderCoords.lat,
+        lng: socketResponderCoords.lng,
+        heading: socketResponderCoords.heading ?? trackerCoords.heading ?? null,
+      };
+    }
+
+    return trackerCoords;
+  }, [socketResponderCoords, trackerCoords]);
+  const handleRouteData = useCallback((distanceKm: number, durationMin: number) => {
+    setRouteDist(distanceKm);
+    setRouteEta(durationMin);
+  }, []);
+
+  useEffect(() => {
+    setMissionMapOfflineReady(false);
+    setRouteDist(null);
+    setRouteEta(null);
+    setSocketResponderCoords(null);
+    setAutoArriving(false);
+  }, [activeIncident?.id]);
 
   const applyAuthSession = (nextToken: string, nextUser: AuthUser, refreshToken?: string) => {
     localStorage.setItem('responder_token', nextToken);
@@ -156,13 +226,26 @@ const App: React.FC = () => {
     setUser(nextUser);
   };
 
-  let distToTarget = Infinity;
-  if (coords && activeIncident?.latitude && activeIncident?.longitude) {
+  const openTacticalMap = () => {
+    setMapActivated(true);
+    void preloadMap();
+    setView('TACTICAL_MAP');
+  };
+
+  const distToTarget = useMemo(() => {
+    if (!coords || !activeIncident?.latitude || !activeIncident?.longitude) return Infinity;
     const from = turf.point([coords.lng, coords.lat]);
     const to = turf.point([activeIncident.longitude, activeIncident.latitude]);
-    distToTarget = turf.distance(from, to, { units: 'kilometers' });
-  }
+    return turf.distance(from, to, { units: 'kilometers' });
+  }, [activeIncident?.latitude, activeIncident?.longitude, coords]);
   const canResolve = distToTarget <= 0.1; // 100 meters
+  const finalReportVisible = view === 'TACTICAL_MAP' && (activeIncident?.status === 'ARRIVED' || activeIncident?.status === 'ON_SCENE');
+
+  useEffect(() => {
+    if (finalReportVisible) {
+      setChatOpen(false);
+    }
+  }, [finalReportVisible]);
 
   const fetchIncidentDetails = async (incidentId: number) => {
     const res = await api.get(`/incidents/${incidentId}`);
@@ -228,6 +311,8 @@ const App: React.FC = () => {
       }
 
       applyAuthSession(t, authUser, res.data.refreshToken);
+      setMapActivated(true);
+      void preloadMap();
       setMessage('Connected as responder.');
 
       // Push subscription
@@ -268,6 +353,8 @@ const App: React.FC = () => {
     setChatMessages([]);
     setChatInput('');
     setResolutionNotes('');
+    setView('MISSION_DASHBOARD');
+    setMapActivated(false);
   };
 
   const refreshSessionUser = async () => {
@@ -344,6 +431,8 @@ const App: React.FC = () => {
         }
 
         setUser(authUser);
+        setMapActivated(true);
+        void preloadMap();
         try {
           await fetchActiveIncident();
         } catch (incidentErr) {
@@ -367,6 +456,12 @@ const App: React.FC = () => {
   }, [activeIncident?.id]);
 
   useEffect(() => {
+    if (view === 'TACTICAL_MAP') {
+      setMapActivated(true);
+    }
+  }, [view]);
+
+  useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
     const onAssigned = (payload: any) => {
@@ -379,16 +474,64 @@ const App: React.FC = () => {
     };
     const onArrival = (payload: any) => {
       if (activeIncident && payload.incidentId === activeIncident.id) {
-        setActiveIncident({ ...activeIncident, status: 'ARRIVED' });
+        setActiveIncident((current) =>
+          current && current.id === payload.incidentId ? { ...current, status: 'ARRIVED' } : current,
+        );
       }
+    };
+    const onStatusChanged = (payload: any) => {
+      if (!activeIncident || payload.incidentId !== activeIncident.id) return;
+      setActiveIncident((current) =>
+        current && current.id === payload.incidentId ? { ...current, status: payload.status } : current,
+      );
+      if (payload.status === 'ARRIVED') {
+        setAutoArriving(false);
+        setMessage('Responder status updated: On scene.');
+      }
+    };
+    const onResponderLocationUpdate = (payload: any) => {
+      if (typeof payload?.lat !== 'number' || typeof payload?.lng !== 'number') return;
+      setSocketResponderCoords({
+        lat: payload.lat,
+        lng: payload.lng,
+        heading: null,
+        updatedAt: typeof payload.updatedAt === 'number' ? payload.updatedAt : Date.now(),
+      });
     };
     socket.on('incident:assignedResponder', onAssigned);
     socket.on('incident:arrival', onArrival);
+    socket.on('incident:statusChanged', onStatusChanged);
+    socket.on('responder:locationUpdate', onResponderLocationUpdate);
     return () => {
       socket.off('incident:assignedResponder', onAssigned);
       socket.off('incident:arrival', onArrival);
+      socket.off('incident:statusChanged', onStatusChanged);
+      socket.off('responder:locationUpdate', onResponderLocationUpdate);
     };
   }, [activeIncident]);
+
+  useEffect(() => {
+    if (!activeIncident?.id || activeIncident.status !== 'RESPONDING') {
+      setAutoArriving(false);
+      return;
+    }
+    if (!coords || !Number.isFinite(distToTarget) || distToTarget > 0.02 || autoArriving) {
+      return;
+    }
+
+    setAutoArriving(true);
+    void syncResponderMissionStatus('ARRIVED')
+      .then(() => {
+        setActiveIncident((current) =>
+          current && current.id === activeIncident.id ? { ...current, status: 'ARRIVED' } : current,
+        );
+        setMessage('Status synced automatically: Arrived on scene.');
+      })
+      .catch((err: any) => {
+        setAutoArriving(false);
+        setError(err?.response?.data?.message || err?.message || 'Failed to mark arrival.');
+      });
+  }, [activeIncident?.id, activeIncident?.status, autoArriving, coords, distToTarget]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -462,8 +605,36 @@ const App: React.FC = () => {
   const openMaps = () => {
     if (!activeIncident?.latitude || !activeIncident.longitude) return;
     window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${activeIncident.latitude},${activeIncident.longitude}`,
+      `https://www.google.com/maps/dir/?api=1&destination=${activeIncident.latitude},${activeIncident.longitude}&travelmode=driving`,
+      '_blank',
+      'noopener,noreferrer',
     );
+  };
+
+  const acceptMission = async () => {
+    if (!activeIncident) return;
+    setAcceptingMission(true);
+    setError(null);
+    try {
+      await api.post('/dispatch/acknowledge', { incidentId: activeIncident.id });
+      setActiveIncident({ ...activeIncident, acknowledgedAt: new Date().toISOString() });
+      setMessage('Mission accepted. Dispatch has been notified.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to accept mission.');
+    } finally {
+      setAcceptingMission(false);
+    }
+  };
+
+  const startMission = async () => {
+    if (!activeIncident) return;
+    try {
+      await syncResponderMissionStatus('EN_ROUTE');
+      setActiveIncident({ ...activeIncident, status: 'RESPONDING' });
+      setMessage('Mission started. Status synced with dispatch.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to start mission.');
+    }
   };
 
   const markResolved = async () => {
@@ -490,7 +661,8 @@ const App: React.FC = () => {
       await api.patch(`/incidents/${activeIncident.id}/resolve`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setActiveIncident({ ...activeIncident, status: 'RESOLVED' });
+      setActiveIncident(null);
+      setView('MISSION_DASHBOARD');
       localStorage.removeItem(ACTIVE_INCIDENT_STORAGE_KEY);
       setMessage('Incident marked resolved.');
       setClosingPhoto(null);
@@ -529,13 +701,9 @@ const App: React.FC = () => {
     const text = (messageOverride ?? chatInput).trim();
     if (!text) return;
 
-    try {
-      await api.post(`/incidents/${activeIncident.id}/chat`, { message: text });
-      setChatInput('');
-      setChatOpen(true);
-    } catch (err) {
-      throw err;
-    }
+    await api.post(`/incidents/${activeIncident.id}/chat`, { message: text });
+    setChatInput('');
+    setChatOpen(true);
   };
 
   const syncResponderMissionStatus = async (nextStatus: 'EN_ROUTE' | 'ARRIVED') => {
@@ -552,17 +720,18 @@ const App: React.FC = () => {
 
     try {
       await api.patch('/responders/me/status', { status: responderStatus });
-      await api.patch('/responders/me/location', {
-        latitude: coords.lat,
-        longitude: coords.lng,
-        status: responderStatus,
-      });
+      if (nextStatus !== 'ARRIVED') {
+        await api.patch('/responders/me/location', {
+          latitude: coords.lat,
+          longitude: coords.lng,
+          status: responderStatus,
+        });
+      }
       await api.patch(incidentPath, {});
     } catch (err: any) {
       const maybeNetworkError =
         !err?.response || err.code === 'ERR_NETWORK' || /network/i.test(err?.message || '');
       if (maybeNetworkError && activeIncident?.id) {
-        const { addStatusUpdateToQueue } = await import('./offline/responderLocationQueue');
         await addStatusUpdateToQueue(activeIncident.id, nextStatus, coords.lat, coords.lng);
         setMessage('Network unstable. Mission status queued for sync.');
       } else {
@@ -603,7 +772,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (user && !user.isVerified) {
+  if (user && !isTrustedVerifiedUser(user)) {
     return (
       <VerificationTerminal user={user} loading={loading} onRefresh={refreshSessionUser} onLogout={logout} />
     );
@@ -620,7 +789,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
-      <NetworkBanner />
+      <NetworkBanner missionMapOfflineReady={missionMapOfflineReady} />
       <InstallAppBanner />
       <header className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
         <div>
@@ -632,253 +801,100 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      <main className="flex-1 p-4 pb-40 flex flex-col gap-4 max-w-md mx-auto w-full">
+      <main className="relative flex-1 overflow-hidden">
         {token && (
           <>
-            {message && <div className="alert alert-info text-xs">{message}</div>}
-            {error && <div className="alert alert-error text-xs">{error}</div>}
-
-            <div className="card p-4 space-y-2">
-              <div className="text-xs text-slate-400">Your location</div>
-              {coords ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-cyan-300" />
-                  <div>
-                    <div>
-                      {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {online ? 'Online' : 'Offline (queued)'}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-500">Waiting for GPS…</div>
-              )}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-[1300] px-4 pt-4">
+              <div className="mx-auto flex max-w-md flex-col gap-2">
+                {message && <div className="pointer-events-auto alert alert-info text-xs">{message}</div>}
+                {error && <div className="pointer-events-auto alert alert-error text-xs">{error}</div>}
+              </div>
             </div>
 
-            <div className="card p-4 space-y-3">
-              <div className="text-xs text-slate-400">Active mission</div>
-              {activeIncident ? (
-                <>
-                  <div className="text-sm font-semibold">{activeIncident.title}</div>
-                  {landmark && (
-                    <div className="text-xs text-slate-400">
-                      Landmark: <span className="text-slate-200">{landmark}</span>
-                    </div>
-                  )}
-                  {activeIncident.description && (
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3 text-sm text-slate-200">
-                      {activeIncident.description}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    <div className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-[11px] font-semibold text-orange-200">
-                      {activeIncident.category || 'UNCLASSIFIED'}
-                    </div>
-                    <div className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold text-cyan-200">
-                      Severity {severityLabel}
-                    </div>
-                  </div>
-                  {activeIncident.photos && activeIncident.photos.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs text-slate-400">Citizen photos</div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {activeIncident.photos.map((photo) => {
-                          const photoUrl = getPublicAssetUrl(photo.url);
-                          return (
-                            <a
-                              key={photo.id}
-                              href={photoUrl || '#'}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900"
-                            >
-                              {photoUrl ? (
-                                <img
-                                  src={photoUrl}
-                                  alt={photo.originalName || 'Incident evidence'}
-                                  className="h-20 w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-20 items-center justify-center text-[11px] text-slate-500">
-                                  Photo unavailable
-                                </div>
-                              )}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {coords && (
-                    <div className="h-64 rounded-xl overflow-hidden relative border border-slate-700 shadow-inner">
-                      <IncidentMap
-                        responderLat={coords.lat}
-                        responderLng={coords.lng}
-                        incidentLat={activeIncident.latitude}
-                        incidentLng={activeIncident.longitude}
-                        nearbyResponders={nearbyResponders}
-                        currentUserId={user?.id}
-                        following={following}
-                        onRouteData={(d, t) => {
-                          setRouteDist(d);
-                          setRouteEta(t);
-                        }}
-                      />
-                      <div className="absolute top-2 right-2 bg-slate-900/90 text-white p-2 rounded-lg text-xs z-[1000] border border-slate-700 backdrop-blur shadow-lg">
-                        <div className="font-bold text-slate-300 mb-1">MISSION HUD</div>
-                        {routeDist !== null ? (
-                          <>
-                            <div>
-                              Distance:{' '}
-                              <span className="font-mono text-cyan-300">
-                                {routeDist.toFixed(2)} km
-                              </span>
-                            </div>
-                            <div>
-                              ETA:{' '}
-                              <span className="font-mono text-emerald-400">
-                                {Math.ceil(routeEta!)} min
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-slate-500">Calculating...</div>
-                        )}
-                      </div>
-                      <button
-                        className="absolute bottom-2 right-2 btn btn-xs btn-neutral z-[1000]"
-                        onClick={() => setFollowing(!following)}
-                      >
-                        {following ? 'Free Pan' : 'Follow Me'}
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <AlertCircle className="w-4 h-4 text-orange-400" />
-                    <span>Status: {activeIncident.status || 'ASSIGNED'}</span>
-                  </div>
-                  <div className="flex flex-col gap-3 pt-2">
-                    {(!activeIncident.status ||
-                      ['ASSIGNED', 'EN_ROUTE'].includes(activeIncident.status)) && (
-                      <button
-                        className="btn btn-warning w-full h-16 text-lg shadow-lg font-bold"
-                        onClick={async () => {
-                          try {
-                            await syncResponderMissionStatus('EN_ROUTE');
-                            setActiveIncident({ ...activeIncident, status: 'RESPONDING' });
-                            setMessage('Mission started. Status synced with dispatch.');
-                          } catch (err: any) {
-                            setError(
-                              err?.response?.data?.message ||
-                                err?.message ||
-                                'Failed to start mission.',
-                            );
-                          }
-                        }}
-                      >
-                        <MapPin className="w-5 h-5" /> START MISSION
-                      </button>
-                    )}
-
-                    {activeIncident.status === 'RESPONDING' && (
-                      <button
-                        className="btn btn-primary w-full h-16 text-lg shadow-lg font-bold"
-                        disabled={!canResolve}
-                        onClick={async () => {
-                          try {
-                            await syncResponderMissionStatus('ARRIVED');
-                            setActiveIncident({ ...activeIncident, status: 'ARRIVED' });
-                            setMessage('Status synced: Arrived');
-                          } catch (err: any) {
-                            setError(
-                              err?.response?.data?.message ||
-                                err?.message ||
-                                'Failed to mark arrival.',
-                            );
-                          }
-                        }}
-                      >
-                        <MapPin className="w-5 h-5" />
-                        {canResolve
-                          ? 'I have Arrived'
-                          : `ARRIVAL LOCKED (${Math.round(distToTarget * 1000)}m away)`}
-                      </button>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                      <button className="btn btn-outline btn-info w-full" onClick={openMaps}>
-                        <Navigation2 className="w-4 h-4" /> Directions in Google Maps
-                      </button>
-
-                      {activeIncident.status === 'ARRIVED' && (
-                        <div className="flex flex-col gap-3 mt-4 border-t border-slate-700 pt-4">
-                          <div className="text-xs text-slate-400">Resolution & Evidence</div>
-                          <div className="relative">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              capture="environment"
-                              onChange={(e) => setClosingPhoto(e.target.files?.[0] || null)}
-                              className="file-input file-input-bordered file-input-sm file-input-success w-full"
-                            />
-                            {!closingPhoto && (
-                              <Camera className="absolute right-3 top-2 w-4 h-4 text-slate-400 pointer-events-none" />
-                            )}
-                          </div>
-                          <textarea
-                            className="textarea textarea-bordered bg-slate-900 text-slate-100"
-                            rows={3}
-                            value={resolutionNotes}
-                            onChange={(e) => setResolutionNotes(e.target.value)}
-                            placeholder="Resolution notes for dispatch and final report..."
-                          />
-                          <button
-                            className="btn btn-success w-full h-14 font-bold"
-                            disabled={!canResolve || !closingPhoto || !resolutionNotes.trim()}
-                            onClick={markResolved}
-                          >
-                            <CheckCircle className="w-5 h-5" />
-                            {!canResolve
-                              ? `GPS Lock Required (${Math.round(distToTarget * 1000)}m away)`
-                              : !closingPhoto
-                                ? 'RESOLUTION PHOTO REQUIRED'
-                                : !resolutionNotes.trim()
-                                  ? 'RESOLUTION NOTES REQUIRED'
-                                : 'MARK AS RESOLVED'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-xs text-slate-500">No active assignment.</div>
-              )}
+            <div className={view === 'MISSION_DASHBOARD' ? 'block h-full' : 'hidden h-full'}>
+              <MissionDashboard
+                incident={activeIncident}
+                online={online}
+                responderCoords={coords}
+                landmark={landmark}
+                severityLabel={severityLabel}
+                getPhotoUrl={getPublicAssetUrl}
+                accepting={acceptingMission}
+                onAcceptMission={acceptMission}
+                onStartMission={startMission}
+                onGoToMap={openTacticalMap}
+                onOpenMaps={openMaps}
+              />
             </div>
+
+            {(mapActivated || view === 'TACTICAL_MAP') && (
+              <Suspense fallback={<DeferredPanelFallback label="Initializing tactical map..." />}>
+                <TacticalMap
+                  visible={view === 'TACTICAL_MAP'}
+                  incidentTitle={activeIncident?.title ?? null}
+                  incidentStatus={activeIncident?.status ?? null}
+                  incidentLat={activeIncident?.latitude}
+                  incidentLng={activeIncident?.longitude}
+                  routeDist={routeDist}
+                  routeEta={routeEta}
+                  following={following}
+                  responderCoords={coords}
+                  currentUserId={user?.id}
+                  nearbyResponders={nearbyResponders}
+                  hasIncident={Boolean(activeIncident)}
+                  canResolve={canResolve}
+                  closingPhoto={closingPhoto}
+                  resolutionNotes={resolutionNotes}
+                  onBack={() => setView('MISSION_DASHBOARD')}
+                  onOpenMaps={openMaps}
+                  onToggleFollowing={() => setFollowing(!following)}
+                  onRecenter={() => {
+                    setFollowing(true);
+                    setRecenterToken((current) => current + 1);
+                  }}
+                  onStartMission={startMission}
+                  onArrive={async () => {
+                    if (!activeIncident) return;
+                    try {
+                      await syncResponderMissionStatus('ARRIVED');
+                      setActiveIncident({ ...activeIncident, status: 'ARRIVED' });
+                      setMessage('Status synced: Arrived');
+                    } catch (err: any) {
+                      setError(err?.response?.data?.message || err?.message || 'Failed to mark arrival.');
+                    }
+                  }}
+                  onResolve={markResolved}
+                  onClosingPhotoChange={setClosingPhoto}
+                  onResolutionNotesChange={setResolutionNotes}
+                  onRouteData={handleRouteData}
+                  recenterToken={recenterToken}
+                  finalReportVisible={finalReportVisible}
+                />
+              </Suspense>
+            )}
           </>
         )}
       </main>
-      {token && activeIncident && (
-        <TacticalChatDrawer
-          open={chatOpen}
-          loading={chatLoading}
-          messages={chatMessages}
-          currentUserId={user?.id}
-          input={chatInput}
-          onInputChange={setChatInput}
-          onToggle={() => setChatOpen((prev) => !prev)}
-          onSend={sendChatMessage}
-          onQuickSend={(message) => {
-            return sendChatMessage(message);
-          }}
-          onQueueFailedMessage={(message) => {
-            return queueChatMessage(message);
-          }}
-        />
+      {token && activeIncident && view === 'TACTICAL_MAP' && (
+        <Suspense fallback={<DeferredPanelFallback label="Loading tactical chat..." />}>
+          <TacticalChatDrawer
+            open={chatOpen}
+            compactMode={finalReportVisible}
+            loading={chatLoading}
+            messages={chatMessages}
+            currentUserId={user?.id}
+            input={chatInput}
+            onInputChange={setChatInput}
+            onToggle={() => setChatOpen((prev) => !prev)}
+            onSend={sendChatMessage}
+            onQuickSend={(message) => {
+              return sendChatMessage(message);
+            }}
+            onQueueFailedMessage={(message) => {
+              return queueChatMessage(message);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

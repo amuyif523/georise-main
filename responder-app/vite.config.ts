@@ -42,6 +42,33 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+
+          if (id.includes('/leaflet/') || id.includes('/react-leaflet/')) {
+            return 'vendor-map';
+          }
+
+          if (id.includes('/@turf/')) {
+            return 'vendor-geo';
+          }
+
+          return 'vendor';
+        },
+      },
+    },
+  },
   server: {
     port: 4173,
   },

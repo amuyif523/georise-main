@@ -7,6 +7,16 @@ body {
   color: #e2e8f0;
 }
 
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+  z-index: 0 !important;
+}
+
+.tactical-hud {
+  z-index: 1000 !important;
+}
+
 .card {
   @apply bg-[#0B1120] border border-slate-800 rounded-xl;
 }

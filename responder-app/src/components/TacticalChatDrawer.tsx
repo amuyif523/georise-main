@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ChevronDown, Clock3, LoaderCircle, MessageSquareText, Send, ShieldAlert } from 'lucide-react';
+import { ChevronDown, Clock3, LoaderCircle, MessageCircle, MessageSquareText, Send, ShieldAlert } from 'lucide-react';
 
 type ChatMessage = {
   id: number;
@@ -26,6 +26,7 @@ type TacticalChatDrawerProps = {
   onSend: (message: string) => Promise<void>;
   onQuickSend: (message: string) => Promise<void>;
   onQueueFailedMessage: (message: string) => Promise<void>;
+  compactMode?: boolean;
 };
 
 const QUICK_ACTIONS = ['Traffic Heavy', 'Request Backup', 'Arrived at Scene'];
@@ -41,6 +42,7 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
   onSend,
   onQuickSend,
   onQueueFailedMessage,
+  compactMode = false,
 }) => {
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -72,8 +74,7 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
     }
   }, [messages, open]);
 
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-[1200] mx-auto w-full max-w-md px-3 pb-3">
+  const drawerContent = (
       <div className="overflow-hidden rounded-t-3xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur">
         <button
           type="button"
@@ -196,6 +197,31 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
           </div>
         )}
       </div>
+  );
+
+  if (compactMode) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[1300]">
+        {open ? (
+          <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] max-h-[45vh] overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur">
+            {drawerContent}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-500/40 bg-slate-950/95 text-cyan-200 shadow-2xl backdrop-blur"
+          aria-label="Open tactical chat"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[1200] mx-auto w-full max-w-md px-3 pb-3">
+      {drawerContent}
     </div>
   );
 };
