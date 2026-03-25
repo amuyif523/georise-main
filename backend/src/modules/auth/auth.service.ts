@@ -57,6 +57,10 @@ type AuthUserShape = {
     createdAt: Date;
     updatedAt: Date;
   } | null;
+  citizenVerification: {
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+    verifiedAt: Date | null;
+  } | null;
 };
 
 type AuthenticatedLoginUser = AuthUserShape & {
@@ -83,6 +87,12 @@ export class AuthService {
         reviewNote: true,
         createdAt: true,
         updatedAt: true,
+      },
+    },
+    citizenVerification: {
+      select: {
+        status: true,
+        verifiedAt: true,
       },
     },
   } satisfies Prisma.UserInclude;
@@ -124,6 +134,7 @@ export class AuthService {
       validReports: user.validReports ?? 0,
       rejectedReports: user.rejectedReports ?? 0,
       isVerified: user.isVerified,
+      citizenVerification: user.citizenVerification ?? null,
       verificationRequest: user.verificationRequest ?? null,
       createdAt: user.createdAt,
     };
@@ -290,8 +301,15 @@ export class AuthService {
     const user = await prisma.user.findUnique({
       where: { phone },
       include: {
-        citizenVerification: true,
         ...this.userInclude,
+        citizenVerification: {
+          select: {
+            status: true,
+            verifiedAt: true,
+            otpCode: true,
+            otpExpiresAt: true,
+          },
+        },
       },
     });
 

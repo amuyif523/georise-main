@@ -245,8 +245,29 @@ export const agencyService = {
           phone: data.phone,
           passwordHash,
           mustChangePassword: true,
+          isVerified: true,
           role: 'AGENCY_STAFF',
           isActive: true,
+        },
+      });
+
+      await tx.citizenVerification.create({
+        data: {
+          userId: user.id,
+          nationalId: 'SYSTEM-AUTO',
+          phone: data.phone,
+          status: 'VERIFIED',
+          verifiedAt: new Date(),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'SYSTEM_AUTO_VERIFY_STAFF',
+          targetType: 'User',
+          targetId: user.id,
+          note: 'Vetted by Agency Manager during staff creation.',
         },
       });
 
