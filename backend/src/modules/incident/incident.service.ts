@@ -772,6 +772,16 @@ export class IncidentService {
       reviewStatus: true,
       createdAt: true,
       assignedAgencyId: true,
+      photos: {
+        where: {
+          url: {
+            contains: '/uploads/resolutions/',
+          },
+        },
+        orderBy: { createdAt: 'desc' as const },
+        take: 1,
+        select: { url: true },
+      },
       sharedWith: { select: { agencyId: true } },
     };
 

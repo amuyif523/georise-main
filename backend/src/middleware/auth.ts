@@ -6,7 +6,10 @@ import prisma from '../prisma';
 
 import redis from '../redis';
 
-const getAuthenticatedUser = async (userId: number) => {
+type EffectiveRole = Role | 'RESPONDER';
+type AuthenticatedUser = Express.UserPayload;
+
+const getAuthenticatedUser = async (userId: number): Promise<AuthenticatedUser | null> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -19,6 +22,7 @@ const getAuthenticatedUser = async (userId: number) => {
       agencyStaff: {
         select: {
           agencyId: true,
+          staffRole: true,
         },
       },
     },
@@ -28,9 +32,12 @@ const getAuthenticatedUser = async (userId: number) => {
     return null;
   }
 
+  const role: EffectiveRole =
+    user.agencyStaff?.staffRole === 'RESPONDER' ? 'RESPONDER' : user.role;
+
   return {
     id: user.id,
-    role: user.role,
+    role,
     isVerified: user.isVerified,
     mustChangePassword: user.mustChangePassword,
     agencyId: user.agencyStaff?.agencyId ?? null,
@@ -59,15 +66,16 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     }
 
     req.user = authenticatedUser;
+    const currentUser = req.user;
 
     // Sprint 6: Scope Hardening
     // If request contains agencyId param/body, ensure it matches user's agency
     // (Ignoring strictly purely 'get' queries for now if they don't imply 'action', but logically strict read is good too)
     // Actually, params usually implies "acting ON this agency" or "fetching FOR this agency".
     // For agency_staff, they shouldn't use a route with :agencyId that isn't theirs.
-    if (req.params.agencyId && req.user.role === 'AGENCY_STAFF') {
+    if (req.params.agencyId && currentUser.role === 'AGENCY_STAFF') {
       const requestedId = parseInt(req.params.agencyId);
-      if (!isNaN(requestedId) && requestedId !== req.user.agencyId) {
+      if (!isNaN(requestedId) && requestedId !== currentUser.agencyId) {
         return res.status(403).json({ message: 'Forbidden: You can only access your own agency' });
       }
     }
@@ -108,7 +116,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const requireRole = (roles: Role[]) => {
+export const requireRole = (roles: EffectiveRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });

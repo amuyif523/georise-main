@@ -166,6 +166,14 @@ export const initSocketServer = (server: HttpServer) => {
             logger.error({ err: redisErr }, 'Failed to save responder location to Redis');
           }
 
+          io?.to(`responder:${responderId}`).emit('responder:locationUpdate', {
+            responderId,
+            lat,
+            lng,
+            status: data.status,
+            updatedAt: data.updatedAt,
+          });
+
           // Real-time emit to agency
           if (agencyId) {
             io?.to(`agency:${agencyId}`).emit('responder:position', {

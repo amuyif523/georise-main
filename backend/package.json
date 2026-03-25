@@ -18,6 +18,7 @@
     "test:db:seed": "dotenv -e .env.test -- tsx prisma/seed.test.ts",
     "test:db:reset": "npm run test:db:migrate && npm run test:db:seed",
     "prisma-seed": "tsx prisma/seed.ts",
+    "simulate": "tsx scripts/simulate-mission.ts",
     "simulate:responder": "node scripts/emitResponderLocation.js"
   },
   "prisma": {

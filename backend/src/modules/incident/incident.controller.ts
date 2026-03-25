@@ -4,7 +4,11 @@ import sanitizeHtml from 'sanitize-html';
 import logger from '../../logger';
 import { getIO } from '../../socket';
 import prisma from '../../prisma';
-import { Role } from '@prisma/client';
+import { IncidentStatus, ResponderStatus, Role } from '@prisma/client';
+import { emitIncidentUpdated, toIncidentPayload } from '../../events/incidentEvents';
+import { logActivity } from './activity.service';
+import { pushService } from '../push/push.service';
+import { publicResolutionPath } from '../../middleware/upload';
 
 export const createIncident = async (req: Request, res: Response) => {
   try {
@@ -223,6 +227,147 @@ export const getIncidentPhotos = async (req: Request, res: Response) => {
   } catch (err: any) {
     logger.error({ err }, 'Fetch incident photos failed');
     res.status(err?.status || 400).json({ message: err?.message || 'Failed to fetch photos' });
+  }
+};
+
+export const resolveIncident = async (req: Request, res: Response) => {
+  try {
+    const incidentId = Number(req.params.id);
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+    const resolutionNotes =
+      typeof req.body.resolutionNotes === 'string'
+        ? req.body.resolutionNotes.trim()
+        : typeof req.body.note === 'string'
+          ? req.body.note.trim()
+          : '';
+
+    if (!resolutionNotes) {
+      return res.status(400).json({ message: 'Resolution notes are required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Resolution photo is required' });
+    }
+    const resolutionFile = req.file;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const incident = await tx.incident.findUnique({
+        where: { id: incidentId },
+        include: {
+          photos: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+      if (!incident) throw new Error('Incident not found');
+
+      const resolutionPhoto = await tx.incidentPhoto.create({
+        data: {
+          incidentId: incident.id,
+          uploadedById: req.user!.id,
+          url: publicResolutionPath(resolutionFile.filename),
+          storagePath: resolutionFile.path,
+          mimeType: resolutionFile.mimetype,
+          size: resolutionFile.size,
+          originalName: resolutionFile.originalname,
+        },
+      });
+
+      const updatedIncident = await tx.incident.update({
+        where: { id: incident.id },
+        data: {
+          status: IncidentStatus.RESOLVED,
+          resolvedAt: new Date(),
+        },
+        include: {
+          photos: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      if (incident.assignedResponderId) {
+        await tx.responder.update({
+          where: { id: incident.assignedResponderId },
+          data: {
+            status: ResponderStatus.AVAILABLE,
+            incidentId: null,
+          },
+        });
+      }
+
+      return {
+        updatedIncident,
+        resolutionPhoto,
+        responderId: incident.assignedResponderId,
+      };
+    });
+
+    const { updatedIncident, resolutionPhoto, responderId } = result;
+
+    await logActivity(updatedIncident.id, 'STATUS_CHANGE', 'Status set to RESOLVED', req.user.id);
+    await logActivity(
+      updatedIncident.id,
+      'COMMENT',
+      `Resolution report: ${resolutionNotes}`,
+      req.user.id,
+    );
+
+    emitIncidentUpdated(
+      toIncidentPayload({
+        ...updatedIncident,
+        resolutionPhotoUrl: resolutionPhoto.url,
+      }),
+    );
+    getIO().to(`incident:${updatedIncident.id}`).emit('incident:statusChanged', {
+      incidentId: updatedIncident.id,
+      status: updatedIncident.status,
+      resolvedAt: updatedIncident.resolvedAt,
+      resolutionPhotoUrl: resolutionPhoto.url,
+    });
+
+    if (responderId) {
+      const io = getIO();
+      const responder = await prisma.responder.findUnique({ where: { id: responderId } });
+      if (responder && responder.agencyId) {
+        io.to(`agency:${responder.agencyId}`).emit('responder:position', {
+          responderId: responder.id,
+          lat: responder.latitude || 0,
+          lng: responder.longitude || 0,
+          status: 'AVAILABLE',
+        });
+      }
+    }
+
+    if (updatedIncident.reporterId) {
+      await pushService.sendToUsers([updatedIncident.reporterId], {
+        title: 'Incident resolved',
+        body: `Your report #${updatedIncident.id} has been resolved.`,
+        data: { incidentId: updatedIncident.id, url: '/citizen/my-reports' },
+      });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id,
+        action: 'RESOLVE_INCIDENT',
+        targetType: 'Incident',
+        targetId: incidentId,
+      },
+    });
+
+    return res.json({
+      incident: {
+        ...updatedIncident,
+        resolutionPhotoUrl: resolutionPhoto.url,
+      },
+    });
+  } catch (err: any) {
+    logger.error({ err }, 'Resolve incident error');
+    return res.status(400).json({ message: err?.message || 'Failed to resolve incident' });
   }
 };
 

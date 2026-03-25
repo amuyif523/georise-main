@@ -15,6 +15,7 @@ import {
   getIncidents,
   getIncidentDetails,
   updateIncidentTriage,
+  resolveIncident,
 } from './incident.controller';
 import { validateBody } from '../../middleware/validate';
 import { createIncidentSchema } from './incident.validation';
@@ -25,7 +26,7 @@ import { logActivity } from './activity.service';
 import { getIO } from '../../socket';
 import rateLimit from 'express-rate-limit';
 import { pushService } from '../push/push.service';
-import { incidentUpload } from '../../middleware/upload';
+import { incidentUpload, resolutionUpload } from '../../middleware/upload';
 
 const router = Router();
 
@@ -101,13 +102,13 @@ router.post(
 router.get(
   '/:incidentId/chat',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  requireRole(['RESPONDER', Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   getIncidentChat,
 );
 router.post(
   '/:incidentId/chat',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  requireRole(['RESPONDER', Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   postChatMessage,
 );
 
@@ -425,7 +426,7 @@ router.patch(
 router.patch(
   '/:id/respond',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN, 'RESPONDER']),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -465,20 +466,31 @@ router.patch(
 router.patch(
   '/:id/arrive',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN, 'RESPONDER']),
   async (req, res) => {
     try {
       const { id } = req.params;
+      const incidentId = Number(id);
+      const currentIncident = await prisma.incident.findUnique({
+        where: { id: incidentId },
+        select: { arrivalAt: true },
+      });
+
       const updated = await prisma.incident.update({
-        where: { id: Number(id) },
+        where: { id: incidentId },
         data: {
           status: IncidentStatus.ARRIVED,
-          arrivalAt: new Date(),
+          arrivalAt: currentIncident?.arrivalAt ?? new Date(),
         },
       });
 
       await logActivity(updated.id, 'STATUS_CHANGE', 'Responder arrived on scene', req.user!.id);
       emitIncidentUpdated(toIncidentPayload(updated));
+      getIO().to(`incident:${updated.id}`).emit('incident:statusChanged', {
+        incidentId: updated.id,
+        status: updated.status,
+        arrivalAt: updated.arrivalAt,
+      });
       getIO().to(`incident:${updated.id}`).emit('incident:arrival', {
         incidentId: updated.id,
         status: updated.status,
@@ -504,119 +516,9 @@ router.patch(
 router.patch(
   '/:id/resolve',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
-  incidentUpload.fields([
-    { name: 'closingPhoto', maxCount: 1 },
-    { name: 'photo', maxCount: 1 },
-  ]),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const resolutionNotes =
-        typeof req.body.resolutionNotes === 'string'
-          ? req.body.resolutionNotes.trim()
-          : typeof req.body.note === 'string'
-            ? req.body.note.trim()
-            : '';
-
-      const uploaded = req.files as
-        | {
-            closingPhoto?: Express.Multer.File[];
-            photo?: Express.Multer.File[];
-          }
-        | undefined;
-      const resolutionPhoto = uploaded?.closingPhoto?.[0] || uploaded?.photo?.[0];
-
-      if (!resolutionNotes) {
-        return res.status(400).json({ message: 'Resolution notes are required' });
-      }
-
-      if (!resolutionPhoto) {
-        return res.status(400).json({ message: 'Resolution photo is required' });
-      }
-
-      const result = await prisma.$transaction(async (tx) => {
-        const incident = await tx.incident.findUnique({ where: { id: Number(id) } });
-        if (!incident) throw new Error('Incident not found');
-
-        const updatedIncident = await tx.incident.update({
-          where: { id: incident.id },
-          data: { status: IncidentStatus.RESOLVED, resolvedAt: new Date() },
-        });
-
-        await tx.incidentPhoto.create({
-          data: {
-            incidentId: incident.id,
-            uploadedById: req.user!.id,
-            url: `/uploads/incident-photos/${resolutionPhoto.filename}`,
-            storagePath: resolutionPhoto.path,
-            mimeType: resolutionPhoto.mimetype,
-            size: resolutionPhoto.size,
-            originalName: resolutionPhoto.originalname,
-          },
-        });
-
-        if (incident.assignedResponderId) {
-          await tx.responder.update({
-            where: { id: incident.assignedResponderId },
-            data: { status: ResponderStatus.AVAILABLE },
-          });
-        }
-        return { updatedIncident, responderId: incident.assignedResponderId };
-      });
-
-      const { updatedIncident, responderId } = result;
-
-      await logActivity(
-        updatedIncident.id,
-        'STATUS_CHANGE',
-        'Status set to RESOLVED',
-        req.user!.id,
-      );
-      await logActivity(
-        updatedIncident.id,
-        'COMMENT',
-        `Resolution report: ${resolutionNotes}`,
-        req.user!.id,
-      );
-      emitIncidentUpdated(toIncidentPayload(updatedIncident));
-
-      if (responderId) {
-        // Emit responder update so map clears the red status
-        const io = getIO();
-        const responder = await prisma.responder.findUnique({ where: { id: responderId } });
-        if (responder && responder.agencyId) {
-          io.to(`agency:${responder.agencyId}`).emit('responder:position', {
-            responderId: responder.id,
-            lat: responder.latitude || 0,
-            lng: responder.longitude || 0,
-            status: 'AVAILABLE',
-          });
-        }
-      }
-
-      if (updatedIncident.reporterId) {
-        await pushService.sendToUsers([updatedIncident.reporterId], {
-          title: 'Incident resolved',
-          body: `Your report #${updatedIncident.id} has been resolved.`,
-          data: { incidentId: updatedIncident.id, url: '/citizen/my-reports' },
-        });
-      }
-      await prisma.auditLog.create({
-        data: {
-          actorId: req.user!.id,
-          action: 'RESOLVE_INCIDENT',
-          targetType: 'Incident',
-          targetId: Number(id),
-        },
-      });
-
-      res.json({ incident: updatedIncident });
-    } catch (err: unknown) {
-      console.error('Resolve incident error:', err);
-      res.status(400).json({ message: errorMessage(err, 'Failed to resolve incident') });
-    }
-  },
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN, 'RESPONDER']),
+  resolutionUpload.single('photo'),
+  resolveIncident,
 );
 
 router.post(

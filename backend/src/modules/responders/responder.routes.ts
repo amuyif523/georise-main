@@ -3,6 +3,7 @@ import { IncidentStatus, Role, ResponderStatus } from '@prisma/client';
 import prisma from '../../prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import logger from '../../logger';
+import { responderService } from './responder.service';
 
 const router = Router();
 
@@ -26,13 +27,17 @@ async function auditResponder(actorId: number, action: string, targetId: number,
 router.get(
   '/',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER, 'RESPONDER']),
   async (req: any, res) => {
     try {
       const user = req.user!;
       const where: Record<string, unknown> = {};
 
-      if (user.role === Role.AGENCY_STAFF || user.role === Role.AGENCY_MANAGER) {
+      if (
+        user.role === Role.AGENCY_STAFF ||
+        user.role === Role.AGENCY_MANAGER ||
+        user.role === 'RESPONDER'
+      ) {
         const staff = await prisma.agencyStaff.findUnique({ where: { userId: user.id } });
         // Instead of hard-failing (403) for e.g. supervisors without linked agencyStaff yet:
         // just return empty if they attempt to list responders but have no agency context.
@@ -225,27 +230,21 @@ router.patch('/me/status', requireAuth, async (req: any, res) => {
       return res.status(400).json({ message: 'Valid responder status is required' });
     }
 
-    const responder = await prisma.responder.findFirst({
-      where: { userId: req.user!.id, isActive: true, deletedAt: null },
-    });
-    if (!responder) {
-      return res.status(404).json({ message: 'Responder profile not found' });
-    }
+    const updated = await responderService.updateOwnStatus(req.user!.id, status);
 
-    const updated = await prisma.responder.update({
-      where: { id: responder.id },
-      data: { status, lastSeenAt: new Date() },
-    });
-
-    await auditResponder(req.user!.id, 'UPDATE_RESPONDER_STATUS_SELF', responder.id, status);
+    await auditResponder(req.user!.id, 'UPDATE_RESPONDER_STATUS_SELF', updated.id, status);
     return res.json({ responder: updated });
   } catch (err: any) {
     logger.error({ err }, 'Update own responder status error');
-    return res.status(400).json({ message: 'Failed to update responder status' });
+    return res.status(400).json({ message: err?.message || 'Failed to update responder status' });
   }
 });
 
-router.get('/me/active-incident', requireAuth, async (req: any, res) => {
+router.get(
+  '/me/active-incident',
+  requireAuth,
+  requireRole(['RESPONDER', Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  async (req: any, res) => {
   try {
     const responder = await prisma.responder.findFirst({
       where: { userId: req.user!.id, isActive: true, deletedAt: null },
@@ -253,7 +252,7 @@ router.get('/me/active-incident', requireAuth, async (req: any, res) => {
     });
 
     if (!responder) {
-      return res.status(404).json({ message: 'Responder profile not found' });
+      return res.json({ incident: null });
     }
 
     const incident = await prisma.incident.findFirst({
@@ -278,7 +277,8 @@ router.get('/me/active-incident', requireAuth, async (req: any, res) => {
     logger.error({ err }, 'Fetch active responder incident error');
     return res.status(400).json({ message: 'Failed to fetch active incident' });
   }
-});
+  },
+);
 
 router.patch('/me/location', requireAuth, async (req: any, res) => {
   try {

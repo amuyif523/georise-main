@@ -11,6 +11,7 @@ export interface IncidentPayload {
   longitude: number | null;
   reporterId: number | null;
   assignedAgencyId?: number | null;
+  resolutionPhotoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +27,11 @@ export const toIncidentPayload = (incident: any): IncidentPayload => ({
   longitude: incident.longitude,
   reporterId: incident.reporterId,
   assignedAgencyId: incident.assignedAgencyId ?? null,
+  resolutionPhotoUrl:
+    incident.resolutionPhotoUrl ??
+    incident.photos?.[0]?.url ??
+    incident.latestResolutionPhoto?.url ??
+    null,
   createdAt:
     incident.createdAt instanceof Date ? incident.createdAt.toISOString() : incident.createdAt,
   updatedAt:
@@ -50,8 +56,14 @@ export const emitIncidentUpdated = (incident: IncidentPayload) => {
   }
   if (incident.assignedAgencyId) {
     io.to(`agency:${incident.assignedAgencyId}`).emit('incident:updated', incident);
+    if (incident.status === 'RESOLVED') {
+      io.to(`agency:${incident.assignedAgencyId}`).emit('incident:resolved', incident);
+    }
   }
   io.to('role:ADMIN').emit('incident:updated', incident);
+  if (incident.status === 'RESOLVED') {
+    io.to('role:ADMIN').emit('incident:resolved', incident);
+  }
 };
 
 export const emitPendingIncidentToAgencies = (incident: IncidentPayload) => {

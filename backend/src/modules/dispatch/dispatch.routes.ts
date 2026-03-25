@@ -31,7 +31,7 @@ router.post(
 router.post(
   '/acknowledge',
   requireAuth,
-  requireRole([Role.AGENCY_STAFF, Role.ADMIN]),
+  requireRole([Role.AGENCY_STAFF, Role.ADMIN, 'RESPONDER']),
   acknowledgeIncident,
 ); // Ideally Responder role is used if separated, but currently mapped to AGENCY_STAFF logic often.
 // Wait, Responders might have CITIZEN role or AGENCY_STAFF role?
@@ -40,7 +40,12 @@ router.post(
 // A responder user should have `role: AGENCY_STAFF`.
 // So `requireRole(['AGENCY_STAFF'])` covers responders.
 
-router.post('/decline', requireAuth, requireRole([Role.AGENCY_STAFF, Role.ADMIN]), declineIncident);
+router.post(
+  '/decline',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.ADMIN, 'RESPONDER']),
+  declineIncident,
+);
 
 // Optional: auto-assign top candidate
 router.post(

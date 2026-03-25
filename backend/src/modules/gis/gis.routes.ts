@@ -223,7 +223,7 @@ router.get(
 router.get(
   '/route',
   requireAuth,
-  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER]),
+  requireRole([Role.ADMIN, Role.AGENCY_STAFF, Role.AGENCY_MANAGER, 'RESPONDER']),
   async (req, res) => {
     try {
       const { startLat, startLon, endLat, endLon } = req.query;
