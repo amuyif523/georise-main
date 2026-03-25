@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '../lib/socket';
-import { addLocationToQueue, flushLocationQueue } from '../offline/responderLocationQueue';
+import { addLocationToQueue } from '../offline/responderLocationQueue';
 import { useNetworkStatus } from './useNetworkStatus';
 
 function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -23,12 +23,6 @@ export function useLocationTracker(currentStatus?: string) {
   const watchId = useRef<number | null>(null);
   const lastEmitted = useRef<{ lat: number; lng: number; time: number } | null>(null);
   const online = useNetworkStatus();
-
-  useEffect(() => {
-    if (online) {
-      flushLocationQueue().catch((err) => console.error('Failed to flush location queue', err));
-    }
-  }, [online]);
 
   useEffect(() => {
     if (!('geolocation' in navigator)) {
@@ -65,10 +59,14 @@ export function useLocationTracker(currentStatus?: string) {
 
         // 1. WebSocket Emit (Realtime map update)
         if (online && socket?.connected) {
-          socket.emit('responder:locationUpdate', { lat: latitude, lng: longitude });
+          socket.emit('responder:locationUpdate', {
+            lat: latitude,
+            lng: longitude,
+            ...(currentStatus ? { status: currentStatus } : {}),
+          });
           lastEmitted.current = { lat: latitude, lng: longitude, time: now };
         } else {
-          addLocationToQueue(latitude, longitude);
+          void addLocationToQueue(latitude, longitude, currentStatus);
         }
 
         // 2. Surgical Auth Fix (Direct database update)
@@ -91,7 +89,10 @@ export function useLocationTracker(currentStatus?: string) {
                   headers: token ? { Authorization: `Bearer ${token}` } : undefined,
                 },
               )
-              .catch((err) => console.warn('Axios location sync failed', err));
+              .catch((err) => {
+                console.warn('Axios location sync failed', err);
+                void addLocationToQueue(latitude, longitude, currentStatus);
+              });
           });
         }
       }
@@ -112,7 +113,7 @@ export function useLocationTracker(currentStatus?: string) {
         navigator.geolocation.clearWatch(watchId.current);
       }
     };
-  }, [online]);
+  }, [online, currentStatus]);
 
   return coords;
 }

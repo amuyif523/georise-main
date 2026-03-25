@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ChevronDown, MessageSquareText, Send, ShieldAlert } from 'lucide-react';
+import { ChevronDown, Clock3, LoaderCircle, MessageSquareText, Send, ShieldAlert } from 'lucide-react';
 
 type ChatMessage = {
   id: number;
@@ -7,6 +7,7 @@ type ChatMessage = {
   senderId: number;
   message: string;
   createdAt: string;
+  syncState?: 'PENDING' | 'SYNCING';
   sender?: {
     id: number;
     fullName?: string | null;
@@ -22,8 +23,9 @@ type TacticalChatDrawerProps = {
   input: string;
   onInputChange: (value: string) => void;
   onToggle: () => void;
-  onSend: () => void;
-  onQuickSend: (message: string) => void;
+  onSend: (message: string) => Promise<void>;
+  onQuickSend: (message: string) => Promise<void>;
+  onQueueFailedMessage: (message: string) => Promise<void>;
 };
 
 const QUICK_ACTIONS = ['Traffic Heavy', 'Request Backup', 'Arrived at Scene'];
@@ -38,8 +40,31 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
   onToggle,
   onSend,
   onQuickSend,
+  onQueueFailedMessage,
 }) => {
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  const isConnectivityError = (err: any) =>
+    !err?.response || err?.code === 'ERR_NETWORK' || /network/i.test(err?.message || '');
+
+  const dispatchMessage = async (text: string, useQuickPath = false) => {
+    const payload = text.trim();
+    if (!payload) return;
+
+    try {
+      if (useQuickPath) {
+        await onQuickSend(payload);
+      } else {
+        await onSend(payload);
+      }
+    } catch (err: any) {
+      if (isConnectivityError(err)) {
+        await onQueueFailedMessage(payload);
+      } else {
+        console.error('Failed to send tactical message', err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -79,7 +104,9 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
                   key={action}
                   type="button"
                   className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-[11px] font-medium text-slate-200"
-                  onClick={() => onQuickSend(action)}
+                  onClick={() => {
+                    void dispatchMessage(action, true);
+                  }}
                 >
                   {action}
                 </button>
@@ -92,6 +119,9 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
               ) : messages.length > 0 ? (
                 messages.map((msg) => {
                   const own = msg.senderId === currentUserId;
+                  const senderLabel = own
+                    ? 'You'
+                    : msg.sender?.fullName || msg.sender?.role || 'Dispatch';
                   return (
                     <div
                       key={msg.id}
@@ -104,14 +134,33 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
                             : 'bg-slate-800 text-slate-100 border border-slate-700'
                         }`}
                       >
-                        <div className="mb-1 text-[11px] text-slate-400">
-                          {msg.sender?.fullName || 'Dispatch'} ·{' '}
+                        <div className="mb-1 flex items-center justify-between gap-3 text-[11px] text-slate-400">
+                          <span className="font-semibold uppercase tracking-[0.14em]">
+                            {senderLabel}
+                          </span>
+                          <span>
                           {new Date(msg.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
+                          </span>
                         </div>
                         <div className="text-sm leading-relaxed">{msg.message}</div>
+                        {msg.syncState && (
+                          <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-300">
+                            {msg.syncState === 'PENDING' ? (
+                              <>
+                                <Clock3 className="h-3 w-3 text-amber-300" />
+                                <span>Pending</span>
+                              </>
+                            ) : (
+                              <>
+                                <LoaderCircle className="h-3 w-3 animate-spin text-cyan-300" />
+                                <span>Syncing</span>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -133,7 +182,14 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
                 placeholder="Send tactical update..."
                 className="textarea textarea-bordered min-h-[72px] flex-1 border-slate-700 bg-slate-900 text-sm text-slate-100 placeholder:text-slate-500"
               />
-              <button type="button" className="btn btn-info h-[72px]" onClick={onSend} disabled={!input.trim()}>
+              <button
+                type="button"
+                className="btn btn-info h-[72px]"
+                onClick={() => {
+                  void dispatchMessage(input);
+                }}
+                disabled={!input.trim()}
+              >
                 <Send className="h-4 w-4" />
               </button>
             </div>

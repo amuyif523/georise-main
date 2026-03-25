@@ -17,6 +17,15 @@ interface IncidentMapProps {
   responderLng: number;
   incidentLat?: number | null;
   incidentLng?: number | null;
+  currentUserId?: number;
+  nearbyResponders?: Array<{
+    id: number;
+    name: string;
+    status: string;
+    latitude: number;
+    longitude: number;
+    user?: { id: number; fullName?: string | null } | null;
+  }>;
   following: boolean;
   onRouteData?: (distanceKm: number, durationMin: number) => void;
 }
@@ -40,6 +49,8 @@ const IncidentMap: React.FC<IncidentMapProps> = ({
   responderLng,
   incidentLat,
   incidentLng,
+  currentUserId,
+  nearbyResponders = [],
   following,
   onRouteData,
 }) => {
@@ -114,6 +125,28 @@ const IncidentMap: React.FC<IncidentMapProps> = ({
           <Popup>Target</Popup>
         </Marker>
       )}
+
+      {nearbyResponders
+        .filter((responder) => responder.user?.id !== currentUserId)
+        .map((responder) => (
+          <Marker
+            key={responder.id}
+            position={[responder.latitude, responder.longitude]}
+            icon={L.divIcon({
+              className: 'backup-responder-marker',
+              html: `<div style="background:#22c55e; width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px #22c55e;"></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            })}
+          >
+            <Popup>
+              <div className="text-xs">
+                <div className="font-semibold">{responder.name}</div>
+                <div>Status: {responder.status}</div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
       {/* Route Line */}
       {routeGeoJSON && routeGeoJSON.coordinates && (

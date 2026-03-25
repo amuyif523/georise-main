@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from './lib/api';
-import { connectSocket, disconnectSocket, getSocket } from './lib/socket';
+import { connectSocket, disconnectSocket, getSocket, setActiveIncidentRoom } from './lib/socket';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { useLocationTracker } from './hooks/useLocationTracker';
 import NetworkBanner from './components/NetworkBanner';
@@ -12,6 +12,8 @@ import VerificationTerminal from './components/VerificationTerminal';
 import TacticalChatDrawer from './components/TacticalChatDrawer';
 import { MapPin, Navigation2, CheckCircle, AlertCircle, Camera } from 'lucide-react';
 import * as turf from '@turf/turf';
+import { addChatMessageToQueue } from './offline/chatQueue';
+import { flushOfflineQueuesChronologically } from './offline/offlineSync';
 
 const urlBase64ToUint8Array = (base64String: string) => {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -22,6 +24,8 @@ const urlBase64ToUint8Array = (base64String: string) => {
 
 type Incident = {
   id: number;
+  assignedAgencyId?: number | null;
+  assignedResponderId?: number | null;
   title: string;
   description?: string | null;
   category?: string | null;
@@ -36,6 +40,15 @@ type Incident = {
     url: string;
     originalName?: string | null;
   }>;
+};
+
+type NearbyResponder = {
+  id: number;
+  name: string;
+  status: string;
+  latitude: number;
+  longitude: number;
+  user?: { id: number; fullName?: string | null } | null;
 };
 
 type VerificationRequest = {
@@ -59,6 +72,8 @@ type ChatMessage = {
   senderId: number;
   message: string;
   createdAt: string;
+  clientId?: string;
+  syncState?: 'PENDING' | 'SYNCING';
   sender?: {
     id: number;
     fullName?: string | null;
@@ -83,6 +98,8 @@ const getPublicAssetUrl = (path?: string | null) => {
 
 const normalizeIncident = (payload: any): Incident => ({
   id: payload.id,
+  assignedAgencyId: payload.assignedAgencyId ?? null,
+  assignedResponderId: payload.assignedResponderId ?? null,
   title: payload.title || 'Untitled Incident',
   description: payload.description ?? null,
   category: payload.category ?? payload.aiOutput?.category ?? null,
@@ -102,7 +119,7 @@ const normalizeIncident = (payload: any): Incident => ({
 });
 
 const getResponderStatusForIncident = (incidentStatus?: string | null) => {
-  if (incidentStatus === 'ON_SCENE') return 'ON_SCENE';
+  if (incidentStatus === 'ARRIVED' || incidentStatus === 'ON_SCENE') return 'ON_SCENE';
   if (incidentStatus === 'RESPONDING' || incidentStatus === 'EN_ROUTE') return 'EN_ROUTE';
   if (incidentStatus === 'ASSIGNED') return 'ASSIGNED';
   return undefined;
@@ -126,6 +143,8 @@ const App: React.FC = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [nearbyResponders, setNearbyResponders] = useState<NearbyResponder[]>([]);
   const coords = useLocationTracker(getResponderStatusForIncident(activeIncident?.status));
 
   const applyAuthSession = (nextToken: string, nextUser: AuthUser, refreshToken?: string) => {
@@ -154,11 +173,28 @@ const App: React.FC = () => {
     return incident;
   };
 
+  const fetchActiveIncident = async () => {
+    const res = await api.get('/responders/me/active-incident');
+    const payload = res.data?.incident;
+    if (!payload) {
+      localStorage.removeItem(ACTIVE_INCIDENT_STORAGE_KEY);
+      setActiveIncident(null);
+      return null;
+    }
+    const incident = normalizeIncident(payload);
+    localStorage.setItem(ACTIVE_INCIDENT_STORAGE_KEY, String(incident.id));
+    setActiveIncident(incident);
+    return incident;
+  };
+
   const fetchIncidentChat = async (incidentId: number) => {
     setChatLoading(true);
     try {
       const res = await api.get(`/incidents/${incidentId}/chat`);
-      setChatMessages(res.data?.messages || []);
+      setChatMessages((prev) => {
+        const pending = prev.filter((msg) => msg.syncState === 'PENDING' || msg.syncState === 'SYNCING');
+        return [...(res.data?.messages || []), ...pending];
+      });
     } catch (err) {
       console.error('Failed to load incident chat', err);
     } finally {
@@ -231,6 +267,7 @@ const App: React.FC = () => {
     setActiveIncident(null);
     setChatMessages([]);
     setChatInput('');
+    setResolutionNotes('');
   };
 
   const refreshSessionUser = async () => {
@@ -263,6 +300,36 @@ const App: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
+    if (!online || !token) return;
+
+    const sync = async () => {
+      await flushOfflineQueuesChronologically({
+        onChatStateChange: (clientId, state) => {
+          if (state === 'SYNCING') {
+            setChatMessages((prev) =>
+              prev.map((msg) => (msg.clientId === clientId ? { ...msg, syncState: 'SYNCING' } : msg)),
+            );
+            return;
+          }
+
+          if (state === 'SYNCED') {
+            setChatMessages((prev) => prev.filter((msg) => msg.clientId !== clientId));
+            return;
+          }
+
+          if (state === 'FAILED') {
+            setChatMessages((prev) =>
+              prev.map((msg) => (msg.clientId === clientId ? { ...msg, syncState: 'PENDING' } : msg)),
+            );
+          }
+        },
+      });
+    };
+
+    void sync();
+  }, [online, token]);
+
+  useEffect(() => {
     const bootstrap = async () => {
       if (!token) {
         setBootstrapping(false);
@@ -277,15 +344,12 @@ const App: React.FC = () => {
         }
 
         setUser(authUser);
-        const savedIncidentId = localStorage.getItem(ACTIVE_INCIDENT_STORAGE_KEY);
-        if (savedIncidentId) {
-          try {
-            await fetchIncidentDetails(Number(savedIncidentId));
-          } catch (incidentErr) {
-            console.warn('Failed to restore active incident', incidentErr);
-            localStorage.removeItem(ACTIVE_INCIDENT_STORAGE_KEY);
-            setActiveIncident(null);
-          }
+        try {
+          await fetchActiveIncident();
+        } catch (incidentErr) {
+          console.warn('Failed to restore active incident', incidentErr);
+          localStorage.removeItem(ACTIVE_INCIDENT_STORAGE_KEY);
+          setActiveIncident(null);
         }
       } catch (err: any) {
         console.error('Responder session bootstrap failed', err);
@@ -297,6 +361,10 @@ const App: React.FC = () => {
 
     void bootstrap();
   }, [token]);
+
+  useEffect(() => {
+    setActiveIncidentRoom(activeIncident?.id ?? null);
+  }, [activeIncident?.id]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -311,7 +379,7 @@ const App: React.FC = () => {
     };
     const onArrival = (payload: any) => {
       if (activeIncident && payload.incidentId === activeIncident.id) {
-        setActiveIncident({ ...activeIncident, status: 'RESPONDING' });
+        setActiveIncident({ ...activeIncident, status: 'ARRIVED' });
       }
     };
     socket.on('incident:assignedResponder', onAssigned);
@@ -353,6 +421,44 @@ const App: React.FC = () => {
     };
   }, [activeIncident?.id]);
 
+  useEffect(() => {
+    if (!activeIncident) {
+      setNearbyResponders([]);
+      return;
+    }
+
+    const loadNearbyResponders = async () => {
+      try {
+        const res = await api.get('/responders');
+        const rawResponders = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.responders)
+            ? res.data.responders
+            : [];
+        const scoped = rawResponders
+          .filter((responder: any) => responder.id !== activeIncident.assignedResponderId)
+          .filter((responder: any) => responder.latitude && responder.longitude)
+          .filter((responder: any) => {
+            if (!activeIncident.latitude || !activeIncident.longitude) return true;
+            const from = turf.point([activeIncident.longitude, activeIncident.latitude]);
+            const to = turf.point([Number(responder.longitude), Number(responder.latitude)]);
+            return turf.distance(from, to, { units: 'kilometers' }) <= 5;
+          })
+          .slice(0, 8);
+        setNearbyResponders(scoped);
+      } catch (err) {
+        console.warn('Failed to load nearby responders', err);
+      }
+    };
+
+    void loadNearbyResponders();
+    const interval = window.setInterval(() => {
+      void loadNearbyResponders();
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, [activeIncident?.id, activeIncident?.latitude, activeIncident?.longitude, activeIncident?.assignedResponderId]);
+
   const openMaps = () => {
     if (!activeIncident?.latitude || !activeIncident.longitude) return;
     window.open(
@@ -366,14 +472,20 @@ const App: React.FC = () => {
       setError('You are too far from the incident site.');
       return;
     }
+    if (!closingPhoto) {
+      setError('Resolution photo is required.');
+      return;
+    }
+    if (!resolutionNotes.trim()) {
+      setError('Resolution notes are required.');
+      return;
+    }
     if (!confirm('Mark incident resolved?')) return;
     try {
       // Create FormData to upload photo (Evidence Bridge)
       const fd = new FormData();
-      fd.append('note', 'Resolved by responder');
-      if (closingPhoto) {
-        fd.append('photo', closingPhoto);
-      }
+      fd.append('note', resolutionNotes.trim());
+      fd.append('photo', closingPhoto);
 
       await api.patch(`/incidents/${activeIncident.id}/resolve`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -382,9 +494,34 @@ const App: React.FC = () => {
       localStorage.removeItem(ACTIVE_INCIDENT_STORAGE_KEY);
       setMessage('Incident marked resolved.');
       setClosingPhoto(null);
+      setResolutionNotes('');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to resolve');
     }
+  };
+
+  const queueChatMessage = async (messageOverride?: string) => {
+    if (!activeIncident) return;
+    const text = (messageOverride ?? chatInput).trim();
+    if (!text) return;
+
+    const queued = await addChatMessageToQueue(activeIncident.id, text);
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: -Date.now(),
+        incidentId: activeIncident.id,
+        senderId: user?.id || 0,
+        message: text,
+        createdAt: queued.ts,
+        clientId: queued.clientId,
+        syncState: 'PENDING',
+        sender: { id: user?.id || 0, fullName: user?.fullName || 'You' },
+      },
+    ]);
+    setChatInput('');
+    setChatOpen(true);
+    setMessage('Offline. Chat message queued for sync.');
   };
 
   const sendChatMessage = async (messageOverride?: string) => {
@@ -396,29 +533,49 @@ const App: React.FC = () => {
       await api.post(`/incidents/${activeIncident.id}/chat`, { message: text });
       setChatInput('');
       setChatOpen(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to send message to dispatch.');
+    } catch (err) {
+      throw err;
     }
   };
 
-  const syncResponderMissionStatus = async (nextStatus: 'EN_ROUTE' | 'ON_SCENE') => {
+  const syncResponderMissionStatus = async (nextStatus: 'EN_ROUTE' | 'ARRIVED') => {
     if (!coords) {
       throw new Error('Current GPS location is required to update mission status.');
     }
 
-    await api.patch('/responders/me/status', { status: nextStatus });
-    await api.patch('/responders/me/location', {
-      latitude: coords.lat,
-      longitude: coords.lng,
-      status: nextStatus,
-    });
+    const incidentPath =
+      nextStatus === 'ARRIVED'
+        ? `/incidents/${activeIncident?.id}/arrive`
+        : `/incidents/${activeIncident?.id}/respond`;
+
+    const responderStatus = nextStatus === 'ARRIVED' ? 'ON_SCENE' : 'EN_ROUTE';
+
+    try {
+      await api.patch('/responders/me/status', { status: responderStatus });
+      await api.patch('/responders/me/location', {
+        latitude: coords.lat,
+        longitude: coords.lng,
+        status: responderStatus,
+      });
+      await api.patch(incidentPath, {});
+    } catch (err: any) {
+      const maybeNetworkError =
+        !err?.response || err.code === 'ERR_NETWORK' || /network/i.test(err?.message || '');
+      if (maybeNetworkError && activeIncident?.id) {
+        const { addStatusUpdateToQueue } = await import('./offline/responderLocationQueue');
+        await addStatusUpdateToQueue(activeIncident.id, nextStatus, coords.lat, coords.lng);
+        setMessage('Network unstable. Mission status queued for sync.');
+      } else {
+        throw err;
+      }
+    }
 
     const socket = getSocket();
     if (socket) {
       socket.emit('responder:locationUpdate', {
         lat: coords.lat,
         lng: coords.lng,
-        status: nextStatus,
+        status: responderStatus,
       });
     }
   };
@@ -562,6 +719,8 @@ const App: React.FC = () => {
                         responderLng={coords.lng}
                         incidentLat={activeIncident.latitude}
                         incidentLng={activeIncident.longitude}
+                        nearbyResponders={nearbyResponders}
+                        currentUserId={user?.id}
                         following={following}
                         onRouteData={(d, t) => {
                           setRouteDist(d);
@@ -631,9 +790,9 @@ const App: React.FC = () => {
                         disabled={!canResolve}
                         onClick={async () => {
                           try {
-                            await syncResponderMissionStatus('ON_SCENE');
-                            setActiveIncident({ ...activeIncident, status: 'ON_SCENE' });
-                            setMessage('Status synced: On Scene');
+                            await syncResponderMissionStatus('ARRIVED');
+                            setActiveIncident({ ...activeIncident, status: 'ARRIVED' });
+                            setMessage('Status synced: Arrived');
                           } catch (err: any) {
                             setError(
                               err?.response?.data?.message ||
@@ -645,17 +804,17 @@ const App: React.FC = () => {
                       >
                         <MapPin className="w-5 h-5" />
                         {canResolve
-                          ? 'I HAVE ARRIVED'
+                          ? 'I have Arrived'
                           : `ARRIVAL LOCKED (${Math.round(distToTarget * 1000)}m away)`}
                       </button>
                     )}
 
                     <div className="flex flex-col gap-2">
                       <button className="btn btn-outline btn-info w-full" onClick={openMaps}>
-                        <Navigation2 className="w-4 h-4" /> Export to Google Maps
+                        <Navigation2 className="w-4 h-4" /> Directions in Google Maps
                       </button>
 
-                      {activeIncident.status === 'ON_SCENE' && (
+                      {activeIncident.status === 'ARRIVED' && (
                         <div className="flex flex-col gap-3 mt-4 border-t border-slate-700 pt-4">
                           <div className="text-xs text-slate-400">Resolution & Evidence</div>
                           <div className="relative">
@@ -670,9 +829,16 @@ const App: React.FC = () => {
                               <Camera className="absolute right-3 top-2 w-4 h-4 text-slate-400 pointer-events-none" />
                             )}
                           </div>
+                          <textarea
+                            className="textarea textarea-bordered bg-slate-900 text-slate-100"
+                            rows={3}
+                            value={resolutionNotes}
+                            onChange={(e) => setResolutionNotes(e.target.value)}
+                            placeholder="Resolution notes for dispatch and final report..."
+                          />
                           <button
                             className="btn btn-success w-full h-14 font-bold"
-                            disabled={!canResolve || !closingPhoto}
+                            disabled={!canResolve || !closingPhoto || !resolutionNotes.trim()}
                             onClick={markResolved}
                           >
                             <CheckCircle className="w-5 h-5" />
@@ -680,6 +846,8 @@ const App: React.FC = () => {
                               ? `GPS Lock Required (${Math.round(distToTarget * 1000)}m away)`
                               : !closingPhoto
                                 ? 'RESOLUTION PHOTO REQUIRED'
+                                : !resolutionNotes.trim()
+                                  ? 'RESOLUTION NOTES REQUIRED'
                                 : 'MARK AS RESOLVED'}
                           </button>
                         </div>
@@ -703,11 +871,12 @@ const App: React.FC = () => {
           input={chatInput}
           onInputChange={setChatInput}
           onToggle={() => setChatOpen((prev) => !prev)}
-          onSend={() => {
-            void sendChatMessage();
-          }}
+          onSend={sendChatMessage}
           onQuickSend={(message) => {
-            void sendChatMessage(message);
+            return sendChatMessage(message);
+          }}
+          onQueueFailedMessage={(message) => {
+            return queueChatMessage(message);
           }}
         />
       )}
