@@ -151,6 +151,14 @@ const AgencyAnalyticsPage: React.FC = () => {
     };
   }, [data?.byCategory]);
 
+  const hasChartData = Boolean(
+    data &&
+      (data.totalIncidents > 0 ||
+        data.byDay?.length ||
+        data.byStatus?.length ||
+        data.byCategory?.length),
+  );
+
   return (
     <AppLayout>
       <div className="flex items-center gap-3 mb-4">
@@ -183,60 +191,68 @@ const AgencyAnalyticsPage: React.FC = () => {
       {error && <div className="alert alert-error text-sm mb-3">{error}</div>}
       {loading && <div className="text-slate-400 text-sm mb-3">Loading analytics…</div>}
 
+      {!loading && !error && !data && (
+        <div className="cyber-card text-sm text-slate-400">No Data Available Yet</div>
+      )}
+
       {data && (
         <>
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <KPICard label="Incidents" value={data.totalIncidents} subtitle="Your agency scope" />
             <KPICard
               label="Avg response time"
-              value={data.avgResponseMinutes ? `${data.avgResponseMinutes.toFixed(1)} min` : 'N/A'}
+              value={`${Number(data.avgResponseMinutes || 0).toFixed(1)} min`}
               subtitle="Created → Arrived"
             />
             <KPICard
               label="Avg resolution time"
-              value={
-                data.avgResolutionMinutes ? `${data.avgResolutionMinutes.toFixed(1)} min` : 'N/A'
-              }
+              value={`${Number(data.avgResolutionMinutes || 0).toFixed(1)} min`}
               subtitle="Created → Completed"
             />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
-            <div className="cyber-card">
-              <p className="text-sm text-slate-300 mb-2">Incident volume over time</p>
-              {trendData ? (
-                <Line data={trendData} />
-              ) : (
-                <p className="text-slate-400 text-sm">No data</p>
-              )}
-            </div>
-            <div className="cyber-card">
-              <p className="text-sm text-slate-300 mb-2">Incidents by status</p>
-              {statusBar ? (
-                <Bar data={statusBar} />
-              ) : (
-                <p className="text-slate-400 text-sm">No data</p>
-              )}
-            </div>
-          </div>
+          {hasChartData ? (
+            <>
+              <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                <div className="cyber-card">
+                  <p className="text-sm text-slate-300 mb-2">Incident volume over time</p>
+                  {trendData ? (
+                    <Line data={trendData} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
+                </div>
+                <div className="cyber-card">
+                  <p className="text-sm text-slate-300 mb-2">Incidents by status</p>
+                  {statusBar ? (
+                    <Bar data={statusBar} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
+                </div>
+              </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="cyber-card">
-              <p className="text-sm text-slate-300 mb-2">Incidents by category</p>
-              {categoryPie ? (
-                <Doughnut data={categoryPie} />
-              ) : (
-                <p className="text-slate-400 text-sm">No data</p>
-              )}
-            </div>
-            <div className="cyber-card">
-              <p className="text-sm text-slate-300 mb-2">Heatmap points</p>
-              <p className="text-3xl font-bold text-cyan-200">{heatCount}</p>
-              <p className="text-xs text-slate-500">
-                Severity-weighted points for the selected range.
-              </p>
-            </div>
-          </div>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="cyber-card">
+                  <p className="text-sm text-slate-300 mb-2">Incidents by category</p>
+                  {categoryPie ? (
+                    <Doughnut data={categoryPie} />
+                  ) : (
+                    <p className="text-slate-400 text-sm">No data</p>
+                  )}
+                </div>
+                <div className="cyber-card">
+                  <p className="text-sm text-slate-300 mb-2">Heatmap points</p>
+                  <p className="text-3xl font-bold text-cyan-200">{heatCount}</p>
+                  <p className="text-xs text-slate-500">
+                    Severity-weighted points for the selected range.
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="cyber-card text-sm text-slate-400">No Data Available Yet</div>
+          )}
         </>
       )}
     </AppLayout>

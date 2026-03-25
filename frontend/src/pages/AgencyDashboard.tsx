@@ -23,6 +23,14 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
 
 import { getSocket } from '../lib/socket';
 
+const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '');
+
+const toPublicAssetUrl = (path?: string | null) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${apiBase}${path.startsWith('/') ? path : `/${path}`}`;
+};
+
 const AgencyDashboard: React.FC = () => {
   const [stats, setStats] = useState({ active: 0, resolved: 0, highSeverity: 0 });
   const [view, setView] = useState<'live' | 'history'>('live');
@@ -38,6 +46,9 @@ const AgencyDashboard: React.FC = () => {
   const [jurisdiction, setJurisdiction] = useState<any>(null);
   const [agencyCenter, setAgencyCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const visibleIncidents = (recent || []).filter((incident) =>
+    view === 'live' ? incident.status !== 'RESOLVED' : incident.status === 'RESOLVED',
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -118,7 +129,14 @@ const AgencyDashboard: React.FC = () => {
       };
 
       const handleUpdated = (updated: IncidentListItem) => {
-        setRecent((prev) => (prev ?? []).map((i) => (i.id === updated.id ? updated : i)));
+        setRecent((prev) => {
+          const existing = prev ?? [];
+          const found = existing.some((incident) => incident.id === updated.id);
+          if (found) {
+            return existing.map((incident) => (incident.id === updated.id ? { ...incident, ...updated } : incident));
+          }
+          return [updated, ...existing].slice(0, 8);
+        });
         if (updated.status === 'RESOLVED') {
           setStats((s) => ({ ...s, active: Math.max(0, s.active - 1), resolved: s.resolved + 1 }));
         }
@@ -126,10 +144,12 @@ const AgencyDashboard: React.FC = () => {
 
       socket.on('incident:created', handleCreated);
       socket.on('incident:updated', handleUpdated);
+      socket.on('incident:resolved', handleUpdated);
 
       return () => {
         socket.off('incident:created', handleCreated);
         socket.off('incident:updated', handleUpdated);
+        socket.off('incident:resolved', handleUpdated);
       };
     }
   }, []);
@@ -240,7 +260,7 @@ const AgencyDashboard: React.FC = () => {
               <h3 className="font-semibold">Recent incidents</h3>
             </div>
             <div className="space-y-3">
-              {(recent || []).map((i) => (
+              {visibleIncidents.map((i) => (
                 <div key={i.id} className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{i.title}</p>
@@ -254,11 +274,20 @@ const AgencyDashboard: React.FC = () => {
                   <p className="text-xs text-slate-300">
                     Severity: {i.severityScore ?? '?'} • {new Date(i.createdAt).toLocaleString()}
                   </p>
+                  {view === 'history' && toPublicAssetUrl(i.resolutionPhotoUrl ?? i.photos?.[0]?.url) && (
+                    <img
+                      src={toPublicAssetUrl(i.resolutionPhotoUrl ?? i.photos?.[0]?.url) || undefined}
+                      alt={`Resolution evidence for ${i.title}`}
+                      className="mt-3 h-32 w-full rounded-lg object-cover border border-slate-700"
+                    />
+                  )}
                 </div>
               ))}
-              {recent !== null && recent.length === 0 && (
+              {recent !== null && visibleIncidents.length === 0 && (
                 <div className="p-6 text-center border border-dashed border-slate-800 rounded-lg">
-                  <p className="text-sm text-slate-500">No active incidents reported recently.</p>
+                  <p className="text-sm text-slate-500">
+                    {view === 'live' ? 'No active incidents reported recently.' : 'No resolved incidents yet.'}
+                  </p>
                 </div>
               )}
             </div>
