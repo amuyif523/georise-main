@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Role, ResponderStatus } from '@prisma/client';
+import { IncidentStatus, Role, ResponderStatus } from '@prisma/client';
 import prisma from '../../prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import logger from '../../logger';
@@ -242,6 +242,41 @@ router.patch('/me/status', requireAuth, async (req: any, res) => {
   } catch (err: any) {
     logger.error({ err }, 'Update own responder status error');
     return res.status(400).json({ message: 'Failed to update responder status' });
+  }
+});
+
+router.get('/me/active-incident', requireAuth, async (req: any, res) => {
+  try {
+    const responder = await prisma.responder.findFirst({
+      where: { userId: req.user!.id, isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!responder) {
+      return res.status(404).json({ message: 'Responder profile not found' });
+    }
+
+    const incident = await prisma.incident.findFirst({
+      where: {
+        assignedResponderId: responder.id,
+        deletedAt: null,
+        status: {
+          in: [IncidentStatus.ASSIGNED, IncidentStatus.RESPONDING, IncidentStatus.ARRIVED],
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        aiOutput: true,
+        photos: true,
+        subCity: { select: { id: true, name: true } },
+        woreda: { select: { id: true, name: true } },
+      },
+    });
+
+    return res.json({ incident });
+  } catch (err: any) {
+    logger.error({ err }, 'Fetch active responder incident error');
+    return res.status(400).json({ message: 'Failed to fetch active incident' });
   }
 });
 

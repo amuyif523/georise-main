@@ -463,12 +463,77 @@ router.patch(
 );
 
 router.patch(
-  '/:id/resolve',
+  '/:id/arrive',
   requireAuth,
   requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
   async (req, res) => {
     try {
       const { id } = req.params;
+      const updated = await prisma.incident.update({
+        where: { id: Number(id) },
+        data: {
+          status: IncidentStatus.ARRIVED,
+          arrivalAt: new Date(),
+        },
+      });
+
+      await logActivity(updated.id, 'STATUS_CHANGE', 'Responder arrived on scene', req.user!.id);
+      emitIncidentUpdated(toIncidentPayload(updated));
+      getIO().to(`incident:${updated.id}`).emit('incident:arrival', {
+        incidentId: updated.id,
+        status: updated.status,
+        arrivalAt: updated.arrivalAt,
+      });
+
+      if (updated.reporterId) {
+        await pushService.sendToUsers([updated.reporterId], {
+          title: 'Responder arrived',
+          body: `A responder has arrived at report #${updated.id}.`,
+          data: { incidentId: updated.id, url: '/citizen/my-reports' },
+        });
+      }
+
+      res.json({ incident: updated });
+    } catch (err: unknown) {
+      console.error('Arrive incident error:', err);
+      res.status(400).json({ message: errorMessage(err, 'Failed to mark arrival') });
+    }
+  },
+);
+
+router.patch(
+  '/:id/resolve',
+  requireAuth,
+  requireRole([Role.AGENCY_STAFF, Role.AGENCY_MANAGER, Role.ADMIN]),
+  incidentUpload.fields([
+    { name: 'closingPhoto', maxCount: 1 },
+    { name: 'photo', maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const resolutionNotes =
+        typeof req.body.resolutionNotes === 'string'
+          ? req.body.resolutionNotes.trim()
+          : typeof req.body.note === 'string'
+            ? req.body.note.trim()
+            : '';
+
+      const uploaded = req.files as
+        | {
+            closingPhoto?: Express.Multer.File[];
+            photo?: Express.Multer.File[];
+          }
+        | undefined;
+      const resolutionPhoto = uploaded?.closingPhoto?.[0] || uploaded?.photo?.[0];
+
+      if (!resolutionNotes) {
+        return res.status(400).json({ message: 'Resolution notes are required' });
+      }
+
+      if (!resolutionPhoto) {
+        return res.status(400).json({ message: 'Resolution photo is required' });
+      }
 
       const result = await prisma.$transaction(async (tx) => {
         const incident = await tx.incident.findUnique({ where: { id: Number(id) } });
@@ -476,7 +541,19 @@ router.patch(
 
         const updatedIncident = await tx.incident.update({
           where: { id: incident.id },
-          data: { status: IncidentStatus.RESOLVED },
+          data: { status: IncidentStatus.RESOLVED, resolvedAt: new Date() },
+        });
+
+        await tx.incidentPhoto.create({
+          data: {
+            incidentId: incident.id,
+            uploadedById: req.user!.id,
+            url: `/uploads/incident-photos/${resolutionPhoto.filename}`,
+            storagePath: resolutionPhoto.path,
+            mimeType: resolutionPhoto.mimetype,
+            size: resolutionPhoto.size,
+            originalName: resolutionPhoto.originalname,
+          },
         });
 
         if (incident.assignedResponderId) {
@@ -494,6 +571,12 @@ router.patch(
         updatedIncident.id,
         'STATUS_CHANGE',
         'Status set to RESOLVED',
+        req.user!.id,
+      );
+      await logActivity(
+        updatedIncident.id,
+        'COMMENT',
+        `Resolution report: ${resolutionNotes}`,
         req.user!.id,
       );
       emitIncidentUpdated(toIncidentPayload(updatedIncident));
