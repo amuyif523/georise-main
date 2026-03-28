@@ -6,6 +6,7 @@ import type { IncidentListItem } from '../types/incidents';
 import { motion } from 'framer-motion';
 import IncidentMap from '../components/maps/IncidentMap';
 import Skeleton from '../components/ui/Skeleton';
+import AgencyChat from '../components/AgencyChat';
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode }> = ({
   label,
@@ -42,6 +43,7 @@ const AgencyDashboard: React.FC = () => {
     totalScore: number;
   } | null>(null);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
   const [jurisdiction, setJurisdiction] = useState<any>(null);
   const [agencyCenter, setAgencyCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -49,6 +51,8 @@ const AgencyDashboard: React.FC = () => {
   const visibleIncidents = (recent || []).filter((incident) =>
     view === 'live' ? incident.status !== 'RESOLVED' : incident.status === 'RESOLVED',
   );
+  const selectedIncident =
+    visibleIncidents.find((incident) => incident.id === selectedIncidentId) ?? visibleIncidents[0] ?? null;
 
   useEffect(() => {
     const load = async () => {
@@ -92,6 +96,7 @@ const AgencyDashboard: React.FC = () => {
         });
 
         const target = incs.find((i) => i.status !== 'RESOLVED');
+        setSelectedIncidentId((current) => current ?? incs[0]?.id ?? null);
         if (target) {
           try {
             const recRes = await api.get(`/dispatch/recommend/${target.id}`);
@@ -153,6 +158,20 @@ const AgencyDashboard: React.FC = () => {
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (!visibleIncidents.length) {
+      setSelectedIncidentId(null);
+      return;
+    }
+
+    setSelectedIncidentId((current) => {
+      if (current && visibleIncidents.some((incident) => incident.id === current)) {
+        return current;
+      }
+      return visibleIncidents[0].id;
+    });
+  }, [visibleIncidents]);
 
   const acceptSuggestion = async () => {
     if (!suggestion || !recent?.length) return;
@@ -261,7 +280,16 @@ const AgencyDashboard: React.FC = () => {
             </div>
             <div className="space-y-3">
               {visibleIncidents.map((i) => (
-                <div key={i.id} className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+                <button
+                  key={i.id}
+                  type="button"
+                  onClick={() => setSelectedIncidentId(i.id)}
+                  className={`block w-full rounded-lg border p-3 text-left transition ${
+                    selectedIncident?.id === i.id
+                      ? 'border-cyan-500/40 bg-cyan-500/10'
+                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <p className="font-semibold">{i.title}</p>
                     <div className="flex gap-2">
@@ -281,7 +309,7 @@ const AgencyDashboard: React.FC = () => {
                       className="mt-3 h-32 w-full rounded-lg object-cover border border-slate-700"
                     />
                   )}
-                </div>
+                </button>
               ))}
               {recent !== null && visibleIncidents.length === 0 && (
                 <div className="p-6 text-center border border-dashed border-slate-800 rounded-lg">
@@ -342,6 +370,14 @@ const AgencyDashboard: React.FC = () => {
                 <p className="text-xs text-slate-400">No recommendation available yet.</p>
               )}
             </div>
+          </div>
+
+          <div className="cyber-card">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle size={18} className="text-cyan-400" />
+              <h3 className="font-semibold">Tactical command</h3>
+            </div>
+            <AgencyChat incident={selectedIncident} />
           </div>
         </div>
       </div>

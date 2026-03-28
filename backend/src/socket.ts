@@ -70,12 +70,16 @@ export const initSocketServer = (server: HttpServer) => {
         logger.info({ userId, agencyId }, 'Joined agency room');
       }
 
-      // Incident Chat Rooms
-      socket.on('join_incident', (incidentId: number) => {
+      // Accept both naming styles so chat room joins remain compatible across clients.
+      const joinIncidentRoom = (incidentId: number) => {
         socket.join(`incident:${incidentId}`);
         socket.emit('room:joined', { room: `incident:${incidentId}` });
         logger.info({ userId, incidentId }, 'Joined incident room');
-      });
+      };
+
+      // Incident Chat Rooms
+      socket.on('join_incident', joinIncidentRoom);
+      socket.on('join:incident', joinIncidentRoom);
 
       socket.on('leave_incident', (incidentId: number) => {
         socket.leave(`incident:${incidentId}`);
