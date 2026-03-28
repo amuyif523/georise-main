@@ -428,7 +428,7 @@ def classify(req: ClassifyRequest):
         if not text:
             return ClassifyResponse(
                 predicted_category="OTHER",
-                severity_score=1,
+                severity_score=3,
                 confidence=0.0,
                 model_version=f"{model_version}-empty",
                 summary="Empty description",
@@ -520,7 +520,7 @@ def classify(req: ClassifyRequest):
         print(f"Classification error: {e}")
         return ClassifyResponse(
             predicted_category="OTHER",
-            severity_score=2,
+            severity_score=3,
             confidence=0.0,
             model_version="error-fallback",
             summary="Error processing request",

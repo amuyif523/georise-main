@@ -10,9 +10,9 @@ export class AlertService {
 
     if (!incident || !incident.latitude || !incident.longitude) return;
 
-    // Requirement: incident = CONFIRMED & Severity > 4
+    // Requirement: incident = CONFIRMED & high severity on the 1-10 triage scale
     // We interpret CONFIRMED as reviewStatus = APPROVED
-    if (incident.reviewStatus !== 'APPROVED' || (incident.severityScore || 0) <= 4) {
+    if (incident.reviewStatus !== 'APPROVED' || (incident.severityScore || 0) < 7) {
       return;
     }
 

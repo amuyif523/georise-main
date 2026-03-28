@@ -1,46 +1,107 @@
+RUBRIC_PROMPT = """
+Analyze this incident in Addis Ababa. Rate severity from 1-10 using:
+1. Life Threat: active victims, trapped people, unconscious persons, bleeding, deaths.
+2. Spread Potential: fire spread, gas/chemical hazard, dense structures, risk of escalation.
+3. Systemic Impact: major road blocked, airport/hospital disruption, substation or utility outage.
+Prioritize human life first, then spread risk, then citywide disruption.
+""".strip()
+
+
+def _count_matches(text: str, keywords: list[str]) -> int:
+    return sum(1 for keyword in keywords if keyword in text)
+
+
 def infer_severity(base_label: str, text: str) -> int:
-    """Simple heuristic to map label + keywords to a 0-5 severity."""
+    """Rubric-based 1-10 severity model tuned for urban incident triage."""
     t = (text or "").lower()
 
     base_map = {
-        "FIRE": 3,
-        "MEDICAL": 3,
-        "CRIME": 2,
-        "TRAFFIC": 3,
-        "INFRASTRUCTURE": 2,
-        "UTILITY": 2,
-        "OTHER": 2,
+        "FIRE": 4,
+        "MEDICAL": 4,
+        "CRIME": 3,
+        "TRAFFIC": 4,
+        "INFRASTRUCTURE": 3,
+        "UTILITY": 3,
+        "OTHER": 3,
     }
-    score = base_map.get(base_label, 2)
 
-    high_keywords = [
+    life_threat_terms = [
         "dead",
         "death",
         "killed",
         "died",
+        "trapped",
+        "bleeding",
+        "unconscious",
+        "critical",
+        "mass casualty",
+        "child trapped",
         "ሞት",
         "ተገደለ",
         "ሞተ",
-        "explosion",
-        "bomb",
-        "ፍንዳታ",
+        "ተቆልፎ",
+        "ደም",
         "ብዙ ሰዎች ተጎዱ",
     ]
-    medium_keywords = [
-        "injured",
-        "injury",
-        "ጉዳት",
-        "ተጎዳ",
+    spread_terms = [
+        "explosion",
+        "bomb",
+        "gas leak",
+        "chemical",
+        "smoke everywhere",
+        "spreading",
+        "apartment",
+        "market",
+        "factory",
+        "warehouse",
+        "school",
+        "hospital",
+        "substation",
+        "fuel",
+        "ፍንዳታ",
+        "ኬሚካል",
+        "ጭስ",
         "እሳት ቃጠሎ",
-        "burn",
-        "serious",
-        "ወድቆ",
-        "ደም",
+    ]
+    systemic_terms = [
+        "road blocked",
+        "ring road",
+        "traffic lights",
+        "bridge",
+        "airport",
+        "hospital access",
+        "power outage",
+        "substation",
+        "water main",
+        "telecom",
+        "blackout",
+        "grid failure",
+        "au",
+        "african union",
+        "bole",
+        "piazza",
+        "mercato",
+        "መንገድ ተዘግቷል",
+        "መብራት ጠፍቷል",
+        "አየር ማረፊያ",
     ]
 
-    if any(w in t for w in high_keywords):
-        score += 2
-    elif any(w in t for w in medium_keywords):
-        score += 1
+    life_score = min(4, _count_matches(t, life_threat_terms))
+    spread_score = min(3, _count_matches(t, spread_terms))
+    systemic_score = min(3, _count_matches(t, systemic_terms))
 
-    return max(0, min(5, score))
+    if base_label == "MEDICAL" and life_score == 0:
+        life_score = 1
+    if base_label == "FIRE" and spread_score == 0:
+        spread_score = 1
+    if base_label == "TRAFFIC" and systemic_score == 0:
+        systemic_score = 1
+    if base_label in {"INFRASTRUCTURE", "UTILITY"} and systemic_score == 0:
+        systemic_score = 1
+
+    score = max(
+        base_map.get(base_label, 3),
+        base_map.get(base_label, 3) + life_score + spread_score + systemic_score - 1,
+    )
+
+    return max(1, min(10, score))

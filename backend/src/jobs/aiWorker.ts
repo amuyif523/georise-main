@@ -2,6 +2,7 @@ import { Worker, Job } from 'bullmq';
 import { REDIS_URL } from '../config/env';
 import prisma from '../prisma';
 import { classifyWithBackoff } from '../modules/incident/aiClient';
+import { getSpatialRiskScore } from '../modules/incident/incident.service';
 import { emitIncidentUpdated, toIncidentPayload } from '../events/incidentEvents';
 import { notificationService } from '../modules/notifications/notification.service';
 import { dispatchService } from '../modules/dispatch/dispatch.service';
@@ -24,6 +25,8 @@ const CATEGORY_ALIASES: Record<string, string> = {
   UNSPECIFIED: 'OTHER',
   UNKNOWN: 'OTHER',
 };
+
+const clampPriority = (value: number) => Math.max(1, Math.min(10, Math.round(value)));
 
 const normalizeCategory = (value?: string | null) => {
   if (!value) return '';
@@ -72,8 +75,17 @@ const validateIncidentCategory = (
 export const aiWorker = new Worker(
   'incident-ai',
   async (job: Job) => {
-    const { incidentId, title, description, reporterId, initialTrustScore, manualCategory } =
-      job.data;
+    const {
+      incidentId,
+      title,
+      description,
+      reporterId,
+      initialTrustScore,
+      manualCategory,
+      latitude,
+      longitude,
+      subCityId,
+    } = job.data;
     logger.info({ incidentId }, 'Processing AI classification job');
 
     const start = process.hrtime.bigint();
@@ -93,7 +105,7 @@ export const aiWorker = new Worker(
       // Fallback with visible error summary
       aiOutput = {
         predicted_category: 'UNSPECIFIED',
-        severity_score: 2,
+        severity_score: 3,
         confidence: 0,
         model_version: 'worker-fallback',
         summary: `AI Error: ${typeof errorDetails === 'object' ? JSON.stringify(errorDetails) : errorDetails}`,
@@ -105,10 +117,10 @@ export const aiWorker = new Worker(
 
     // 2. Update Database
     try {
-      // Apply Triage Weighting
       const trustWeight = initialTrustScore ?? 0.5;
-      const rawSeverity = aiOutput.severity_score ?? 1;
-      const finalPriority = Math.max(1, Math.round(rawSeverity * trustWeight));
+      const rawSeverity = clampPriority(Number(aiOutput.severity_score ?? 3));
+      const spatialContextScore = await getSpatialRiskScore(latitude, longitude, subCityId);
+      const finalPriority = clampPriority(rawSeverity * 0.7 + spatialContextScore * 0.3);
       const validatedCategory = validateIncidentCategory(
         aiOutput.predicted_category,
         title,
@@ -143,6 +155,10 @@ export const aiWorker = new Worker(
         include: { aiOutput: true },
       });
 
+      if (trustWeight < 0.75) {
+        logger.info({ incidentId, trustWeight }, 'Incident marked as unverified for UI handling');
+      }
+
       // 3. Emit Real-time Update
       emitIncidentUpdated(toIncidentPayload(updated));
       const durationMs = Number((process.hrtime.bigint() - start) / 1_000_000n);
@@ -165,7 +181,7 @@ export const aiWorker = new Worker(
       }
 
       // 5. Critical Alert Logic (Async)
-      if (updated.severityScore && updated.severityScore >= 4) {
+      if (updated.severityScore && updated.severityScore >= 7) {
         await notificationService.send({
           userId: reporterId,
           title: 'High Severity Alert',

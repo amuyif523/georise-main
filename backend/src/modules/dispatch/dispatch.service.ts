@@ -83,7 +83,7 @@ export class DispatchService {
       throw new Error('Incident not found');
     }
 
-    const severityNorm = normalize(incident.severityScore ?? 3, 5);
+    const severityNorm = normalize(incident.severityScore ?? 3, 10);
     const agencies: Array<{ id: number; name: string; jurisdiction: unknown }> =
       await prisma.$queryRawUnsafe(
         `
@@ -210,7 +210,7 @@ export class DispatchService {
     });
 
     if (!incident || incident.status !== 'RECEIVED') return null;
-    if ((incident.severityScore ?? 0) < 5) return null;
+    if ((incident.severityScore ?? 0) < 7) return null;
 
     const recs = await this.recommendForIncident(incidentId);
     if (!recs.length) return null;

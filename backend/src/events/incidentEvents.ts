@@ -6,6 +6,7 @@ export interface IncidentPayload {
   description: string;
   category: string | null;
   severityScore: number | null;
+  isUnverified?: boolean;
   status: string;
   latitude: number | null;
   longitude: number | null;
@@ -22,6 +23,7 @@ export const toIncidentPayload = (incident: any): IncidentPayload => ({
   description: incident.description,
   category: incident.category,
   severityScore: incident.severityScore,
+  isUnverified: (incident.initialTrustScore ?? 0.5) < 0.75,
   status: incident.status,
   latitude: incident.latitude,
   longitude: incident.longitude,

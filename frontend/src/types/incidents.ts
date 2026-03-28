@@ -3,6 +3,7 @@ export interface IncidentListItem {
   title: string;
   category: string | null;
   severityScore: number | null;
+  isUnverified?: boolean;
   status: string;
   createdAt: string;
   resolutionPhotoUrl?: string | null;

@@ -18,6 +18,55 @@ import logger from '../../logger';
 import { incidentQueue } from '../../jobs/queue';
 
 const LOW_PRIORITY_CATEGORIES = ['INFRASTRUCTURE'];
+const BOLE_AIRPORT = { lat: 8.9779, lng: 38.7993 };
+const AU_HQ = { lat: 9.0104, lng: 38.7614 };
+const BLACK_LION_HOSPITAL = { lat: 9.0361, lng: 38.7608 };
+
+const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(lat2 - lat1);
+  const deltaLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLng / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const isWithinAkakiKalityIndustrialZone = (lat: number, lng: number) =>
+  lat >= 8.86 && lat <= 8.93 && lng >= 38.74 && lng <= 38.86;
+
+export const getSpatialRiskScore = async (
+  lat?: number | null,
+  lng?: number | null,
+  subCityId?: number | null,
+) => {
+  let score = 3;
+
+  if (subCityId) {
+    const subCity = await prisma.subCity.findUnique({
+      where: { id: subCityId },
+      select: { name: true },
+    });
+    const name = subCity?.name?.trim().toLowerCase();
+    if (name === 'addis ketema' || name === 'arada') {
+      score += 2.0;
+    }
+  }
+
+  if (lat != null && lng != null) {
+    const criticalHubs = [BOLE_AIRPORT, AU_HQ, BLACK_LION_HOSPITAL];
+    if (criticalHubs.some((hub) => distanceKm(lat, lng, hub.lat, hub.lng) <= 1)) {
+      score += 1.5;
+    }
+
+    if (isWithinAkakiKalityIndustrialZone(lat, lng)) {
+      score += 1.0;
+    }
+  }
+
+  return Math.min(10, score);
+};
 
 export class IncidentService {
   async createIncident(data: CreateIncidentRequest, reporterId?: number, ipAddress?: string) {
@@ -135,7 +184,7 @@ export class IncidentService {
         reviewStatus,
         initialTrustScore,
         isReporterAtScene: data.isReporterAtScene ?? true,
-        severityScore: reporterId ? undefined : 1, // Default low severity for guests
+        severityScore: undefined,
       } as any,
     });
 
@@ -156,82 +205,34 @@ export class IncidentService {
 
         try {
           emitIncidentProcessingStart(incident.id, reporterId);
-
-          if (data.category !== 'INFRASTRUCTURE') {
-            incidentQueue.add('analyze', {
-              incidentId: incident.id,
-              title: incident.title,
-              description: incident.description,
-              manualCategory: data.category?.toUpperCase() || null,
-              reporterId: reporterId || 0,
-              initialTrustScore,
-            });
-          } else {
-            const aiOutput = {
-              predicted_category: 'INFRASTRUCTURE',
-              severity_score: 1,
-              confidence: 1.0,
-              model_version: 'manual',
-              summary: null,
-            };
-            await prisma.incident.update({
-              where: { id: incident.id },
-              data: {
-                category: aiOutput.predicted_category,
-                severityScore: aiOutput.severity_score,
-                aiOutput: {
-                  create: {
-                    modelVersion: aiOutput.model_version,
-                    predictedCategory: aiOutput.predicted_category,
-                    severityScore: aiOutput.severity_score,
-                    confidence: aiOutput.confidence,
-                    summary: aiOutput.summary,
-                  },
-                },
-              },
-            });
-          }
+          incidentQueue.add('analyze', {
+            incidentId: incident.id,
+            title: incident.title,
+            description: incident.description,
+            manualCategory: data.category?.toUpperCase() || null,
+            reporterId: reporterId || 0,
+            initialTrustScore,
+            latitude: incident.latitude,
+            longitude: incident.longitude,
+            subCityId: incident.subCityId,
+          });
         } finally {
           // Guaranteed end for the "Submission/Queuing" phase
           emitIncidentProcessingEnd(incident.id, reporterId);
         }
       } else {
         // Guest path - no processing events emitted for now, but same logic applies
-        if (data.category !== 'INFRASTRUCTURE') {
-          incidentQueue.add('analyze', {
-            incidentId: incident.id,
-            title: incident.title,
-            description: incident.description,
-            manualCategory: data.category?.toUpperCase() || null,
-            reporterId: 0,
-            initialTrustScore,
-          });
-        } else {
-          // manual infrastructure logic for guest... (omitted to keep diff clean, focusing on reporterId block)
-          const aiOutput = {
-            predicted_category: 'INFRASTRUCTURE',
-            severity_score: 1,
-            confidence: 1.0,
-            model_version: 'manual',
-            summary: null,
-          };
-          await prisma.incident.update({
-            where: { id: incident.id },
-            data: {
-              category: aiOutput.predicted_category,
-              severityScore: aiOutput.severity_score,
-              aiOutput: {
-                create: {
-                  modelVersion: aiOutput.model_version,
-                  predictedCategory: aiOutput.predicted_category,
-                  severityScore: aiOutput.severity_score,
-                  confidence: aiOutput.confidence,
-                  summary: aiOutput.summary,
-                },
-              },
-            },
-          });
-        }
+        incidentQueue.add('analyze', {
+          incidentId: incident.id,
+          title: incident.title,
+          description: incident.description,
+          manualCategory: data.category?.toUpperCase() || null,
+          reporterId: 0,
+          initialTrustScore,
+          latitude: incident.latitude,
+          longitude: incident.longitude,
+          subCityId: incident.subCityId,
+        });
       }
     } finally {
       // If it was a synchronous manual classification (INFRASTRUCTURE), we must end it now.
