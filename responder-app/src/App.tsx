@@ -256,6 +256,13 @@ const App: React.FC = () => {
     return incident;
   };
 
+  const joinIncidentRoom = useCallback((incidentId: number) => {
+    const socket = getSocket();
+    if (!socket) return;
+    socket.emit('join_incident', incidentId);
+    socket.emit('join:incident', incidentId);
+  }, []);
+
   const fetchActiveIncident = async () => {
     const res = await api.get('/responders/me/active-incident');
     const payload = res.data?.incident;
@@ -270,7 +277,7 @@ const App: React.FC = () => {
     return incident;
   };
 
-  const fetchIncidentChat = async (incidentId: number) => {
+  const fetchIncidentChat = useCallback(async (incidentId: number) => {
     setChatLoading(true);
     try {
       const res = await api.get(`/incidents/${incidentId}/chat`);
@@ -283,7 +290,7 @@ const App: React.FC = () => {
     } finally {
       setChatLoading(false);
     }
-  };
+  }, []);
 
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
@@ -465,6 +472,9 @@ const App: React.FC = () => {
     const socket = getSocket();
     if (!socket) return;
     const onAssigned = (payload: any) => {
+      if (payload?.incidentId) {
+        joinIncidentRoom(payload.incidentId);
+      }
       void fetchIncidentDetails(payload.incidentId).catch((err) => {
         console.error('Failed to fetch assigned incident details', err);
         setError('Received an assignment, but scene details could not be loaded.');
@@ -508,7 +518,7 @@ const App: React.FC = () => {
       socket.off('incident:statusChanged', onStatusChanged);
       socket.off('responder:locationUpdate', onResponderLocationUpdate);
     };
-  }, [activeIncident]);
+  }, [activeIncident, joinIncidentRoom]);
 
   useEffect(() => {
     if (!activeIncident?.id || activeIncident.status !== 'RESPONDING') {
@@ -542,7 +552,7 @@ const App: React.FC = () => {
     }
 
     void fetchIncidentChat(activeIncident.id);
-    socket.emit('join_incident', activeIncident.id);
+    joinIncidentRoom(activeIncident.id);
 
     const onChatMessage = (msg: ChatMessage) => {
       if (msg.incidentId !== activeIncident.id) return;
@@ -562,7 +572,7 @@ const App: React.FC = () => {
       socket.off('incident:chat', onChatMessage);
       socket.off('incident:message', onChatMessage);
     };
-  }, [activeIncident?.id]);
+  }, [activeIncident?.id, fetchIncidentChat, joinIncidentRoom]);
 
   useEffect(() => {
     if (!activeIncident) {
@@ -806,8 +816,16 @@ const App: React.FC = () => {
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 z-[1300] px-4 pt-4">
               <div className="mx-auto flex max-w-md flex-col gap-2">
-                {message && <div className="pointer-events-auto alert alert-info text-xs">{message}</div>}
-                {error && <div className="pointer-events-auto alert alert-error text-xs">{error}</div>}
+                {message && (
+                  <div className="pointer-events-auto alert alert-info border border-cyan-400/40 bg-slate-900/90 text-xs text-slate-100 shadow-xl backdrop-blur-md">
+                    {message}
+                  </div>
+                )}
+                {error && (
+                  <div className="pointer-events-auto alert alert-error border border-red-400/40 bg-slate-900/90 text-xs text-slate-100 shadow-xl backdrop-blur-md">
+                    {error}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -846,7 +864,6 @@ const App: React.FC = () => {
                   closingPhoto={closingPhoto}
                   resolutionNotes={resolutionNotes}
                   onBack={() => setView('MISSION_DASHBOARD')}
-                  onOpenMaps={openMaps}
                   onToggleFollowing={() => setFollowing(!following)}
                   onRecenter={() => {
                     setFollowing(true);
@@ -879,6 +896,7 @@ const App: React.FC = () => {
         <Suspense fallback={<DeferredPanelFallback label="Loading tactical chat..." />}>
           <TacticalChatDrawer
             open={chatOpen}
+            incidentId={activeIncident.id}
             compactMode={finalReportVisible}
             loading={chatLoading}
             messages={chatMessages}
@@ -893,6 +911,7 @@ const App: React.FC = () => {
             onQueueFailedMessage={(message) => {
               return queueChatMessage(message);
             }}
+            onHydrateHistory={fetchIncidentChat}
           />
         </Suspense>
       )}

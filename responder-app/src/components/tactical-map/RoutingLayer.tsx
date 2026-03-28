@@ -18,6 +18,7 @@ const RoutingLayer: React.FC<RoutingLayerProps> = ({
 }) => {
   const [routeGeoJSON, setRouteGeoJSON] = useState<{ coordinates: [number, number][] } | null>(null);
   const lastRouteFetchRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
+  const routeAbortRef = useRef<AbortController | null>(null);
   const onRouteDataRef = useRef<typeof onRouteData | undefined>(undefined);
 
   useEffect(() => {
@@ -41,6 +42,8 @@ const RoutingLayer: React.FC<RoutingLayerProps> = ({
 
   useEffect(() => {
     if (!responderCoords || !incidentCoords || fallbackDistance === null) {
+      routeAbortRef.current?.abort();
+      routeAbortRef.current = null;
       setRouteGeoJSON(null);
       return;
     }
@@ -59,13 +62,20 @@ const RoutingLayer: React.FC<RoutingLayerProps> = ({
       }
     }
 
+    routeAbortRef.current?.abort();
     const controller = new AbortController();
+    routeAbortRef.current = controller;
 
     void api
-      .get(
-        `/gis/route?startLat=${responderCoords.lat}&startLon=${responderCoords.lng}&endLat=${incidentCoords.lat}&endLon=${incidentCoords.lng}`,
-        { signal: controller.signal },
-      )
+      .get('/gis/route', {
+        params: {
+          startLat: responderCoords.lat,
+          startLon: responderCoords.lng,
+          endLat: incidentCoords.lat,
+          endLon: incidentCoords.lng,
+        },
+        signal: controller.signal,
+      })
       .then((res: any) => {
         if (controller.signal.aborted) return;
 
@@ -89,15 +99,26 @@ const RoutingLayer: React.FC<RoutingLayerProps> = ({
         onRouteDataRef.current?.(fallbackDistance, fallbackDistance * 2);
       });
 
-    return () => controller.abort();
-  }, [fallbackDistance, incidentCoords, responderCoords]);
+    return () => {
+      if (routeAbortRef.current === controller) {
+        routeAbortRef.current = null;
+      }
+      controller.abort();
+    };
+  }, [
+    fallbackDistance,
+    incidentCoords?.lat,
+    incidentCoords?.lng,
+    responderCoords?.lat,
+    responderCoords?.lng,
+  ]);
 
   if (!routePositions.length) return null;
 
   return (
     <Polyline
       positions={routePositions}
-      pathOptions={{ color: '#0ea5e9', weight: 5, opacity: 0.92 }}
+      pathOptions={{ color: '#00E5FF', weight: 5, opacity: 0.7 }}
     />
   );
 };

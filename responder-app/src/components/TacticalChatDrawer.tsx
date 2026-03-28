@@ -17,6 +17,7 @@ type ChatMessage = {
 
 type TacticalChatDrawerProps = {
   open: boolean;
+  incidentId?: number | null;
   loading?: boolean;
   messages: ChatMessage[];
   currentUserId?: number;
@@ -26,6 +27,7 @@ type TacticalChatDrawerProps = {
   onSend: (message: string) => Promise<void>;
   onQuickSend: (message: string) => Promise<void>;
   onQueueFailedMessage: (message: string) => Promise<void>;
+  onHydrateHistory?: (incidentId: number) => Promise<void> | void;
   compactMode?: boolean;
 };
 
@@ -33,6 +35,7 @@ const QUICK_ACTIONS = ['Traffic Heavy', 'Request Backup', 'Arrived at Scene'];
 
 const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
   open,
+  incidentId,
   loading = false,
   messages,
   currentUserId,
@@ -42,9 +45,12 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
   onSend,
   onQuickSend,
   onQueueFailedMessage,
+  onHydrateHistory,
   compactMode = false,
 }) => {
   const endRef = useRef<HTMLDivElement | null>(null);
+  const lastHydratedKeyRef = useRef<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   const isConnectivityError = (err: any) =>
     !err?.response || err?.code === 'ERR_NETWORK' || /network/i.test(err?.message || '');
@@ -69,13 +75,29 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
   };
 
   useEffect(() => {
+    const justOpened = open && !wasOpenRef.current;
+    const hydrateKey = incidentId ? `${incidentId}:${open ? 'open' : 'closed'}` : null;
+
+    if (open && incidentId && onHydrateHistory && (justOpened || lastHydratedKeyRef.current !== hydrateKey)) {
+      lastHydratedKeyRef.current = hydrateKey;
+      void onHydrateHistory(incidentId);
+    }
+
+    if (!open) {
+      lastHydratedKeyRef.current = null;
+    }
+
+    wasOpenRef.current = open;
+  }, [incidentId, onHydrateHistory, open]);
+
+  useEffect(() => {
     if (open) {
       endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, open]);
+  }, [messages.length, open]);
 
   const drawerContent = (
-      <div className="overflow-hidden rounded-t-3xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur">
+      <div className="overflow-hidden rounded-t-3xl border border-slate-700/50 bg-slate-900/80 shadow-2xl backdrop-blur-md">
         <button
           type="button"
           onClick={onToggle}
@@ -203,14 +225,14 @@ const TacticalChatDrawer: React.FC<TacticalChatDrawerProps> = ({
     return (
       <div className="fixed bottom-4 right-4 z-[1300]">
         {open ? (
-          <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] max-h-[45vh] overflow-hidden rounded-3xl border border-slate-700 bg-slate-950/95 shadow-2xl backdrop-blur">
+          <div className="mb-3 w-[min(22rem,calc(100vw-2rem))] max-h-[45vh] overflow-hidden rounded-3xl border border-slate-700/50 bg-slate-900/80 shadow-2xl backdrop-blur-md">
             {drawerContent}
           </div>
         ) : null}
         <button
           type="button"
           onClick={onToggle}
-          className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-500/40 bg-slate-950/95 text-cyan-200 shadow-2xl backdrop-blur"
+          className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-700/50 bg-slate-900/80 text-cyan-200 shadow-2xl backdrop-blur-md"
           aria-label="Open tactical chat"
         >
           <MessageCircle className="h-6 w-6" />

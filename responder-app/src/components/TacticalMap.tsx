@@ -35,7 +35,6 @@ type TacticalMapProps = {
   closingPhoto: File | null;
   resolutionNotes: string;
   onBack: () => void;
-  onOpenMaps: () => void;
   onToggleFollowing: () => void;
   onRecenter: () => void;
   onStartMission: () => void;
@@ -79,7 +78,6 @@ const TacticalMap: React.FC<TacticalMapProps> = ({
   closingPhoto,
   resolutionNotes,
   onBack,
-  onOpenMaps,
   onToggleFollowing,
   onRecenter,
   onStartMission,
@@ -116,6 +114,14 @@ const TacticalMap: React.FC<TacticalMapProps> = ({
   );
   const isOnScene = incidentStatus === 'ARRIVED' || incidentStatus === 'ON_SCENE';
   const showNavigationControls = hasIncident && !isOnScene;
+  const handleGoogleMapsClick = () => {
+    if (!responderCoords || !incidentCoords) return;
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&origin=${responderCoords.lat},${responderCoords.lng}&destination=${incidentCoords.lat},${incidentCoords.lng}&travelmode=driving`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  };
 
   return (
     <section
@@ -167,16 +173,25 @@ const TacticalMap: React.FC<TacticalMapProps> = ({
           </div>
         )}
 
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1150] h-32 bg-gradient-to-b from-slate-900/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1150] h-48 bg-gradient-to-t from-slate-900/90 via-slate-900/50 to-transparent" />
+
         <div className="tactical-hud pointer-events-none absolute inset-x-0 top-0 z-[1200]">
-          <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950/90 via-slate-950/55 to-transparent" />
           <div className="relative px-4 pt-[max(1rem,env(safe-area-inset-top))]">
             <div className="pointer-events-auto flex items-start justify-between gap-3">
-              <button className="btn btn-sm btn-neutral" onClick={onBack}>
+              <button
+                className="btn btn-sm border border-slate-700/60 bg-slate-900/80 font-semibold text-white shadow-lg backdrop-blur-md drop-shadow-md hover:bg-slate-800/90"
+                onClick={onBack}
+              >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </button>
               {showNavigationControls ? (
-                <button className="btn btn-sm btn-info" disabled={!hasIncident} onClick={onOpenMaps}>
+                <button
+                  className="btn btn-sm border border-cyan-400/30 bg-cyan-500/85 font-semibold text-white shadow-lg backdrop-blur-md drop-shadow-md hover:bg-cyan-400/90"
+                  disabled={!hasIncident}
+                  onClick={handleGoogleMapsClick}
+                >
                   <Navigation2 className="h-4 w-4" />
                   Google Maps
                 </button>
@@ -185,7 +200,7 @@ const TacticalMap: React.FC<TacticalMapProps> = ({
               )}
             </div>
 
-            <div className="pointer-events-auto mt-3 max-w-[82%] rounded-2xl border border-slate-700/80 bg-slate-950/72 px-4 py-3 text-white shadow-xl backdrop-blur-md">
+            <div className="pointer-events-auto mt-3 max-w-[82%] rounded-2xl border border-slate-700/50 bg-slate-900/80 px-4 py-3 text-white shadow-2xl backdrop-blur-md">
               <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
                 {hasIncident ? 'Tactical Map' : 'Standby Map'}
               </div>
@@ -214,19 +229,25 @@ const TacticalMap: React.FC<TacticalMapProps> = ({
         <div className="tactical-hud pointer-events-none absolute inset-x-0 bottom-0 z-[1200] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-md flex-col items-center gap-3">
             {!isOnScene && (
-              <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-950/72 px-2 py-2 shadow-xl backdrop-blur-md">
-                <button className="btn btn-sm btn-neutral" onClick={onRecenter}>
+              <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-700/50 bg-slate-900/80 px-2 py-2 shadow-2xl backdrop-blur-md">
+                <button
+                  className="btn btn-sm border border-slate-700/70 bg-slate-950 font-semibold text-white shadow-md hover:bg-slate-900"
+                  onClick={onRecenter}
+                >
                   <Crosshair className="h-4 w-4" />
                   Recenter
                 </button>
-                <button className="btn btn-sm btn-neutral" onClick={onToggleFollowing}>
+                <button
+                  className="btn btn-sm border border-slate-700/60 bg-slate-900/85 font-semibold text-white shadow-md hover:bg-slate-800/90"
+                  onClick={onToggleFollowing}
+                >
                   {following ? 'Free Pan' : 'Follow Me'}
                 </button>
               </div>
             )}
 
             {hasIncident && (
-              <div className="pointer-events-auto w-full max-h-[60vh] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-950/90 p-4 shadow-2xl backdrop-blur">
+              <div className="pointer-events-auto w-full max-h-[60vh] overflow-y-auto rounded-3xl border border-slate-700/50 bg-slate-900/80 p-4 shadow-2xl backdrop-blur-md">
                 {incidentStatus === 'ASSIGNED' && (
                   <button
                     className="btn btn-info h-14 w-full text-base font-bold"
