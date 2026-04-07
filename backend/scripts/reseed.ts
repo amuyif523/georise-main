@@ -9,13 +9,17 @@ async function run() {
   console.log('1. Truncating volatile operational logic [Incident, ActivityLog, Responder]...');
   await prisma.activityLog.deleteMany({});
   await prisma.classificationAudit.deleteMany({});
+  await prisma.incidentPhoto.deleteMany({});
+  await prisma.incidentStatusHistory.deleteMany({});
+  await prisma.sharedIncident.deleteMany({});
+  await prisma.incidentChat.deleteMany({});
+  await prisma.incidentAIOutput.deleteMany({});
   await prisma.incident.deleteMany({});
   await prisma.responder.deleteMany({});
 
   console.log('2. Truncating core organizational data [AgencyStaff, Agency, User]...');
   await prisma.auditLog.deleteMany({});
   await prisma.passwordResetToken.deleteMany({});
-  await prisma.incidentChat.deleteMany({});
   await prisma.pushSubscription.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.citizenVerification.deleteMany({});

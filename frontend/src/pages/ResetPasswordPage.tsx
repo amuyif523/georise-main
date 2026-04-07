@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const ResetPasswordPage = () => {
   const { t } = useTranslation();
@@ -11,6 +11,7 @@ const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const [token, setToken] = useState(searchParams.get('token') || '');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +49,10 @@ const ResetPasswordPage = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await api.post('/auth/password-reset/confirm', { token, password });
+      const res = await api.post('/auth/password-reset/confirm', {
+        token: token.trim(),
+        password,
+      });
       setStatus(res.data.message || t('auth.reset_success'));
       setSuccessAnim(true);
       setTimeout(() => navigate('/login'), 2000);
@@ -117,16 +121,30 @@ const ResetPasswordPage = () => {
                   <label className="label" htmlFor="new-password">
                     <span className="label-text">{t('auth.new_password')}</span>
                   </label>
-                  <input
-                    id="new-password"
-                    type="password"
-                    className="input input-bordered w-full"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    minLength={8}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      id="new-password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="input input-bordered w-full pr-12"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      minLength={8}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm absolute right-1 top-1/2 -translate-y-1/2"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={
+                        showPassword
+                          ? t('auth.hide_password', 'Hide password')
+                          : t('auth.show_password', 'Show password')
+                      }
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   {password.length > 0 && (
                     <div className="mt-2 space-y-1">
                       <div className="flex justify-between items-center text-xs">

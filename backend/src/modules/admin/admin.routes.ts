@@ -10,6 +10,7 @@ import * as systemController from './system.controller';
 import * as agencyController from '../agency/agency.controller';
 import * as verificationController from '../user/verification.controller';
 import { metrics } from '../../metrics/metrics.service';
+import { getAdminDashboardStats } from './admin-metrics.service';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -896,6 +897,12 @@ router.get('/audit', requireAuth, requireRole([Role.ADMIN]), async (req, res) =>
 // Live metrics snapshot (requests/DB/AI latency + error rates)
 router.get('/metrics', requireAuth, requireRole([Role.ADMIN]), (_req, res) => {
   res.json({ metrics: metrics.snapshot() });
+});
+
+// Admin dashboard stats
+router.get('/dashboard/stats', requireAuth, requireRole([Role.ADMIN]), async (_req, res) => {
+  const stats = await getAdminDashboardStats();
+  res.json({ stats });
 });
 
 // Analytics

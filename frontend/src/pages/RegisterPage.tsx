@@ -35,6 +35,11 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    if (password.length < 8) {
+      setError(t('auth.errors.password_min_length', 'Password must be at least 8 characters.'));
+      return;
+    }
+
     if (phone && !validatePhone(phone)) {
       setError(t('auth.errors.invalid_phone', 'Invalid phone number format. Must be +251...'));
       return;
@@ -234,7 +239,7 @@ const RegisterPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"

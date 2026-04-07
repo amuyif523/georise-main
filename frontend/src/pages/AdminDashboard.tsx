@@ -1,15 +1,61 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { severityBadgeClass, severityLabel } from '../utils/severity';
 import { Link } from 'react-router-dom';
 import AppLayout from '../layouts/AppLayout';
+import api from '../lib/api';
+
+type CategoryOverviewItem = {
+  id: string;
+  label: string;
+  count: number;
+  sev: number;
+};
+
+type DashboardStats = {
+  totals: {
+    totalIncidents: number;
+    activeIncidents: number;
+    resolvedIncidents: number;
+    activeResponders: number;
+    totalAgencies: number;
+    pendingVerifications: number;
+    totalUsers: number;
+  };
+  byCategory: CategoryOverviewItem[];
+  lastUpdated: string;
+};
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
-  const sampleOverview = [
-    { id: 'FIRE', label: 'Fire', count: 24, sev: 4 },
-    { id: 'MEDICAL', label: 'Medical', count: 18, sev: 3 },
-    { id: 'TRAFFIC', label: 'Traffic', count: 30, sev: 2 },
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/admin/dashboard/stats');
+      setStats(res.data.stats as DashboardStats);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch admin dashboard stats', err);
+      setError('Unable to load live dashboard stats right now.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const cards = [
+    { label: 'Total Incidents', value: stats?.totals.totalIncidents ?? 0 },
+    { label: 'Active Responders', value: stats?.totals.activeResponders ?? 0 },
+    { label: 'Total Agencies', value: stats?.totals.totalAgencies ?? 0 },
+    { label: 'Pending Verifications', value: stats?.totals.pendingVerifications ?? 0 },
   ];
 
   return (
@@ -25,6 +71,12 @@ const AdminDashboard: React.FC = () => {
             Logout
           </button>
         </div>
+
+        {stats?.lastUpdated && (
+          <p className="text-xs text-slate-500">Last updated: {new Date(stats.lastUpdated).toLocaleTimeString()}</p>
+        )}
+
+        {error && <div className="alert alert-warning text-sm">{error}</div>}
 
         <div className="flex gap-2 mb-4">
           <Link to="/agency" className="btn btn-warning btn-sm">
@@ -50,8 +102,24 @@ const AdminDashboard: React.FC = () => {
           </Link>
         </div>
 
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {cards.map((item) => (
+            <div
+              key={item.label}
+              className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10"
+            >
+              <p className="text-sm text-slate-400">{item.label}</p>
+              {isLoading ? (
+                <div className="skeleton h-8 w-20 mt-2"></div>
+              ) : (
+                <h3 className="text-2xl font-bold text-white">{item.value}</h3>
+              )}
+            </div>
+          ))}
+        </div>
+
         <div className="grid md:grid-cols-3 gap-3">
-          {sampleOverview.map((item) => (
+          {(stats?.byCategory ?? []).map((item) => (
             <div
               key={item.id}
               className="p-4 rounded-xl border border-slate-800 bg-[#0D1117] shadow-lg shadow-cyan-500/10"
