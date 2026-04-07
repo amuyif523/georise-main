@@ -6,6 +6,20 @@ export class ReputationService {
   private MIN = -20;
   private MAX = 100;
 
+  getTrustWeightFromScore(trustScore: number | null | undefined) {
+    const score = trustScore ?? 0;
+    return Math.max(0.5, Math.min(1, 0.5 + score / 200));
+  }
+
+  async getTrustWeight(userId: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { trustScore: true },
+    });
+    if (!user) return 0.5;
+    return this.getTrustWeightFromScore(user.trustScore);
+  }
+
   async adjustTrust(userId: number, delta: number) {
     try {
       const user = await prisma.user.findUnique({
@@ -36,22 +50,6 @@ export class ReputationService {
       logger.error({ userId, delta, error }, 'Failed to adjust trust score');
       return null;
     }
-  }
-
-  async getTier(userId: number) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { trustScore: true, citizenVerification: true },
-    });
-    if (!user) return 0;
-
-    const score = user.trustScore ?? 0;
-    const isVerified = user.citizenVerification?.status === 'VERIFIED';
-
-    if (score >= 50 && isVerified) return 3; // Trusted Reporter
-    if (isVerified) return 2; // ID Verified
-    if (score >= 10) return 1; // Phone Verified (simulated)
-    return 0; // Unverified
   }
 
   async onIncidentCreated(userId: number) {

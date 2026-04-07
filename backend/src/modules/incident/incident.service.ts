@@ -92,6 +92,7 @@ export class IncidentService {
     let internalNote: string | undefined;
     let isCriticalHubNearby = false;
     let criticalHubName: string | undefined;
+    let spatialScore = 1;
 
     if (data.latitude != null && data.longitude != null) {
       const duplicates = await this.findPotentialDuplicates(
@@ -120,6 +121,7 @@ export class IncidentService {
       if (hub) {
         isCriticalHubNearby = true;
         criticalHubName = hub.name;
+        spatialScore = 5;
         internalNote = internalNote
           ? `${internalNote} [CRITICAL HUB NEARBY: ${hub.name}]`
           : `[CRITICAL HUB NEARBY: ${hub.name}]`;
@@ -137,18 +139,13 @@ export class IncidentService {
         reviewStatus = 'REJECTED';
         initialTrustScore = 0.0;
       } else {
-        const tier = await reputationService.getTier(reporterId);
+        const trustWeight = await reputationService.getTrustWeight(reporterId);
+        initialTrustScore = trustWeight;
 
-        if (tier >= 3 || isStaff) {
+        if (trustWeight >= 0.9 || isStaff) {
           reviewStatus = 'APPROVED';
         } else {
           reviewStatus = 'PENDING_REVIEW';
-        }
-
-        if (user.citizenVerification?.status === 'VERIFIED') {
-          initialTrustScore = 0.8;
-        } else {
-          initialTrustScore = 0.5;
         }
       }
     } else {
@@ -168,18 +165,22 @@ export class IncidentService {
         isDuplicate,
         title: data.title,
         description: data.description,
-        reporterId,
+        ...(reporterId ? { reporter: { connect: { id: reporterId } } } : {}),
         latitude: data.latitude,
         longitude: data.longitude,
-        subCityId,
-        woredaId,
+        ...(subCityId ? { subCity: { connect: { id: subCityId } } } : {}),
+        ...(woredaId ? { woreda: { connect: { id: woredaId } } } : {}),
         createdAt,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
         reviewNote: internalNote,
         initialTrustScore,
+        spatialScore,
+        aiScore: null,
+        volumeBoost: 0,
+        needsManualReview: false,
         isReporterAtScene: data.isReporterAtScene ?? true,
-        severityScore: isCriticalHubNearby ? 5 : reporterId ? undefined : 1, // Hub proximity forces HIGH (5)
+        severityScore: spatialScore,
       } as any,
     });
 
@@ -202,7 +203,7 @@ export class IncidentService {
           emitIncidentProcessingStart(incident.id, reporterId);
 
           if (data.category !== 'INFRASTRUCTURE') {
-            incidentQueue.add('analyze', {
+            await incidentQueue.add('analyze', {
               incidentId: incident.id,
               title: incident.title,
               description: incident.description,
@@ -242,7 +243,7 @@ export class IncidentService {
       } else {
         // Guest path - no processing events emitted for now, but same logic applies
         if (data.category !== 'INFRASTRUCTURE') {
-          incidentQueue.add('analyze', {
+            await incidentQueue.add('analyze', {
             incidentId: incident.id,
             title: incident.title,
             description: incident.description,
@@ -459,7 +460,43 @@ export class IncidentService {
       );
     }
 
+    if (isDuplicate && duplicateParentIncidentId) {
+      await this.applyPanicFactor(duplicateParentIncidentId);
+    }
+
     return incident;
+  }
+
+  private async applyPanicFactor(incidentId: number) {
+    const incident = await prisma.incident.findUnique({
+      where: { id: incidentId },
+      select: { id: true, severityScore: true, spatialScore: true },
+    });
+    if (!incident) return null;
+
+    const since = new Date(Date.now() - 15 * 60 * 1000);
+    const duplicateCount = await prisma.incident.count({
+      where: {
+        parentIncidentId: incidentId,
+        createdAt: { gte: since },
+        deletedAt: null,
+      },
+    });
+
+    const volumeBoost = Math.min(4, Math.floor(duplicateCount / 3));
+    const spatialBase = incident.spatialScore ?? incident.severityScore ?? 1;
+    const mergedBaseScore = Math.min(5, spatialBase + volumeBoost);
+    const nextSeverity = Math.max(incident.severityScore ?? 1, mergedBaseScore);
+
+    await prisma.incident.update({
+      where: { id: incidentId },
+      data: {
+        volumeBoost,
+        severityScore: nextSeverity,
+      },
+    });
+
+    return { volumeBoost, severityScore: nextSeverity };
   }
 
   async getMyIncidents(reporterId: number) {
@@ -575,10 +612,14 @@ export class IncidentService {
     await prisma.incident.update({
       where: { id: duplicateId },
       data: {
+        parentIncidentId: primaryId,
+        isDuplicate: true,
         status: 'RESOLVED', // Or a specific MERGED status if enum allows, using RESOLVED for now
         reviewStatus: 'APPROVED',
       },
     });
+
+    await this.applyPanicFactor(primaryId);
 
     // Log activity on both
     await logActivity(primaryId, 'SYSTEM', `Merged with incident #${duplicateId}`, agencyUserId);

@@ -31,7 +31,7 @@ registerRoute(
 );
 
 setCatchHandler(async ({ event }) => {
-  if (event.request.mode === 'navigate') {
+  if (event instanceof FetchEvent && event.request.mode === 'navigate') {
     const offlinePage = await matchPrecache('/offline.html');
     if (offlinePage) return offlinePage;
   }

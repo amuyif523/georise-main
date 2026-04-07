@@ -8,10 +8,13 @@ export default function SeverityBadge({ score }: Props) {
   let cls = 'badge-severity-low';
   let label = 'Low';
 
-  if (score >= 4) {
-    cls = 'badge-severity-high';
+  if (score >= 5) {
+    cls = 'badge-severity-critical';
     label = 'Critical';
-  } else if (score >= 2.5) {
+  } else if (score >= 4) {
+    cls = 'badge-severity-high';
+    label = 'High';
+  } else if (score >= 3) {
     cls = 'badge-severity-medium';
     label = 'Medium';
   }

@@ -248,6 +248,10 @@ model Incident {
   description          String
   category             String?
   severityScore        Int?
+  spatialScore         Int                      @default(1)
+  aiScore              Int?
+  volumeBoost          Int                      @default(0)
+  needsManualReview    Boolean                  @default(false)
   status               IncidentStatus           @default(RECEIVED)
   latitude             Float?
   longitude            Float?

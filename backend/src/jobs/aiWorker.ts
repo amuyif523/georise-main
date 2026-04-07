@@ -105,41 +105,61 @@ export const aiWorker = new Worker(
 
     // 2. Update Database
     try {
-      // Apply Triage Weighting
-      const trustWeight = initialTrustScore ?? 0.5;
-      const rawSeverity = aiOutput.severity_score ?? 1;
-      const finalPriority = Math.max(1, Math.round(rawSeverity * trustWeight));
+      const currentIncident = await prisma.incident.findUnique({
+        where: { id: incidentId },
+        select: {
+          severityScore: true,
+          spatialScore: true,
+          volumeBoost: true,
+          needsManualReview: true,
+        },
+      });
+
+      const trustMultiplier = initialTrustScore ?? 0.5;
+      const aiScore = aiOutput.severity_score ?? 1;
+      const aiConfidence = aiOutput.confidence ?? 0;
       const validatedCategory = validateIncidentCategory(
         aiOutput.predicted_category,
         title,
         description,
         manualCategory,
       );
+      const spatialScore = currentIncident?.spatialScore ?? currentIncident?.severityScore ?? 1;
+      const volumeBoost = currentIncident?.volumeBoost ?? 0;
+      const spatialBase = Math.min(5, spatialScore + volumeBoost);
+      const aiWeightedScore = Math.max(1, Math.round(aiScore * trustMultiplier));
 
-      const updated = await prisma.incident.update({
-        where: { id: incidentId },
-        data: {
-          category: validatedCategory,
-          severityScore: finalPriority,
-          aiOutput: {
-            upsert: {
-              create: {
-                modelVersion: aiOutput.model_version,
-                predictedCategory: validatedCategory,
-                severityScore: aiOutput.severity_score,
-                confidence: aiOutput.confidence,
-                summary: aiOutput.summary,
-              },
-              update: {
-                modelVersion: aiOutput.model_version,
-                predictedCategory: validatedCategory,
-                severityScore: aiOutput.severity_score,
-                confidence: aiOutput.confidence,
-                summary: aiOutput.summary,
-              },
+      const updateData: Record<string, any> = {
+        category: validatedCategory,
+        aiScore,
+        needsManualReview: aiConfidence < 0.6,
+        aiOutput: {
+          upsert: {
+            create: {
+              modelVersion: aiOutput.model_version,
+              predictedCategory: validatedCategory,
+              severityScore: aiScore,
+              confidence: aiOutput.confidence,
+              summary: aiOutput.summary,
+            },
+            update: {
+              modelVersion: aiOutput.model_version,
+              predictedCategory: validatedCategory,
+              severityScore: aiScore,
+              confidence: aiOutput.confidence,
+              summary: aiOutput.summary,
             },
           },
         },
+      };
+
+      if (aiConfidence >= 0.6) {
+        updateData.severityScore = Math.max(spatialBase, aiWeightedScore);
+      }
+
+      const updated = await prisma.incident.update({
+        where: { id: incidentId },
+        data: updateData,
         include: { aiOutput: true },
       });
 
