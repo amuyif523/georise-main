@@ -122,6 +122,12 @@ export class IncidentService {
       initialTrustScore = 0.3;
     }
 
+    const parsedLocalCreatedAt = data.localCreatedAt ? new Date(data.localCreatedAt) : null;
+    const createdAt =
+      parsedLocalCreatedAt && !Number.isNaN(parsedLocalCreatedAt.getTime())
+        ? parsedLocalCreatedAt
+        : new Date();
+
     const incident = await prisma.incident.create({
       data: {
         title: data.title,
@@ -131,6 +137,7 @@ export class IncidentService {
         longitude: data.longitude,
         subCityId,
         woredaId,
+        createdAt,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
         initialTrustScore,

@@ -18,6 +18,7 @@ import MapWrapper from '../components/maps/IncidentMap';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import api from '../lib/api';
 import { formatDistanceToNow } from 'date-fns';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 // Types for the dashboard
 interface DashboardIncident {
@@ -32,6 +33,7 @@ interface DashboardIncident {
 const CitizenDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useNetworkStatus();
   const [incidents, setIncidents] = useState<DashboardIncident[]>([]);
   const [loading, setLoading] = useState(true);
   const [trustScore, setTrustScore] = useState(0);
@@ -200,8 +202,17 @@ const CitizenDashboard: React.FC = () => {
         <div className="lg:col-span-3 card bg-base-100 shadow-lg border border-base-content/5 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-base-content/5 bg-base-200/30">
             <h3 className="text-xs font-bold uppercase text-base-content/40 tracking-widest flex items-center justify-between">
-              <span>Incident Wire</span>
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+              <div className="flex items-center gap-2">
+                <span>Incident Wire</span>
+                {!isOnline && (
+                  <span className="badge badge-warning badge-xs text-[10px]">Viewing Cached Data</span>
+                )}
+              </div>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                }`}
+              ></span>
             </h3>
           </div>
 

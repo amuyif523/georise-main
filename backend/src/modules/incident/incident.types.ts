@@ -5,6 +5,7 @@ export interface CreateIncidentRequest {
   longitude?: number;
   isReporterAtScene?: boolean;
   category?: string; // Optional manual override
+  localCreatedAt?: string;
 }
 
 export interface IncidentListItem {
