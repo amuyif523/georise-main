@@ -83,6 +83,7 @@ interface Props {
   onResolve?: () => void;
   responders?: { id: number; name: string; status: string; userId?: number }[];
   onAssignResponder?: (assignment: { responderId: number; agencyId: number }) => void;
+  initialTab?: 'details' | 'messages' | 'logs';
 }
 
 type AssignableResponder = {
@@ -256,6 +257,7 @@ const IncidentDetailPane: React.FC<Props> = ({
   onResolve,
   responders = [],
   onAssignResponder,
+  initialTab = 'details',
 }) => {
   const { user } = useAuth();
   const [incident, setIncident] = useState<Incident | null>(initialIncident);
@@ -375,6 +377,11 @@ const IncidentDetailPane: React.FC<Props> = ({
   const needsAcknowledgement =
     isAssignedToMe && incident?.status === 'ASSIGNED' && !incident?.acknowledgedAt;
 
+  useEffect(() => {
+    if (!initialIncident) return;
+    setActiveTab(initialTab);
+  }, [initialIncident?.id, initialTab]);
+
   const handleAcknowledge = async () => {
     if (!incident) return;
     setActionLoading(true);
@@ -450,6 +457,8 @@ const IncidentDetailPane: React.FC<Props> = ({
 
     if (socket) {
       socket.emit('join_incident', incident.id);
+      socket.emit('join:incident', incident.id);
+      socket.on('chat:message', onIncomingMessage);
       socket.on('incident:message', onIncomingMessage);
       socket.on('incident:chat', onIncomingMessage);
     }
@@ -457,6 +466,8 @@ const IncidentDetailPane: React.FC<Props> = ({
     return () => {
       if (socket) {
         socket.emit('leave_incident', incident.id);
+        socket.emit('leave:incident', incident.id);
+        socket.off('chat:message', onIncomingMessage);
         socket.off('incident:message', onIncomingMessage);
         socket.off('incident:chat', onIncomingMessage);
       }

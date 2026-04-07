@@ -274,6 +274,14 @@ const AgencyDashboard: React.FC = () => {
                   <p className="text-xs text-slate-300">
                     Severity: {i.severityScore ?? '?'} • {new Date(i.createdAt).toLocaleString()}
                   </p>
+                  <div className="mt-2">
+                    <a
+                      href={`/agency/map?incidentId=${i.id}&tab=messages`}
+                      className="btn btn-xs btn-outline btn-info"
+                    >
+                      Open chat
+                    </a>
+                  </div>
                   {view === 'history' && toPublicAssetUrl(i.resolutionPhotoUrl ?? i.photos?.[0]?.url) && (
                     <img
                       src={toPublicAssetUrl(i.resolutionPhotoUrl ?? i.photos?.[0]?.url) || undefined}

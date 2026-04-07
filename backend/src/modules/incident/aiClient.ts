@@ -2,14 +2,16 @@ import axios from 'axios';
 import logger from '../../logger';
 import { INTERNAL_SERVICE_SECRET } from '../../config/env';
 
-const AI_BASE =
-  process.env.AI_ENDPOINT?.replace(/\/classify$/, '') ||
-  process.env.AI_BASE_URL ||
-  'http://localhost:8001';
-const CLASSIFY_URL =
-  process.env.AI_ENDPOINT && process.env.AI_ENDPOINT.includes('/classify')
-    ? process.env.AI_ENDPOINT
-    : `${AI_BASE}/classify`;
+const configuredAiEndpoint =
+  process.env.AI_ENDPOINT || process.env.AI_SERVICE_URL || process.env.AI_BASE_URL;
+
+const CLASSIFY_URL = configuredAiEndpoint
+  ? configuredAiEndpoint.includes('/classify')
+    ? configuredAiEndpoint
+    : `${configuredAiEndpoint.replace(/\/$/, '')}/classify`
+  : 'http://localhost:8000/classify';
+
+const AI_BASE = CLASSIFY_URL.replace(/\/classify$/, '');
 const HEALTH_URL = `${AI_BASE}/health`;
 
 type MetadataPayload = { model?: string; metadata?: Record<string, any> };

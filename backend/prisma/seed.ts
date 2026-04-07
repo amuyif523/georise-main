@@ -8,7 +8,7 @@ import {
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
-import prisma from '../src/prisma';
+import prisma from '../src/prisma.js';
 
 const ADMIN_PASSWORD = 'Admin#2026!';
 const STAFF_OTP_LENGTH = 8;
@@ -101,7 +101,9 @@ async function main() {
       }),
     ),
   );
-  const boleSubCity = subCityRecords.find((subCity) => subCity.name === 'Bole');
+  const boleSubCity = subCityRecords.find(
+    (subCity: (typeof subCityRecords)[number]) => subCity.name === 'Bole',
+  );
   if (!boleSubCity) {
     throw new Error('Bole sub-city must exist for demo seed.');
   }

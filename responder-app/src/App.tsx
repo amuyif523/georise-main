@@ -543,6 +543,7 @@ const App: React.FC = () => {
 
     void fetchIncidentChat(activeIncident.id);
     socket.emit('join_incident', activeIncident.id);
+    socket.emit('join:incident', activeIncident.id);
 
     const onChatMessage = (msg: ChatMessage) => {
       if (msg.incidentId !== activeIncident.id) return;
@@ -554,11 +555,14 @@ const App: React.FC = () => {
       });
     };
 
+    socket.on('chat:message', onChatMessage);
     socket.on('incident:chat', onChatMessage);
     socket.on('incident:message', onChatMessage);
 
     return () => {
       socket.emit('leave_incident', activeIncident.id);
+      socket.emit('leave:incident', activeIncident.id);
+      socket.off('chat:message', onChatMessage);
       socket.off('incident:chat', onChatMessage);
       socket.off('incident:message', onChatMessage);
     };

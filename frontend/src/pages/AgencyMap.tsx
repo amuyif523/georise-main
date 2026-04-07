@@ -23,6 +23,15 @@ import AppLayout from '../layouts/AppLayout';
 import { getSocket } from '../lib/socket';
 import BoundariesLayer from '../components/maps/BoundariesLayer';
 import ClusterLayer from '../components/maps/ClusterLayer';
+import { useSearchParams } from 'react-router-dom';
+
+const ACTIVE_INCIDENT_STATUSES = new Set([
+  'RECEIVED',
+  'ASSIGNED',
+  'RESPONDING',
+  'IN_PROGRESS',
+  'PENDING_REVIEW',
+]);
 
 type Incident = {
   id: number;
@@ -165,6 +174,7 @@ interface AgencyMapProps {
 
 const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction }) => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Suppress unused warning effectively
   useEffect(() => {
@@ -229,6 +239,25 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
   const [responders, setResponders] = useState<any[]>([]); // Task 2: Ensure array init
   const [trajectories, setTrajectories] = useState<Record<number, [number, number][]>>({});
 
+  const requestedIncidentId = useMemo(() => {
+    const raw = searchParams.get('incidentId');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [searchParams]);
+
+  const requestedTab = useMemo<'details' | 'messages' | 'logs'>(() => {
+    const raw = searchParams.get('tab');
+    if (raw === 'messages' || raw === 'logs') return raw;
+    return 'details';
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!requestedIncidentId || incidents.length === 0) return;
+    const exists = incidents.some((i) => i.id === requestedIncidentId);
+    if (exists) setSelectedId(requestedIncidentId);
+  }, [requestedIncidentId, incidents]);
+
   // Deep-Trace Debugging
   useEffect(() => {
     incidents.forEach((i: any) => {
@@ -261,7 +290,7 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
       // Parallel fetches without failing the whole map if one fails
       const requests = [
-        api.get('/incidents', { params: { status: 'RECEIVED', hours } }).catch((err) => {
+        api.get('/incidents', { params: { hours } }).catch((err) => {
           console.error('Failed to load incidents', err);
           return { data: { incidents: [] } };
         }),
@@ -281,7 +310,9 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
 
       const [incRes, heatRes, respRes, clusterRes] = await Promise.all(requests);
 
-      let incs = incRes?.data?.incidents || [];
+      let incs = (incRes?.data?.incidents || []).filter((i: Incident) =>
+        ACTIVE_INCIDENT_STATUSES.has(i.status),
+      );
       if (selectedSubCity) {
         incs = incs.filter((i: any) => i.subCityId === Number(selectedSubCity));
       }
@@ -345,10 +376,22 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
     const socket = getSocket();
     if (socket) {
       const handlerCreated = (inc: any) => {
-        setIncidents((prev) => [inc, ...prev]);
+        if (!ACTIVE_INCIDENT_STATUSES.has(inc.status)) return;
+        setIncidents((prev) => {
+          const exists = prev.some((p) => p.id === inc.id);
+          if (exists) return prev.map((p) => (p.id === inc.id ? inc : p));
+          return [inc, ...prev];
+        });
       };
       const handlerUpdated = (inc: any) => {
-        setIncidents((prev) => prev.map((p) => (p.id === inc.id ? inc : p)));
+        setIncidents((prev) => {
+          const exists = prev.some((p) => p.id === inc.id);
+          if (ACTIVE_INCIDENT_STATUSES.has(inc.status)) {
+            if (exists) return prev.map((p) => (p.id === inc.id ? inc : p));
+            return [inc, ...prev];
+          }
+          return prev.filter((p) => p.id !== inc.id);
+        });
       };
       const responderPos = (payload: any) => {
         setResponders((prev) =>
@@ -841,23 +884,59 @@ const AgencyMap: React.FC<AgencyMapProps> = ({ historyMode = false, jurisdiction
                       className="p-3 rounded-xl border border-slate-800 bg-slate-900 animate-pulse h-20"
                     />
                   ))
-                : incidents.map((i) => (
-                    <IncidentCard
-                      key={i.id}
-                      title={i.title}
-                      category={i.category}
-                      severity={i.severityScore}
-                      status={i.status}
-                      timestamp={i.createdAt}
-                      onClick={() => setSelectedId(i.id)}
-                    />
-                  ))}
+                : incidents.length === 0
+                  ? (
+                    <div className="rounded-lg border border-dashed border-slate-700 p-3 text-xs text-slate-400">
+                      No active incidents in queue.
+                    </div>
+                  )
+                  : incidents.map((i) => (
+                      <div key={i.id} className="space-y-2">
+                        <IncidentCard
+                          title={i.title}
+                          category={i.category}
+                          severity={i.severityScore}
+                          status={i.status}
+                          timestamp={i.createdAt}
+                          onClick={() => setSelectedId(i.id)}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            className="btn btn-xs btn-outline btn-info flex-1"
+                            onClick={() => {
+                              setSelectedId(i.id);
+                              const next = new URLSearchParams(searchParams);
+                              next.set('incidentId', String(i.id));
+                              next.set('tab', 'messages');
+                              setSearchParams(next, { replace: true });
+                            }}
+                          >
+                            Messages
+                          </button>
+                          <button
+                            className="btn btn-xs btn-outline flex-1"
+                            onClick={() => setSelectedId(i.id)}
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    ))}
             </div>
           </div>
         </div>
         <IncidentDetailPane
           incident={selectedIncident}
-          onClose={() => setSelectedId(null)}
+          initialTab={selectedId === requestedIncidentId ? requestedTab : 'details'}
+          onClose={() => {
+            setSelectedId(null);
+            if (searchParams.has('incidentId') || searchParams.has('tab')) {
+              const next = new URLSearchParams(searchParams);
+              next.delete('incidentId');
+              next.delete('tab');
+              setSearchParams(next, { replace: true });
+            }
+          }}
           onAssign={
             selectedIncident ? () => updateStatus(selectedIncident.id, 'assign') : undefined
           }

@@ -423,6 +423,18 @@ export class IncidentService {
         aiOutput: true,
         statusHistory: true,
         photos: true,
+        chatMessages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                fullName: true,
+                role: true,
+              },
+            },
+          },
+        },
         subCity: {
           select: { id: true, name: true },
         },

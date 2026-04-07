@@ -71,15 +71,21 @@ export const initSocketServer = (server: HttpServer) => {
       }
 
       // Incident Chat Rooms
-      socket.on('join_incident', (incidentId: number) => {
+      const joinIncidentRoom = (incidentId: number) => {
         socket.join(`incident:${incidentId}`);
         socket.emit('room:joined', { room: `incident:${incidentId}` });
         logger.info({ userId, incidentId }, 'Joined incident room');
-      });
+      };
 
-      socket.on('leave_incident', (incidentId: number) => {
+      const leaveIncidentRoom = (incidentId: number) => {
         socket.leave(`incident:${incidentId}`);
-      });
+      };
+
+      socket.on('join_incident', joinIncidentRoom);
+      socket.on('join:incident', joinIncidentRoom);
+
+      socket.on('leave_incident', leaveIncidentRoom);
+      socket.on('leave:incident', leaveIncidentRoom);
 
       // Join responder room if linked
       try {
