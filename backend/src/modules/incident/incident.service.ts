@@ -86,10 +86,44 @@ export class IncidentService {
 
     let subCityId: number | undefined;
     let woredaId: number | undefined;
+    let duplicateParentIncidentId: number | undefined;
+    let duplicateSimilarity = 0;
+    let isDuplicate = false;
+    let internalNote: string | undefined;
+    let isCriticalHubNearby = false;
+    let criticalHubName: string | undefined;
+
+    if (data.latitude != null && data.longitude != null) {
+      const duplicates = await this.findPotentialDuplicates(
+        data.latitude,
+        data.longitude,
+        data.title,
+        data.description,
+      );
+      const bestDuplicate = duplicates.find((d) => (d.similarity ?? 0) > 0.7);
+      if (bestDuplicate) {
+        isDuplicate = true;
+        duplicateParentIncidentId = Number(bestDuplicate.id);
+        duplicateSimilarity = Number(bestDuplicate.similarity ?? 0);
+      }
+    }
+
     if (data.latitude != null && data.longitude != null) {
       const areas = await gisService.findAdministrativeAreaForPoint(data.latitude, data.longitude);
       if (areas.subCity) subCityId = areas.subCity.id;
       if (areas.woreda) woredaId = areas.woreda.id;
+      if (!areas.subCity && !areas.woreda) {
+        internalNote = '[OUTSIDE_BOUNDS]';
+      }
+
+      const hub = await gisService.findNearbyCriticalHub(data.latitude, data.longitude, 500);
+      if (hub) {
+        isCriticalHubNearby = true;
+        criticalHubName = hub.name;
+        internalNote = internalNote
+          ? `${internalNote} [CRITICAL HUB NEARBY: ${hub.name}]`
+          : `[CRITICAL HUB NEARBY: ${hub.name}]`;
+      }
     }
 
     let reviewStatus: any = 'NOT_REQUIRED';
@@ -130,6 +164,8 @@ export class IncidentService {
 
     const incident = await prisma.incident.create({
       data: {
+        parentIncidentId: duplicateParentIncidentId,
+        isDuplicate,
         title: data.title,
         description: data.description,
         reporterId,
@@ -140,9 +176,10 @@ export class IncidentService {
         createdAt,
         status: IncidentStatus.RECEIVED,
         reviewStatus,
+        reviewNote: internalNote,
         initialTrustScore,
         isReporterAtScene: data.isReporterAtScene ?? true,
-        severityScore: reporterId ? undefined : 1, // Default low severity for guests
+        severityScore: isCriticalHubNearby ? 5 : reporterId ? undefined : 1, // Hub proximity forces HIGH (5)
       } as any,
     });
 
@@ -402,6 +439,26 @@ export class IncidentService {
       const { emitPendingIncidentToAgencies } = await import('../../events/incidentEvents');
       emitPendingIncidentToAgencies(toIncidentPayload(fresh || incident));
     }
+
+    if (isDuplicate && duplicateParentIncidentId) {
+      getIO().to('role:ADMIN').emit('incident:duplicate_detected', {
+        duplicateIncidentId: incident.id,
+        parentIncidentId: duplicateParentIncidentId,
+        similarity: Number(duplicateSimilarity.toFixed(3)),
+        latitude: incident.latitude,
+        longitude: incident.longitude,
+      });
+    }
+
+    if (isCriticalHubNearby && criticalHubName) {
+      await logActivity(
+        incident.id,
+        'SYSTEM',
+        `[CRITICAL HUB NEARBY] Auto-raised severity near ${criticalHubName}`,
+        reporterId as number,
+      );
+    }
+
     return incident;
   }
 

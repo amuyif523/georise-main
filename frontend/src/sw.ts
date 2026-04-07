@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
+import { clientsClaim } from 'workbox-core';
+import { createHandlerBoundToURL, matchPrecache, precacheAndRoute } from 'workbox-precaching';
+import { NavigationRoute, registerRoute, setCatchHandler } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
@@ -9,7 +10,33 @@ declare let self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string }>;
 };
 
-precacheAndRoute(self.__WB_MANIFEST || []);
+self.skipWaiting();
+clientsClaim();
+
+const precacheManifest = [...(self.__WB_MANIFEST || [])];
+if (!precacheManifest.some((entry) => entry.url === '/index.html')) {
+  precacheManifest.push({ url: '/index.html' });
+}
+if (!precacheManifest.some((entry) => entry.url === '/offline.html')) {
+  precacheManifest.push({ url: '/offline.html' });
+}
+
+precacheAndRoute(precacheManifest);
+
+const appShellHandler = createHandlerBoundToURL('/index.html');
+registerRoute(
+  new NavigationRoute(appShellHandler, {
+    denylist: [/^\/api\//, /\/__\//],
+  }),
+);
+
+setCatchHandler(async ({ event }) => {
+  if (event.request.mode === 'navigate') {
+    const offlinePage = await matchPrecache('/offline.html');
+    if (offlinePage) return offlinePage;
+  }
+  return Response.error();
+});
 
 registerRoute(
   ({ url, request }) =>

@@ -3,7 +3,43 @@ import redis from '../../redis';
 
 const ADMIN_AREA_CACHE_TTL_SECONDS = 300;
 
+export const CRITICAL_HUBS = [
+  { name: 'Bole Airport', latitude: 8.9779, longitude: 38.7993 },
+  { name: 'AU HQ', latitude: 9.0108, longitude: 38.7614 },
+  { name: 'Black Lion Hospital', latitude: 9.0359, longitude: 38.7469 },
+] as const;
+
 export class GisService {
+  async findNearbyCriticalHub(lat: number, lng: number, radiusMeters = 500) {
+    const rows = await prisma.$queryRawUnsafe<Array<{ name: string; distance_meters: number }>>(
+      `
+      SELECT hub.name,
+             ST_Distance(
+               ST_SetSRID(ST_MakePoint(hub.lng, hub.lat), 4326)::geography,
+               ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+             ) AS distance_meters
+      FROM (
+        VALUES
+          ('Bole Airport', 8.9779, 38.7993),
+          ('AU HQ', 9.0108, 38.7614),
+          ('Black Lion Hospital', 9.0359, 38.7469)
+      ) AS hub(name, lat, lng)
+      WHERE ST_DWithin(
+        ST_SetSRID(ST_MakePoint(hub.lng, hub.lat), 4326)::geography,
+        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+        $3
+      )
+      ORDER BY distance_meters ASC
+      LIMIT 1;
+    `,
+      lng,
+      lat,
+      radiusMeters,
+    );
+
+    return rows[0] || null;
+  }
+
   async findAdministrativeAreaForPoint(lat: number, lng: number) {
     const cacheKey = `gis:admin-area:${lat.toFixed(4)}:${lng.toFixed(4)}`;
     try {
@@ -25,7 +61,7 @@ export class GisService {
       SELECT id, name, code
       FROM "SubCity"
       WHERE jurisdiction IS NOT NULL
-        AND ST_Within(ST_GeomFromText($1), jurisdiction)
+        AND ST_Intersects(ST_GeomFromText($1), jurisdiction)
       LIMIT 1;
     `,
       pointWkt,
@@ -36,7 +72,7 @@ export class GisService {
       SELECT id, name, code, "subCityId"
       FROM "Woreda"
       WHERE boundary IS NOT NULL
-        AND ST_Within(ST_GeomFromText($1), boundary)
+        AND ST_Intersects(ST_GeomFromText($1), boundary)
       LIMIT 1;
     `,
       pointWkt,

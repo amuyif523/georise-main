@@ -12,6 +12,17 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/*'],
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+      },
+      workbox: {
+        navigateFallback: '/index.html',
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: '/index.html',
+      },
       manifest: {
         name: 'GEORISE - Citizen & Agency Portal',
         short_name: 'GEORISE',

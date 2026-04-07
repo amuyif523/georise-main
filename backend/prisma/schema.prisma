@@ -239,6 +239,8 @@ model CitizenVerification {
 
 model Incident {
   id                   Int                      @id @default(autoincrement())
+  parentIncidentId     Int?
+  isDuplicate          Boolean                  @default(false)
   reporterId           Int?
   assignedAgencyId     Int?
   assignedResponderId  Int?
@@ -271,6 +273,8 @@ model Incident {
   deletedAt            DateTime?
   initialTrustScore    Float                    @default(0.5)
 
+  parentIncident       Incident?                @relation("IncidentDuplicates", fields: [parentIncidentId], references: [id])
+  duplicateIncidents   Incident[]               @relation("IncidentDuplicates")
   reporter             User?                   @relation("IncidentsReportedByUser", fields: [reporterId], references: [id])
   assignedAgency       Agency?                 @relation("IncidentsAssignedToAgency", fields: [assignedAgencyId], references: [id])
   assignedResponder    Responder?              @relation("IncidentAssignedResponder", fields: [assignedResponderId], references: [id])
@@ -288,6 +292,7 @@ model Incident {
   classificationAudits ClassificationAudit[]
 
   @@index([location], name: "incident_location_idx", type: Gist)
+  @@index([parentIncidentId])
   @@index([id, deletedAt])
   @@index([initialTrustScore])
 }
